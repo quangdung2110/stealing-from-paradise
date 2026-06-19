@@ -30,25 +30,16 @@
 
 
 # new
+# Stage 1: Build ứng dụng với Maven
+FROM maven:3.9-eclipse-temurin-17 AS builder
 WORKDIR /app
-
-# Copy file pom.xml và source code
 COPY pom.xml .
 COPY src ./src
-
-# Build ứng dụng (bỏ qua test để nhanh hơn)
 RUN mvn clean package -DskipTests
 
-# Stage 2: Chạy ứng dụng
+# Stage 2: Runtime (chạy ứng dụng)
 FROM eclipse-temurin:17-jre-alpine
-
 WORKDIR /app
-
-# Copy file JAR đã build từ stage builder
 COPY --from=builder /app/target/*.jar app.jar
-
-# Mở cổng mặc định
 EXPOSE 8080
-
-# Chạy ứng dụng
 ENTRYPOINT ["java", "-jar", "app.jar"]
