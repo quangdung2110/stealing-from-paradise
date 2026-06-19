@@ -3,25 +3,52 @@
 # JAR pre-built on host via GitHub Actions (mvn package)
 # Context: ./backend/product-service
 # ============================================================
-FROM eclipse-temurin:25-jre-alpine AS builder
-WORKDIR /build
-COPY target/product-service-*.jar app.jar
-RUN java -Djarmode=layertools -jar app.jar extract
+# FROM eclipse-temurin:25-jre-alpine AS builder
+# WORKDIR /build
+# COPY target/product-service-*.jar app.jar
+# RUN java -Djarmode=layertools -jar app.jar extract
 
-FROM eclipse-temurin:25-jre-alpine
+# FROM eclipse-temurin:25-jre-alpine
+# WORKDIR /app
+
+# COPY --from=builder /build/dependencies/ ./
+# COPY --from=builder /build/spring-boot-loader/ ./
+# COPY --from=builder /build/snapshot-dependencies/ ./
+# COPY --from=builder /build/application/ ./
+
+# RUN addgroup -S spring && adduser -S spring -G spring
+# USER spring:spring
+
+# EXPOSE 8090
+
+# HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=8 \
+#     CMD wget --no-verbose --tries=1 --spider http://localhost:8090/actuator/health || exit 1
+
+# ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "org.springframework.boot.loader.launch.JarLauncher"]
+
+
+
+
+# new
 WORKDIR /app
 
-COPY --from=builder /build/dependencies/ ./
-COPY --from=builder /build/spring-boot-loader/ ./
-COPY --from=builder /build/snapshot-dependencies/ ./
-COPY --from=builder /build/application/ ./
+# Copy file pom.xml và source code
+COPY pom.xml .
+COPY src ./src
 
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
+# Build ứng dụng (bỏ qua test để nhanh hơn)
+RUN mvn clean package -DskipTests
 
-EXPOSE 8090
+# Stage 2: Chạy ứng dụng
+FROM eclipse-temurin:17-jre-alpine
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=8 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8090/actuator/health || exit 1
+WORKDIR /app
 
-ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "org.springframework.boot.loader.launch.JarLauncher"]
+# Copy file JAR đã build từ stage builder
+COPY --from=builder /app/target/*.jar app.jar
+
+# Mở cổng mặc định
+EXPOSE 8080
+
+# Chạy ứng dụng
+ENTRYPOINT ["java", "-jar", "app.jar"]
