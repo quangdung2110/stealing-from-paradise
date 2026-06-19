@@ -1,15 +1,18 @@
-# Stage 1: Build all modules và cài đặt vào local repo
+# Stage 1: Build
 FROM maven:3.9-eclipse-temurin-17 AS builder
 
 WORKDIR /build
 
-# Copy toàn bộ source code
+# Copy toàn bộ repository vào container
 COPY . .
 
-# Bước 1: Build và cài đặt common-lib vào local Maven repository
+# QUAN TRỌNG: Di chuyển vào thư mục backend (nơi chứa pom.xml cha)
+WORKDIR /build/backend
+
+# Bước 1: Build và cài đặt common-lib (nó nằm trong cùng thư mục backend)
 RUN mvn clean install -pl common-lib -am -DskipTests
 
-# Bước 2: Build product-service (lúc này common-lib đã có trong local repo)
+# Bước 2: Build product-service (sẽ phụ thuộc vào common-lib đã cài)
 RUN mvn clean package -pl product-service -am -DskipTests
 
 # Stage 2: Runtime
@@ -17,8 +20,8 @@ FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
-# Copy file JAR đã build
-COPY --from=builder /build/product-service/target/*.jar app.jar
+# Copy file JAR từ thư mục backend/product-service/target
+COPY --from=builder /build/backend/product-service/target/*.jar app.jar
 
 EXPOSE 8080
 
