@@ -1,0 +1,22 @@
+# Stage 1: Build
+FROM maven:3.9-eclipse-temurin-17 AS builder
+
+WORKDIR /build
+
+# Copy toàn bộ source code vào container
+COPY . .
+
+# Build module product-service và các module phụ thuộc (bao gồm cả parent)
+RUN mvn clean package -pl backend/product-service -am -DskipTests
+
+# Stage 2: Runtime
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+# Copy file JAR đã build từ stage builder
+COPY --from=builder /build/backend/product-service/target/*.jar app.jar
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
