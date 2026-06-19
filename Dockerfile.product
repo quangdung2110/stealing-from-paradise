@@ -1,5 +1,5 @@
 # Stage 1: Build với JDK 24
-FROM maven:3.9-eclipse-temurin-24 AS builder
+FROM maven:3.9-amazoncorretto-25 AS builder AS builder
 
 WORKDIR /build
 COPY . .
@@ -14,7 +14,7 @@ RUN mvn clean install -pl common-lib -am -DskipTests
 RUN mvn clean package -pl product-service -am -DskipTests
 
 # Stage 2: Runtime với JRE 24
-FROM eclipse-temurin:24-jre-alpine
+FROM amazoncorretto:25-alpine
 
 WORKDIR /app
 
