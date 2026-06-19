@@ -1,17 +1,6 @@
 {
-  "builds": [
-    {
-      "src": "frontend/apps/customer/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "frontend/apps/customer/dist"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/apps/customer/dist/$1"
-    }
-  ]
+  "installCommand": "cd frontend/apps/customer && npm install",
+  "buildCommand": "cd frontend/apps/customer && npm run build",
+  "outputDirectory": "frontend/apps/customer/dist",
+  "framework": "vite"
 }
