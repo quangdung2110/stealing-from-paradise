@@ -32,14 +32,27 @@
 # new
 # Stage 1: Build ứng dụng với Maven
 FROM maven:3.9-eclipse-temurin-17 AS builder
-WORKDIR /app
-COPY pom.xml .
-COPY src ./src
-RUN mvn clean package -DskipTests
 
-# Stage 2: Runtime (chạy ứng dụng)
+WORKDIR /build
+
+# Copy toàn bộ các file pom.xml cần thiết cho multi-module
+# Giả sử cấu trúc: backend/pom.xml (parent) và backend/product-service/pom.xml
+COPY backend/pom.xml .
+COPY backend/product-service/pom.xml ./product-service/
+
+# Copy source code của product-service
+COPY backend/product-service/src ./product-service/src
+
+# Build chỉ riêng module product-service (và các module phụ thuộc)
+RUN mvn clean package -pl product-service -am -DskipTests
+
+# Stage 2: Runtime
 FROM eclipse-temurin:17-jre-alpine
+
 WORKDIR /app
-COPY --from=builder /app/target/*.jar app.jar
+
+COPY --from=builder /build/product-service/target/*.jar app.jar
+
 EXPOSE 8080
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
