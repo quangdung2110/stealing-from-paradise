@@ -1,0 +1,300 @@
+[
+  {
+    "parentOrderId": 1,
+    "customerId": 1,
+    "totalAmt": 250000.00,
+    "status": "COMPLETED",
+    "createdAtOffset": "7 days ago",
+    "subOrders": [
+      {
+        "orderId": 1,
+        "orderCode": "ORD-1",
+        "sellerId": 1,
+        "totalAmt": 250000.00,
+        "status": "COMPLETED",
+        "trackingNumber": "VNPOST123456",
+        "items": [
+          {
+            "sku": "SKU-IPHONE-BLK-128",
+            "name": "iPhone 15 Black 128GB",
+            "price": 250000.00,
+            "quantity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "parentOrderId": 2,
+    "customerId": 2,
+    "totalAmt": 1590000.00,
+    "status": "SHIPPED",
+    "createdAtOffset": "5 days ago",
+    "subOrders": [
+      {
+        "orderId": 2,
+        "orderCode": "ORD-2",
+        "sellerId": 2,
+        "totalAmt": 1590000.00,
+        "status": "SHIPPED",
+        "trackingNumber": "GHTK987654",
+        "items": [
+          {
+            "sku": "SKU-AIRPOD-PRO2",
+            "name": "AirPods Pro 2",
+            "price": 590000.00,
+            "quantity": 1
+          },
+          {
+            "sku": "SKU-MAGSAFE",
+            "name": "MagSafe Charger",
+            "price": 300000.00,
+            "quantity": 2
+          },
+          {
+            "sku": "SKU-WATCH-SE",
+            "name": "Apple Watch SE",
+            "price": 700000.00,
+            "quantity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "parentOrderId": 3,
+    "customerId": 3,
+    "totalAmt": 899000.00,
+    "status": "CONFIRMED",
+    "createdAtOffset": "3 days ago",
+    "subOrders": [
+      {
+        "orderId": 3,
+        "orderCode": "ORD-3",
+        "sellerId": 3,
+        "totalAmt": 899000.00,
+        "status": "CONFIRMED",
+        "trackingNumber": null,
+        "items": [
+          {
+            "sku": "SKU-IPAD-10",
+            "name": "iPad 10th Gen",
+            "price": 899000.00,
+            "quantity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "parentOrderId": 4,
+    "customerId": 4,
+    "totalAmt": 3450000.00,
+    "status": "DELIVERED",
+    "createdAtOffset": "10 days ago",
+    "subOrders": [
+      {
+        "orderId": 4,
+        "orderCode": "ORD-4",
+        "sellerId": 1,
+        "totalAmt": 3450000.00,
+        "status": "DELIVERED",
+        "trackingNumber": "GHN555666",
+        "items": [
+          {
+            "sku": "SKU-MACBOOK-AIR-M3",
+            "name": "MacBook Air M3",
+            "price": 2450000.00,
+            "quantity": 1
+          },
+          {
+            "sku": "SKU-MOUSE-MX3",
+            "name": "Logitech MX Master 3S",
+            "price": 1000000.00,
+            "quantity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "parentOrderId": 5,
+    "customerId": 5,
+    "totalAmt": 459000.00,
+    "status": "PENDING",
+    "createdAtOffset": "1 hour ago",
+    "subOrders": [
+      {
+        "orderId": 5,
+        "orderCode": "ORD-5",
+        "sellerId": 2,
+        "totalAmt": 459000.00,
+        "status": "PENDING",
+        "trackingNumber": null,
+        "items": [
+          {
+            "sku": "SKU-CABLE-TYPE-C",
+            "name": "Cable USB-C 1m",
+            "price": 150000.00,
+            "quantity": 1
+          },
+          {
+            "sku": "SKU-HUB-7IN1",
+            "name": "Hub USB-C 7-in-1",
+            "price": 309000.00,
+            "quantity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "parentOrderId": 6,
+    "customerId": 1,
+    "totalAmt": 1299000.00,
+    "status": "CANCELLED",
+    "createdAtOffset": "2 days ago",
+    "subOrders": [
+      {
+        "orderId": 6,
+        "orderCode": "ORD-6",
+        "sellerId": 3,
+        "totalAmt": 1299000.00,
+        "status": "CANCELLED",
+        "trackingNumber": null,
+        "items": [
+          {
+            "sku": "SKU-SAMSUNG-BUDS2",
+            "name": "Samsung Galaxy Buds2",
+            "price": 1299000.00,
+            "quantity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "parentOrderId": 7,
+    "customerId": 6,
+    "totalAmt": 6800000.00,
+    "status": "SHIPPING",
+    "createdAtOffset": "4 days ago",
+    "subOrders": [
+      {
+        "orderId": 7,
+        "orderCode": "ORD-7",
+        "sellerId": 4,
+        "totalAmt": 6800000.00,
+        "status": "SHIPPING",
+        "trackingNumber": "GHTK112233",
+        "items": [
+          {
+            "sku": "SKU-AIRFRY-55",
+            "name": "Nồi chiên không dầu 5.5L",
+            "price": 3200000.00,
+            "quantity": 1
+          },
+          {
+            "sku": "SKU-KETTLE-LNL",
+            "name": "Bình đun siêu tốc LocknLock",
+            "price": 550000.00,
+            "quantity": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "parentOrderId": 8,
+    "customerId": 7,
+    "totalAmt": 1200000.00,
+    "status": "CONFIRMED",
+    "createdAtOffset": "2 days ago",
+    "subOrders": [
+      {
+        "orderId": 8,
+        "orderCode": "ORD-8",
+        "sellerId": 5,
+        "totalAmt": 1200000.00,
+        "status": "CONFIRMED",
+        "trackingNumber": null,
+        "items": [
+          {
+            "sku": "SKU-NIKE-PEG40-42",
+            "name": "Giày chạy Nike Air Zoom Pegasus 40",
+            "price": 4200000.00,
+            "quantity": 1
+          },
+          {
+            "sku": "SKU-YOGAMAT-6MM",
+            "name": "Thảm yoga cao cấp 6mm",
+            "price": 280000.00,
+            "quantity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "parentOrderId": 9,
+    "customerId": 8,
+    "totalAmt": 4200000.00,
+    "status": "DELIVERED",
+    "createdAtOffset": "8 days ago",
+    "subOrders": [
+      {
+        "orderId": 9,
+        "orderCode": "ORD-9",
+        "sellerId": 1,
+        "totalAmt": 4200000.00,
+        "status": "DELIVERED",
+        "trackingNumber": "VNPOST778899",
+        "items": [
+          {
+            "sku": "SKU-JBL-FLIP6-BLK",
+            "name": "Loa Bluetooth JBL Flip 6",
+            "price": 3800000.00,
+            "quantity": 1
+          },
+          {
+            "sku": "SKU-BACKPACK-TOM",
+            "name": "Balo laptop Tomtoc 15.6 inch",
+            "price": 1200000.00,
+            "quantity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "parentOrderId": 10,
+    "customerId": 9,
+    "totalAmt": 8500000.00,
+    "status": "PENDING",
+    "createdAtOffset": "2 hours ago",
+    "subOrders": [
+      {
+        "orderId": 10,
+        "orderCode": "ORD-10",
+        "sellerId": 3,
+        "totalAmt": 8500000.00,
+        "status": "PENDING",
+        "trackingNumber": null,
+        "items": [
+          {
+            "sku": "SKU-AKKO-3098B-R",
+            "name": "Bàn phím cơ Akko 3098B",
+            "price": 2100000.00,
+            "quantity": 1
+          },
+          {
+            "sku": "SKU-ANKER-20000",
+            "name": "Pin dự phòng Anker 20000mAh",
+            "price": 890000.00,
+            "quantity": 1
+          }
+        ]
+      }
+    ]
+  }
+]

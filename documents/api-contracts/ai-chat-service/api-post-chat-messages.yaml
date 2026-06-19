@@ -1,0 +1,467 @@
+openapi: "3.0.3"
+info:
+  title: AI Chat Service API
+  description: |
+    AI-powered chat support with multi-turn conversations, tool calls,
+    and human-in-the-loop confirmation for high-risk actions.
+    AI Chat Service (Port 8093). Spring AI + PostgreSQL + Redis + Kafka.
+  version: "5.5"
+
+servers:
+  - url: http://localhost:8093/api/ai
+    description: Local development
+
+paths:
+  /sessions:
+    post:
+      operationId: createSession
+      summary: Create a new chat session
+      description: |
+        Creates a new chat session. Optionally provides page context
+        to prime the AI (e.g., which product the user is viewing).
+        Can also be created implicitly by POST /chat with sessionId=null.
+      tags:
+        - Sessions
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                context:
+                  type: object
+                  properties:
+                    currentPage:
+                      type: string
+                      enum: [home, product_detail, order, cart]
+                    productId:
+                      type: string
+              example:
+                context:
+                  currentPage: "product_detail"
+                  productId: "prod_abc123"
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    get:
+      operationId: listSessions
+      summary: List user's chat sessions
+      description: Returns all sessions for the authenticated user, active first.
+      tags:
+        - Sessions
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Session list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SessionResponse"
+
+  /sessions/{sessionId}:
+    delete:
+      operationId: closeSession
+      summary: Close a chat session
+      description: |
+        Closes the session, clears Redis cache, publishes ai.session.closed event.
+        Best practice: call in window.addEventListener('beforeunload').
+      tags:
+        - Sessions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Session closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClosedSessionResponse"
+        "404":
+          $ref: "#/components/responses/SessionNotFound"
+        "422":
+          $ref: "#/components/responses/InvalidSessionStatus"
+
+  /chat:
+    post:
+      operationId: sendMessage
+      summary: Send message and receive streaming AI response
+      description: |
+        Main endpoint. Sends user message, AI processes (potentially calling tools),
+        and streams response back via SSE (text/event-stream).
+        SSE events: delta, tool_start, tool_done, products, order,
+        confirmation_required, done, error.
+      tags:
+        - Chat
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [text/event-stream]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                sessionId:
+                  type: string
+                  format: uuid
+                  description: Existing session ID. Null to auto-create.
+                message:
+                  type: string
+                  description: Message text. Empty when type=LOAD_MORE.
+                type:
+                  type: string
+                  enum: [TEXT, LOAD_MORE, FOLLOW_UP]
+                  default: TEXT
+              example:
+                sessionId: "sess_01J..."
+                message: "Don hang ORD-2024-00892 dang o dau?"
+                type: "TEXT"
+      responses:
+        "200":
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/InvalidSessionStatus"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/LLMUnavailable"
+
+  /chat/history:
+    get:
+      operationId: getMessageHistory
+      summary: Get message history for a session
+      description: |
+        Returns messages for a session with cursor-based pagination.
+        All four message roles returned: USER, ASSISTANT, TOOL_CALL, TOOL_RESULT.
+      tags:
+        - Chat
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 50
+        - name: before
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Cursor - get messages with sequence_no less than this value
+      responses:
+        "200":
+          description: Message history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageHistoryResponse"
+
+  /confirm:
+    post:
+      operationId: confirmAction
+      summary: Confirm or reject a pending action
+      description: |
+        Called after user receives confirmation_required SSE event.
+        CONFIRMED = execute the action. REJECTED = skip the action.
+      tags:
+        - Confirmation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - confirmId
+                - sessionId
+                - decision
+              properties:
+                confirmId:
+                  type: string
+                  format: uuid
+                sessionId:
+                  type: string
+                  format: uuid
+                decision:
+                  type: string
+                  enum: [CONFIRMED, REJECTED]
+              example:
+                confirmId: "conf_01J..."
+                sessionId: "sess_01J..."
+                decision: "CONFIRMED"
+      responses:
+        "200":
+          description: Confirmation processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfirmationResponse"
+        "400":
+          description: Token expired or already used
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          description: Core Service rejected the action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /suggest:
+    get:
+      operationId: getSuggestions
+      summary: Get quick suggestion questions
+      description: |
+        Returns contextual suggestions for the chat input.
+        Personalized when JWT is provided.
+      tags:
+        - Suggestions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: context
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [home, product, order, cart]
+            default: home
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 4
+            minimum: 1
+            maximum: 6
+      responses:
+        "200":
+          description: Suggestion list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: JWT invalid or missing
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    SessionNotFound:
+      description: Session does not exist or does not belong to user
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InvalidSessionStatus:
+      description: Session is CLOSED or EXPIRED
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RateLimitExceeded:
+      description: Too many requests
+      headers:
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Unix timestamp when limit resets
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    LLMUnavailable:
+      description: LLM provider unavailable after retries
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Confirm token ownership mismatch
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    SessionResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+          example: "sess_01J..."
+        status:
+          type: string
+          enum: [ACTIVE]
+          example: "ACTIVE"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-05-03T10:00:00Z"
+        expiresAt:
+          type: string
+          format: date-time
+          example: "2026-05-03T10:30:00Z"
+
+    ClosedSessionResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [CLOSED]
+        closedAt:
+          type: string
+          format: date-time
+
+    MessageHistoryResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageItem"
+        hasMore:
+          type: boolean
+        nextCursor:
+          type: integer
+          nullable: true
+
+    MessageItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [USER, ASSISTANT, TOOL_CALL, TOOL_RESULT]
+        content:
+          type: string
+        toolName:
+          type: string
+          nullable: true
+        sequenceNo:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    ConfirmationResponse:
+      type: object
+      properties:
+        confirmId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [CONFIRMED, REJECTED]
+        executionResult:
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
+        message:
+          type: string
+
+    SuggestResponse:
+      type: object
+      properties:
+        suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              text:
+                type: string
+              icon:
+                type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "RATE_LIMIT_EXCEEDED"
+            message:
+              type: string
+              example: "Qua nhieu yeu cau, thu lai sau 30 giay."
+            retryAfter:
+              type: integer
+              example: 30

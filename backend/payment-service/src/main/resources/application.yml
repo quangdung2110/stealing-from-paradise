@@ -1,0 +1,125 @@
+server:
+  port: 8082
+spring:
+  application:
+    name: payment-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  threads:
+    virtual:
+      enabled: true             # Virtual Threads Java 21+ — bật cho MVC, không cần cho WebFlux
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:flashsale_platform}?currentSchema=payment
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres123!}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      auto-commit: true
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    schemas: payment
+    default-schema: payment
+    create-schemas: true
+    clean-disabled: true
+  jpa:
+    defer-datasource-initialization: true
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: com.flashsale.commonlib.config.ByteaPostgreSQLDialect
+        show_sql: false
+        format_sql: false
+        query.startup_check: false
+        jdbc.batch_size: 10
+        order_inserts: true
+        order_updates: true
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVER:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: ${spring.application.name}-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        spring.json.trusted.packages: com.flashsale.*
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+    registry-fetch-interval-seconds: 30
+    initial-instance-info-replication-interval-seconds: 40
+    should-enforce-registration-at-init: false
+    fetch-registry: true
+    register-with-eureka: true
+    enabled: true
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:sk_test_placeholder}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_placeholder}
+  platform-fee-percentage: ${STRIPE_PLATFORM_FEE_PERCENTAGE:5.0}
+  default-country: ${STRIPE_DEFAULT_COUNTRY:US}
+  onboarding-return-url: ${STRIPE_RETURN_URL:http://localhost:3001/stripe/return}
+  onboarding-refresh-url: ${STRIPE_REFRESH_URL:http://localhost:3001/stripe/refresh}
+
+axon:
+  axonserver:
+    servers: ${AXON_SERVER:localhost:8124}
+    context: default
+    component-name: ${spring.application.name}
+  eventhandling:
+    poolsize: 10
+  serializer:
+    general: xstream
+  repository:
+    snapshot-filter: 10
+
+# Actuator — always enabled so docker healthcheck works
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+flashsale:
+  infra:
+    shedlock:
+      enabled: true   # distributed lock for @Scheduled jobs (ShedLock)
+    dlq:
+      enabled: true   # Kafka consumer DLQ -> <topic>.DLT
+    outbox:
+      enabled: true   # Transactional Outbox pattern
+
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    com.flashsale.commonlib.filter: DEBUG
+    # Suppress Kafka client spam logs
+    org.apache.kafka: WARN
+    org.springframework.kafka: WARN
+    kafka: WARN

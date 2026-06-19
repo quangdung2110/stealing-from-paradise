@@ -1,0 +1,354 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Return & Cancel API
+  description: |
+    Buyer cancel order, buyer refund request, and seller Return-To-Sender (RTS).
+    Covers both manual (admin-reviewed) and automatic (RTS) refund flows.
+  version: "5.4"
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: Cancel
+    description: Order cancellation
+  - name: Return
+    description: Refund and Return-To-Sender operations
+paths:
+  /orders/{orderId}/cancel:
+    post:
+      tags:
+        - Cancel
+      summary: Cancel order (Buyer or Seller)
+      description: |
+        Cancels a PENDING order. Releases reserved stock.
+        Produces `order.cancelled` Kafka event.
+      operationId: cancelOrder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelRequest"
+      responses:
+        "200":
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelResponse"
+        "403":
+          description: Not the order owner
+        "409":
+          description: Order not in PENDING status
+
+  /orders/{orderId}/return-to-sender:
+    post:
+      tags:
+        - Return
+      summary: Return-To-Sender (Seller RTS)
+      description: |
+        Seller confirms goods returned by carrier. Triggers automatic full refund
+        without admin approval. Restores stock. Produces `order.returned` event.
+      operationId: returnToSender
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/RTSRequest"
+      responses:
+        "200":
+          description: RTS confirmed, auto-refund initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RTSResponse"
+        "400":
+          description: Missing or invalid evidence_images
+        "403":
+          description: Not the order's seller
+        "409":
+          description: Order already RETURNED or has pending refund
+        "422":
+          description: Order not in SHIPPING status
+
+  /orders/{orderId}/refunds:
+    post:
+      tags:
+        - Return
+      summary: Request partial refund (Buyer)
+      description: |
+        Buyer requests refund for specific items within the 7-day return window.
+        Requires admin approval. Produces `refund.requested` event.
+      operationId: requestRefund
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefundRequest"
+      responses:
+        "201":
+          description: Refund request submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefundResponse"
+
+  /orders/parent/{parentOrderId}/refund:
+    post:
+      tags:
+        - Return
+      summary: Request full refund (Buyer)
+      description: Full refund for all sub-orders under a parent order.
+      operationId: requestFullRefund
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: parentOrderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FullRefundRequest"
+      responses:
+        "201":
+          description: Full refund request submitted
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CancelRequest:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: Reason for cancellation
+          example: "I want to cancel this order"
+        note:
+          type: string
+          maxLength: 500
+          description: Additional note
+          example: "Ordered by mistake"
+
+    CancelResponse:
+      type: object
+      properties:
+        order_id:
+          type: integer
+          format: int64
+          example: 100
+        order_code:
+          type: string
+          example: "OR-20251001-100"
+        status:
+          type: string
+          enum: [CANCELLED]
+          example: "CANCELLED"
+        cancelled_by:
+          type: string
+          enum: [BUYER, SELLER]
+          example: "BUYER"
+        cancel_reason:
+          type: string
+          example: "I want to cancel this order"
+        cancelled_at:
+          type: string
+          format: date-time
+          example: "2026-04-15T11:00:00Z"
+
+    RTSRequest:
+      type: object
+      required:
+        - evidence_images
+        - return_tracking_number
+      properties:
+        evidence_images:
+          type: array
+          items:
+            type: string
+            format: binary
+          description: Photos of returned package (multipart files)
+        return_tracking_number:
+          type: string
+          description: Return tracking number from carrier
+          example: "VT999888777"
+        note:
+          type: string
+          description: Additional notes about the return
+          example: "Returned due to unreachable buyer, wrong address"
+
+    RTSResponse:
+      type: object
+      properties:
+        order_id:
+          type: integer
+          format: int64
+          example: 1001
+        order_code:
+          type: string
+          example: "OR-20251001-1001"
+        order_status:
+          type: string
+          enum: [RETURNED]
+          example: "RETURNED"
+        refund_id:
+          type: integer
+          format: int64
+          example: 99
+        refund_status:
+          type: string
+          enum: [PENDING]
+          example: "PENDING"
+        return_tracking_number:
+          type: string
+          example: "VT999888777"
+        estimated_refund_days:
+          type: integer
+          example: 3
+        stripe_refund_id:
+          type: string
+          example: "re_3Px5Ab..."
+        message:
+          type: string
+          example: "Return recorded. System is auto-refunding the buyer."
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-10-01T14:30:00Z"
+
+    RefundRequest:
+      type: object
+      required:
+        - reason
+        - items
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: Overall reason for refund
+          example: "Product defective, not as described"
+        items:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/RefundItem"
+        evidence_images:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+            format: uri
+          description: Pre-uploaded evidence image URLs (via pre-signed URL)
+
+    RefundItem:
+      type: object
+      required:
+        - order_item_id
+        - quantity
+        - item_reason
+      properties:
+        order_item_id:
+          type: integer
+          format: int64
+          description: Must belong to the order
+        quantity:
+          type: integer
+          minimum: 1
+          description: Must be <= remaining (not already refunded)
+        item_reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+
+    RefundResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            group_ref:
+              type: string
+              format: uuid
+            order_id:
+              type: integer
+              format: int64
+            type:
+              type: string
+              enum: [FULL, PARTIAL]
+            status:
+              type: string
+              enum: [PENDING]
+            total_amount:
+              type: number
+              format: double
+            refund_amount:
+              type: number
+              format: double
+            item_count:
+              type: integer
+            message:
+              type: string
+
+    FullRefundRequest:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        evidence_images:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+            format: uri

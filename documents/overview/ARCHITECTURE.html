@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Architecture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --doc-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      --doc-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --doc-bg: #f6f7f9;
+      --doc-panel: #ffffff;
+      --doc-border: #d9dee7;
+      --doc-muted: #5c6675;
+      --doc-text: #162033;
+      --doc-accent: #1d4ed8;
+      --doc-accent-soft: #eff6ff;
+    }
+
+    html { scroll-padding-top: 5rem; }
+    body {
+      background: var(--doc-bg);
+      color: var(--doc-text);
+      font-family: var(--doc-font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      letter-spacing: 0;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      text-rendering: optimizeLegibility;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      line-height: 1.22;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+
+    a { color: var(--doc-accent); }
+    a:hover { color: #123b9c; }
+
+    .doc-topbar {
+      background: rgba(255, 255, 255, .96);
+      border-bottom: 1px solid var(--doc-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .doc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    .doc-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .doc-sidebar {
+      position: sticky;
+      top: 5rem;
+      max-height: calc(100vh - 6rem);
+      overflow: auto;
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+    }
+
+    .doc-main {
+      min-width: 0;
+    }
+
+    .doc-hero,
+    .doc-panel {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+    }
+
+    .doc-hero {
+      padding: 1.25rem;
+    }
+
+    .doc-section {
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-kpi {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+      height: 100%;
+    }
+
+    .doc-card {
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      background: var(--doc-panel);
+      height: 100%;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .doc-card:hover {
+      border-color: #adc6ff;
+      box-shadow: 0 .5rem 1.5rem rgba(22, 32, 51, .08);
+      transform: translateY(-1px);
+    }
+
+    .doc-card:focus-visible,
+    .doc-link-list a:focus-visible,
+    .nav-link:focus-visible,
+    .btn:focus-visible {
+      outline: 3px solid rgba(29, 78, 216, .35);
+      outline-offset: 2px;
+    }
+
+    .doc-card .card-body {
+      padding: 1rem;
+    }
+
+    .doc-link-list {
+      display: grid;
+      gap: .5rem;
+      padding-left: 0;
+      margin-bottom: 0;
+      list-style: none;
+    }
+
+    .doc-link-list a {
+      display: block;
+      padding: .625rem .75rem;
+      border: 1px solid var(--doc-border);
+      border-radius: .5rem;
+      background: #fff;
+      text-decoration: none;
+    }
+
+    .doc-link-list a:hover {
+      background: var(--doc-accent-soft);
+      border-color: #bfdbfe;
+    }
+
+    .doc-table {
+      --bs-table-bg: #fff;
+      border: 1px solid var(--doc-border);
+    }
+
+    .doc-table thead th {
+      background: #eef2f7;
+      color: #283549;
+      white-space: nowrap;
+    }
+
+    pre {
+      background: #101827;
+      color: #f8fafc;
+      font-family: var(--doc-font-mono);
+      font-size: .875rem;
+      line-height: 1.55;
+      padding: 1rem;
+      border-radius: .75rem;
+      overflow: auto;
+    }
+
+    pre.mermaid {
+      background: #ffffff;
+      color: var(--doc-text);
+      border: 1px solid var(--doc-border);
+      min-height: 8rem;
+    }
+
+    code {
+      color: #9a3412;
+      font-family: var(--doc-font-mono);
+      font-size: .9em;
+    }
+
+    .doc-meta {
+      color: var(--doc-muted);
+      font-size: .875rem;
+    }
+
+    .doc-anchor {
+      scroll-margin-top: 5rem;
+    }
+
+    @media (max-width: 991.98px) {
+      .doc-shell { padding: .875rem; }
+      .doc-layout { grid-template-columns: 1fr; }
+      .doc-sidebar {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    @media print {
+      .doc-topbar,
+      .doc-sidebar,
+      .btn,
+      .nav-tabs {
+        display: none !important;
+      }
+      body { background: #fff; }
+      .doc-shell { max-width: none; padding: 0; }
+      .doc-layout { display: block; }
+      .doc-hero,
+      .doc-panel,
+      .doc-card,
+      .doc-kpi {
+        border: 1px solid #bbb;
+        box-shadow: none !important;
+      }
+    }
+      pre code { color: inherit; background: transparent; font-size: inherit; padding: 0; }
+    pre { white-space: pre; }
+  </style>
+</head>
+<body>
+  <header class="doc-topbar sticky-top">
+    <nav class="navbar navbar-expand-lg">
+      <div class="container-fluid px-3">
+        <a class="navbar-brand fw-semibold" href="../index.html">Stealing-from-Paradise</a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <a class="btn btn-sm btn-outline-secondary" href="../index.html">Home</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/overview.html">Overview</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/architecture.html">Architecture</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/domain.html">Domain Model and Rules</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/use-cases.html">Use Cases</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/business-flows.html">Business Flows</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/interfaces.html">Interfaces</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/messaging.html">Messaging and Realtime</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/traceability.html">Traceability</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="doc-shell">
+    <div class="doc-layout">
+      <aside class="doc-sidebar">
+        <div class="fw-semibold mb-2">Contents</div>
+        <nav class="nav nav-pills flex-column gap-1">
+          <a class="nav-link" href="../groups/overview.html">Overview</a>
+<a class="nav-link" href="../groups/architecture.html">Architecture</a>
+<a class="nav-link" href="../groups/domain.html">Domain Model and Rules</a>
+<a class="nav-link" href="../groups/business-flows.html">Business Flows</a>
+<a class="nav-link" href="../groups/use-cases.html">Use Cases</a>
+<a class="nav-link" href="../groups/interfaces.html">Interfaces</a>
+<a class="nav-link" href="../groups/messaging.html">Messaging and Realtime</a>
+<a class="nav-link" href="../groups/identity.html">Identity and Security</a>
+<a class="nav-link" href="../groups/platform.html">Platform and Operations</a>
+<a class="nav-link" href="../groups/deployment.html">Deployment</a>
+<a class="nav-link" href="../groups/observability.html">Observability</a>
+<a class="nav-link" href="../groups/integrations.html">Integrations</a>
+<a class="nav-link" href="../groups/traceability.html">Traceability</a>
+<a class="nav-link" href="../traceability/matrix.html">Traceability Matrix</a>
+        </nav>
+      </aside>
+
+      <main class="doc-main">
+        <section class="doc-hero doc-section">
+          <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div>
+              <h1 class="h2 mb-1">Architecture</h1>
+              <div class="doc-meta">DOC-OVERVIEW-ARCHITECTURE | 2026-06-09</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2"><span class="badge text-bg-info">architecture</span> <span class="badge text-bg-light">platform</span></div>
+          </div>
+        </section>
+
+        <section class="doc-section"><div class="doc-panel p-3 p-md-4 doc-prose"><h2>System Architecture</h2>
+<p>Service: platform</p>
+<h3>Service Registry</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Service</th>
+<th>Port</th>
+<th>Database</th>
+<th>Pattern</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SVC-001</td>
+<td>api-gateway</td>
+<td>8080</td>
+<td>—</td>
+<td>Spring Cloud Gateway</td>
+<td>JWT RS256 validation, routing, rate limiting</td>
+</tr>
+<tr>
+<td>SVC-002</td>
+<td>discovery-service</td>
+<td>8761</td>
+<td>—</td>
+<td>Eureka</td>
+<td>Service registry &amp; health</td>
+</tr>
+<tr>
+<td>SVC-003</td>
+<td>identity-service</td>
+<td>8081</td>
+<td>PostgreSQL</td>
+<td>JPA</td>
+<td>Auth, JWT, users, addresses</td>
+</tr>
+<tr>
+<td>SVC-004</td>
+<td>payment-service</td>
+<td>8082</td>
+<td>PostgreSQL</td>
+<td>JPA + Kafka</td>
+<td>Stripe Connect, multi-vendor splits</td>
+</tr>
+<tr>
+<td>SVC-005</td>
+<td>order-service</td>
+<td>8083</td>
+<td>PostgreSQL + Axon</td>
+<td>CQRS/ES + Saga</td>
+<td>Checkout, order lifecycle, RTS</td>
+</tr>
+<tr>
+<td>SVC-006</td>
+<td>product-service</td>
+<td>8084</td>
+<td>PostgreSQL</td>
+<td>Traditional</td>
+<td>Catalog, variants, cart, images (MinIO)</td>
+</tr>
+<tr>
+<td>SVC-007</td>
+<td>flashsale-service</td>
+<td>8086</td>
+<td>PostgreSQL + Redis</td>
+<td>Reactive + Kafka</td>
+<td>Flash sale sessions, price promotion</td>
+</tr>
+<tr>
+<td>SVC-008</td>
+<td>search-service</td>
+<td>8087</td>
+<td>Elasticsearch + Redis</td>
+<td>Traditional</td>
+<td>Full-text search, VN text analysis</td>
+</tr>
+<tr>
+<td>SVC-009</td>
+<td>notification-service</td>
+<td>8092</td>
+<td>MongoDB</td>
+<td>Traditional</td>
+<td>SSE real-time notifications</td>
+</tr>
+<tr>
+<td>SVC-010</td>
+<td>ai-chat-service</td>
+<td>8093</td>
+<td>MongoDB</td>
+<td>Traditional</td>
+<td>AI chat, tool calls, human-in-the-loop</td>
+</tr>
+<tr>
+<td>SVC-011</td>
+<td>refund-service</td>
+<td>8094</td>
+<td>PostgreSQL</td>
+<td>JPA</td>
+<td>Admin refund approval, buyer requests, RTS automatic refunds</td>
+</tr>
+</tbody>
+</table>
+<h3>Infrastructure Map</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Port</th>
+<th>Used By</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PostgreSQL</td>
+<td>5432</td>
+<td>identity, payment, order, flashsale, product, refund</td>
+<td>Primary relational store</td>
+</tr>
+<tr>
+<td>MongoDB</td>
+<td>27017</td>
+<td>notification, ai-chat</td>
+<td>Document store</td>
+</tr>
+<tr>
+<td>Redis</td>
+<td>6379</td>
+<td>api-gateway, identity, product, flashsale, search, notification, ai-chat</td>
+<td>JWT blocklist, reservation/session state, rate limits, cache</td>
+</tr>
+<tr>
+<td>Elasticsearch</td>
+<td>9200</td>
+<td>search</td>
+<td>Full-text product index</td>
+</tr>
+<tr>
+<td>MinIO</td>
+<td>9000/9001</td>
+<td>product</td>
+<td>Object storage (product images)</td>
+</tr>
+<tr>
+<td>Kafka</td>
+<td>9092</td>
+<td>all services</td>
+<td>Async event streaming (58 Kafka topics: 44 event + 14 request-reply)</td>
+</tr>
+<tr>
+<td>Axon Server</td>
+<td>8024/8124</td>
+<td>order-service</td>
+<td>Event store + saga/event handling</td>
+</tr>
+</tbody>
+</table>
+<h3>Frontend Apps</h3>
+<table>
+<thead>
+<tr>
+<th>App</th>
+<th>Port</th>
+<th>Stack</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Customer</td>
+<td>3000</td>
+<td>React 19 + Vite + TypeScript</td>
+</tr>
+<tr>
+<td>Seller</td>
+<td>3001</td>
+<td>React 19 + Vite + TypeScript</td>
+</tr>
+<tr>
+<td>Admin</td>
+<td>3002</td>
+<td>React 19 + Vite + TypeScript</td>
+</tr>
+</tbody>
+</table>
+<h3>Technology Stack</h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Technologies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend</td>
+<td>Java 25 LTS, Spring Boot 4.0.4, Spring Cloud 2025.1.1, Axon Framework 4.13.0</td>
+</tr>
+<tr>
+<td>Databases</td>
+<td>PostgreSQL 15.4, MongoDB 6.0, Redis 7.2, Elasticsearch 8.10</td>
+</tr>
+<tr>
+<td>Messaging</td>
+<td>Kafka 7.4.0, Axon Server</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>React 19, Vite 6.0, TypeScript, Tailwind CSS, Zustand, React Query</td>
+</tr>
+<tr>
+<td>DevOps</td>
+<td>Docker, Docker Compose, Nginx, Eureka</td>
+</tr>
+</tbody>
+</table>
+<h3>Key Features</h3>
+<ul>
+<li>Multi-vendor marketplace with 3 roles (Customer, Seller, Admin)</li>
+<li>Flash sales with price promotion and session scheduling</li>
+<li>Stripe Connect for multi-vendor payments with automatic transfers</li>
+<li>Real-time SSE notifications</li>
+<li>Full-text search with Elasticsearch (Vietnamese text analysis)</li>
+<li>Return To Sender (RTS) refund workflow</li>
+<li>AI Chat Support (multi-turn, tool calls, human-in-the-loop)</li>
+<li>11 implemented scheduled backend jobs plus MongoDB TTL retention</li>
+<li>58 Kafka topics (44 event + 14 request-reply)</li>
+<li>Axon CQRS/Saga orchestration in order-service</li>
+</ul>
+<hr>
+<h2>AI Chat Service -- Technical Architecture</h2>
+<blockquote>
+<p>Source: <code>docs/services/ai-chat-service/01_technical_module.md</code></p>
+</blockquote>
+<h3>AI Orchestrator Layers</h3>
+<pre><code>Frontend / Chat UI
+        |  (JWT + message)
+API Gateway
+        |
+AI Orchestrator (Spring AI)     &lt;-&gt;  PageIndex (vector search)
+        |  (JWT delegation)
+Core Services (Order, Product, Account...)
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Layer 1 -- Frontend</td>
+<td>Send message + JWT, render SSE stream, display Product Card / Order Card</td>
+</tr>
+<tr>
+<td>Layer 2 -- AI Orchestrator</td>
+<td>Validate JWT, rate limit, manage ChatClient, dispatch Tool calls</td>
+</tr>
+<tr>
+<td>Layer 3 -- PageIndex</td>
+<td>Vector search for products and system features</td>
+</tr>
+<tr>
+<td>Layer 4 -- Core Services</td>
+<td>Existing system, AI calls via existing APIs, no modification</td>
+</tr>
+<tr>
+<td>Layer 5 -- Security</td>
+<td>JWT validation, Rate limiting, Human-in-the-loop (Level 3)</td>
+</tr>
+</tbody>
+</table>
+<h3>Tool Risk Classification</h3>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Action Type</th>
+<th>Requirement</th>
+<th>Example Tools</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Level 1</td>
+<td>Read general info</td>
+<td>No special auth</td>
+<td><code>searchProducts</code>, <code>searchFaq</code></td>
+</tr>
+<tr>
+<td>Level 2</td>
+<td>Read personal data</td>
+<td>Valid JWT required</td>
+<td><code>getOrderDetail</code>, <code>getUserProfile</code></td>
+</tr>
+<tr>
+<td>Level 3</td>
+<td>Modify/delete data</td>
+<td>JWT + Human confirmation</td>
+<td><code>cancelOrder</code>, <code>deleteAccount</code></td>
+</tr>
+</tbody>
+</table>
+<h3>PageIndex -- 1 Billion Product Pipeline</h3>
+<pre><code>1 billion products
+      |  ANN vector search (~50ms)
+Top-100 candidates
+      |  Business filter (in_stock, active, correct category)
+Top-20 results
+      |  AI rerank + intent match
+3-5 products displayed in chat
+</code></pre>
+<h3>Results Per Intent</h3>
+<table>
+<thead>
+<tr>
+<th>Intent</th>
+<th>Example Query</th>
+<th>PageIndex top-K</th>
+<th>Display</th>
+<th>Batch "See More"</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Vague</td>
+<td>"Find me a shirt"</td>
+<td>50</td>
+<td>3 (after clarify)</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Specific</td>
+<td>"White t-shirt M &lt; 200k"</td>
+<td>20</td>
+<td>3-5</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Compare</td>
+<td>"A vs B which is better"</td>
+<td>10</td>
+<td>2-3</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Cache buffer: Store 20 products in Redis TTL 10 min. "See More" pops from Redis, no PageIndex re-query.</p>
+</blockquote>
+<h3>Spring AI Configuration</h3>
+<pre><code class="language-yaml">spring:
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o
+          temperature: 0.1
+          max-tokens: 2048
+
+pageindex:
+  api-key: ${PAGEINDEX_API_KEY}
+  index-id:
+    product: ${PAGEINDEX_PRODUCT_INDEX}
+    feature: ${PAGEINDEX_FEATURE_INDEX}
+</code></pre>
+<h3>System Prompt Template</h3>
+<pre><code>You are [BOT NAME], virtual assistant of [COMPANY NAME].
+
+## Core Rules
+1. NEVER fabricate information. If unknown -&gt; &quot;I don't have information about this issue&quot;.
+2. ALWAYS use Tools to look up instead of answering from general knowledge.
+3. DO NOT perform data-modifying actions without confirmation.
+4. If question out of scope -&gt; politely decline.
+
+## Style
+- Short, friendly, professional
+
+## User Context
+- userId: {userId} | Name: {userName} | Time: {currentTime}
+</code></pre>
+<h3>Tool Definition Checklist</h3>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Required?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>When to use</td>
+<td>Mandatory</td>
+</tr>
+<tr>
+<td>When NOT to use</td>
+<td>Mandatory</td>
+</tr>
+<tr>
+<td>Example trigger phrases</td>
+<td>Recommended</td>
+</tr>
+<tr>
+<td>Confirmation warning</td>
+<td>Mandatory for Level 3</td>
+</tr>
+<tr>
+<td>Parameter format</td>
+<td>Recommended</td>
+</tr>
+</tbody>
+</table>
+<h3>Project Structure</h3>
+<pre><code>com.yourcompany.ai
++-- config/
+|   +-- SpringAiConfig.java          # ChatClient bean, model config
+|   +-- PageIndexConfig.java         # PageIndex client bean
+|   +-- SecurityConfig.java          # JWT filter, rate limit
++-- controller/
+|   +-- ChatController.java          # POST /api/ai/chat (SSE)
+|   +-- SessionController.java       # POST/DELETE /api/ai/sessions
+|   +-- ConfirmController.java       # POST /api/ai/confirm
++-- service/
+|   +-- ChatService.java             # Orchestration logic
+|   +-- PageIndexService.java        # Vector search wrapper
+|   +-- ConfirmationService.java     # Human-in-the-loop
++-- tools/
+|   +-- ProductSearchTool.java       # @Tool risk_level=1
+|   +-- OrderQueryTool.java          # @Tool risk_level=2
+|   +-- SystemActionTool.java        # @Tool risk_level=3
++-- model/
+    +-- ChatRequest.java
+    +-- ChatResponse.java
+</code></pre>
+<h3>Redis Keys</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>TTL</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rate:{userId}</code></td>
+<td>60s</td>
+<td>Rate limit counter (20 req/min)</td>
+</tr>
+<tr>
+<td><code>tool:rate:{userId}</code></td>
+<td>60s</td>
+<td>Tool call rate limit (10/min)</td>
+</tr>
+<tr>
+<td><code>ctx:{sessionId}</code></td>
+<td>30 min</td>
+<td>Cache 20 recent messages, avoid DB query per request</td>
+</tr>
+<tr>
+<td><code>pending:{confirmId}</code></td>
+<td>5 min</td>
+<td>Fast lookup for confirm button (&lt; 5ms)</td>
+</tr>
+<tr>
+<td><code>buf:{sessionId}</code></td>
+<td>10 min</td>
+<td>Buffer 20 products from PageIndex for "See More"</td>
+</tr>
+<tr>
+<td><code>tool:cache:{hash}</code></td>
+<td>60s</td>
+<td>Cache Level 1 tool results</td>
+</tr>
+</tbody>
+</table>
+<h3>Elasticsearch -- Product Search</h3>
+<p><strong>Index:</strong> <code>skus</code> -- SKU-first with field collapsing by <code>product_id</code></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>max_result_window</code></td>
+<td>10,000</td>
+<td>ES hard limit</td>
+</tr>
+<tr>
+<td>Page size</td>
+<td>40 products/page</td>
+<td>Max 250 pages</td>
+</tr>
+<tr>
+<td><code>track_total_hits</code></td>
+<td>10,000</td>
+<td>Count up to 10k then stop, show "10,000+ products"</td>
+</tr>
+<tr>
+<td>Tiebreaker</td>
+<td><code>sort_id: asc</code></td>
+<td>Mandatory with all sort options for stable ordering</td>
+</tr>
+</tbody>
+</table>
+<h3>Vietnamese Text Analysis</h3>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No-diacritic typing: "ao thun"</td>
+<td><code>asciifolding</code> filter with <code>preserve_original: true</code></td>
+</tr>
+<tr>
+<td>Spelling errors: "ao thunn"</td>
+<td><code>fuzziness: AUTO</code> in query</td>
+</tr>
+<tr>
+<td>Synonyms</td>
+<td>Synonym filter with file <code>synonyms/vi_product.txt</code></td>
+</tr>
+<tr>
+<td>Recommended plugin</td>
+<td><code>elasticsearch-plugin install analysis-icu</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Database: MongoDB Collection Schemas</h3>
+<p><strong>chat_sessions</strong></p>
+<pre><code class="language-json">{
+  &quot;_id&quot;: &quot;ObjectId&quot;,
+  &quot;user_id&quot;: &quot;Long&quot;,
+  &quot;status&quot;: &quot;String (ACTIVE | CLOSED | EXPIRED)&quot;,
+  &quot;context_summary&quot;: &quot;String&quot;,
+  &quot;created_at&quot;: &quot;Date&quot;,
+  &quot;updated_at&quot;: &quot;Date&quot;,
+  &quot;closed_at&quot;: &quot;Date&quot;
+}
+</code></pre>
+<p><strong>chat_messages</strong></p>
+<pre><code class="language-json">{
+  &quot;_id&quot;: &quot;ObjectId&quot;,
+  &quot;session_id&quot;: &quot;ObjectId (ref: chat_sessions)&quot;,
+  &quot;role&quot;: &quot;String (USER | ASSISTANT | TOOL_CALL | TOOL_RESULT)&quot;,
+  &quot;content&quot;: &quot;String&quot;,
+  &quot;tool_name&quot;: &quot;String (TOOL_CALL/TOOL_RESULT only)&quot;,
+  &quot;sequence_no&quot;: &quot;Int (compound unique with session_id)&quot;,
+  &quot;tokens_used&quot;: &quot;Int (ASSISTANT only)&quot;,
+  &quot;created_at&quot;: &quot;Date&quot;
+}
+</code></pre>
+<p><strong>pending_confirmations</strong></p>
+<pre><code class="language-json">{
+  &quot;_id&quot;: &quot;ObjectId&quot;,
+  &quot;session_id&quot;: &quot;ObjectId (ref: chat_sessions)&quot;,
+  &quot;user_id&quot;: &quot;Long&quot;,
+  &quot;tool_name&quot;: &quot;String&quot;,
+  &quot;tool_arguments&quot;: &quot;Object&quot;,
+  &quot;summary&quot;: &quot;String&quot;,
+  &quot;status&quot;: &quot;String (PENDING | CONFIRMED | REJECTED | EXPIRED)&quot;,
+  &quot;action&quot;: &quot;String (CANCEL_ORDER | UPDATE_PROFILE | DELETE_ACCOUNT | CUSTOM)&quot;,
+  &quot;expires_at&quot;: &quot;Date (TTL index: 5 min)&quot;,
+  &quot;created_at&quot;: &quot;Date&quot;,
+  &quot;resolved_at&quot;: &quot;Date&quot;
+}
+</code></pre>
+<p><strong>tool_call_logs</strong></p>
+<pre><code class="language-json">{
+  &quot;_id&quot;: &quot;ObjectId&quot;,
+  &quot;session_id&quot;: &quot;ObjectId (ref: chat_sessions)&quot;,
+  &quot;message_id&quot;: &quot;ObjectId (ref: chat_messages)&quot;,
+  &quot;user_id&quot;: &quot;Long&quot;,
+  &quot;tool_name&quot;: &quot;String&quot;,
+  &quot;arguments&quot;: &quot;Object&quot;,
+  &quot;result&quot;: &quot;Object&quot;,
+  &quot;status&quot;: &quot;String (SUCCESS | FAILED | BLOCKED | TIMEOUT)&quot;,
+  &quot;latency_ms&quot;: &quot;Int&quot;,
+  &quot;error_code&quot;: &quot;String&quot;,
+  &quot;error_message&quot;: &quot;String&quot;,
+  &quot;created_at&quot;: &quot;Date&quot;
+}
+</code></pre>
+<h3>Message Flow: 4 Records per Turn</h3>
+<pre><code>#1  role=USER        -&gt; &quot;Where is order ORD-2024-00892?&quot;
+#2  role=TOOL_CALL   -&gt; {&quot;name&quot;:&quot;getOrderDetail&quot;,&quot;args&quot;:{...&#125;&#125;
+#3  role=TOOL_RESULT -&gt; {&quot;status&quot;:&quot;SHIPPED&quot;,&quot;eta&quot;:&quot;2026-05-05&quot;}
+#4  role=ASSISTANT   -&gt; &quot;Order is being delivered, estimated 05/05...&quot;
+</code></pre>
+<p><code>sequence_no</code> is mandatory -- timestamp not reliable (multiple records at same ms).</p>
+<h3>SSE Streaming Events</h3>
+<table>
+<thead>
+<tr>
+<th>Event Type</th>
+<th>When</th>
+<th>Frontend Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>delta</code></td>
+<td>LLM generates token</td>
+<td>Append text to chat bubble</td>
+</tr>
+<tr>
+<td><code>tool_start</code></td>
+<td>AI begins tool call</td>
+<td>Show "Fetching data..."</td>
+</tr>
+<tr>
+<td><code>tool_done</code></td>
+<td>Tool completed</td>
+<td>Hide status indicator</td>
+</tr>
+<tr>
+<td><code>products</code></td>
+<td>Search results returned</td>
+<td>Render Product Card grid</td>
+</tr>
+<tr>
+<td><code>order</code></td>
+<td>Order lookup result</td>
+<td>Render Order Card with timeline</td>
+</tr>
+<tr>
+<td><code>confirmation_required</code></td>
+<td>Level 3 action pending</td>
+<td>Render [Confirm] / [Cancel] buttons</td>
+</tr>
+<tr>
+<td><code>done</code></td>
+<td>Stream complete</td>
+<td>Show final state, tokensUsed</td>
+</tr>
+<tr>
+<td><code>error</code></td>
+<td>Error during processing</td>
+<td>Show error message, close stream</td>
+</tr>
+</tbody>
+</table>
+<h3>Rate Limiting</h3>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Limit</th>
+<th>Window</th>
+<th>Redis Key</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST /chat</td>
+<td>20 req/min/user</td>
+<td>60s</td>
+<td><code>rate:{userId}</code></td>
+</tr>
+<tr>
+<td>Tool calls</td>
+<td>10 req/min/user</td>
+<td>60s</td>
+<td><code>tool:rate:{userId}</code></td>
+</tr>
+<tr>
+<td>POST /confirm</td>
+<td>10 req/min/user</td>
+<td>60s</td>
+<td>--</td>
+</tr>
+<tr>
+<td>All others</td>
+<td>60 req/min/user</td>
+<td>60s</td>
+<td>--</td>
+</tr>
+</tbody>
+</table>
+<p>Rate limit exceeded -&gt; HTTP 429 + <code>X-RateLimit-Reset</code> header.</p></div></section>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    function normalizeDocSearchText(value) {
+      return (value || '').toString().toLowerCase();
+    }
+
+    function escapeDocHtml(value) {
+      return (value || '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderSearchIndexResults(container, items, query) {
+      if (!container) return;
+      var normalized = normalizeDocSearchText(query);
+      if (!normalized) {
+        container.innerHTML = '';
+        container.classList.add('d-none');
+        return;
+      }
+      var matches = items.filter(function(item) {
+        var haystack = [
+          item.id,
+          item.title,
+          item.type,
+          item.group,
+          item.status,
+          item.summary,
+          (item.tags || []).join(' '),
+          (item.related_ids || []).join(' '),
+          item.search_text
+        ].map(normalizeDocSearchText).join(' ');
+        return haystack.indexOf(normalized) !== -1;
+      }).slice(0, 12);
+
+      if (!matches.length) {
+        container.innerHTML = '<div class="text-secondary small">No indexed results found.</div>';
+        container.classList.remove('d-none');
+        return;
+      }
+
+      container.innerHTML = matches.map(function(item) {
+        var title = escapeDocHtml(item.title || item.id || 'Untitled');
+        var path = escapeDocHtml(item.path || '#');
+        var meta = escapeDocHtml([item.type, item.group, item.status].filter(Boolean).join(' | '));
+        return '<a class="d-block border rounded p-2 mb-2 text-decoration-none bg-white" href="' + path + '">' +
+          '<div class="fw-semibold">' + title + '</div>' +
+          '<div class="text-secondary small">' + meta + '</div>' +
+          '</a>';
+      }).join('');
+      container.classList.remove('d-none');
+    }
+
+    var searchIndexPromise = null;
+    function loadDocSearchIndex(path, inlineSelector) {
+      var inlineNode = inlineSelector ? document.querySelector(inlineSelector) : null;
+      if (inlineNode && inlineNode.textContent.trim()) {
+        try {
+          return Promise.resolve(JSON.parse(inlineNode.textContent));
+        } catch (error) {
+          return Promise.resolve(null);
+        }
+      }
+      if (!path) return Promise.resolve(null);
+      if (!searchIndexPromise) {
+        searchIndexPromise = fetch(path).then(function(response) {
+          if (!response.ok) return null;
+          return response.json();
+        }).catch(function() { return null; });
+      }
+      return searchIndexPromise;
+    }
+
+    document.querySelectorAll('[data-doc-filter-target]').forEach(function(input) {
+      var selector = input.getAttribute('data-doc-filter-target');
+      var items = Array.prototype.slice.call(document.querySelectorAll(selector));
+      var indexPath = input.getAttribute('data-doc-search-index');
+      var inlineIndexSelector = input.getAttribute('data-doc-search-inline');
+      var resultSelector = input.getAttribute('data-doc-search-results');
+      var resultContainer = resultSelector ? document.querySelector(resultSelector) : null;
+      input.addEventListener('input', function() {
+        var query = input.value.trim().toLowerCase();
+        items.forEach(function(item) {
+          var haystack = (item.getAttribute('data-doc-filter-text') || item.textContent || '').toLowerCase();
+          item.classList.toggle('d-none', query && haystack.indexOf(query) === -1);
+        });
+        loadDocSearchIndex(indexPath, inlineIndexSelector).then(function(index) {
+          if (index && Array.isArray(index.items)) {
+            renderSearchIndexResults(resultContainer, index.items, query);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# ============================================================
+# DEV Profile — flashsale-service
+# Active when SPRING_PROFILES_ACTIVE=dev
+# ============================================================
+logging:
+  level:
+    com.flashsale: DEBUG
+    org.springframework.r2dbc: INFO
+
+dev-data:
+  enabled: true
+  # reset=true wipes fs_sessions / fs_items / fs_reminders before reseeding.
+  # CAUTION: destroys ALL data in the flashsale schema.
+  reset: ${DEV_DATA_RESET:false}

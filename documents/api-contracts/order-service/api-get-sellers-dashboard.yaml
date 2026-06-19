@@ -1,0 +1,141 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Seller Dashboard
+  description: >
+    Seller order and revenue dashboard. Returns aggregated metrics
+    for the authenticated seller.
+    Order Service (Port 8083).
+  version: "5.4"
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: Seller Dashboard
+    description: Seller business overview and metrics
+paths:
+  /sellers/me/dashboard:
+    get:
+      tags:
+        - Seller Dashboard
+      summary: Seller order and revenue dashboard
+      description: >
+        Returns aggregated order statistics, revenue metrics, and product counts
+        for the authenticated seller. Useful for seller admin panel overview.
+        Referenced by FR-ORDER-015.
+      operationId: getSellerDashboard
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Seller dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerDashboard"
+              example:
+                seller_id: 5
+                total_orders: 245
+                total_revenue: 87500000
+                pending_orders: 3
+                paid_orders: 12
+                shipping_orders: 8
+                delivered_orders: 210
+                cancelled_orders: 5
+                returned_orders: 7
+                active_products: 43
+                pending_review_products: 2
+                total_payout: 82000000
+                pending_payout: 3500000
+                updated_at: "2026-04-15T10:00:00Z"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not a SELLER role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SellerDashboard:
+      type: object
+      properties:
+        seller_id:
+          type: integer
+          format: int64
+          description: Seller ID
+          example: 5
+        total_orders:
+          type: integer
+          description: Total sub-orders ever placed for this seller
+          example: 245
+        total_revenue:
+          type: number
+          format: double
+          description: Total gross revenue from all orders
+          example: 87500000
+        pending_orders:
+          type: integer
+          description: Orders awaiting payment
+          example: 3
+        paid_orders:
+          type: integer
+          description: Orders paid but not yet shipped
+          example: 12
+        shipping_orders:
+          type: integer
+          description: Orders currently in transit
+          example: 8
+        delivered_orders:
+          type: integer
+          description: Orders successfully delivered
+          example: 210
+        cancelled_orders:
+          type: integer
+          description: Orders cancelled by buyer or seller
+          example: 5
+        returned_orders:
+          type: integer
+          description: Orders returned via RTS
+          example: 7
+        active_products:
+          type: integer
+          description: Number of currently published products
+          example: 43
+        pending_review_products:
+          type: integer
+          description: Products awaiting admin approval
+          example: 2
+        total_payout:
+          type: number
+          format: double
+          description: Total amount paid out to seller
+          example: 82000000
+        pending_payout:
+          type: number
+          format: double
+          description: Amount pending payout (delivered, within payout window)
+          example: 3500000
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp of the dashboard snapshot
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

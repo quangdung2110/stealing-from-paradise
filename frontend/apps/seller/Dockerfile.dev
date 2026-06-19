@@ -1,0 +1,28 @@
+# Dev image — Vite dev server with hot-reload via volume mounts
+# Context: ./frontend  (same as production Dockerfile)
+#
+# Directory layout inside container:
+#   /app/apps/seller/   ← mounted from ./frontend/apps/seller
+#   /app/shared/        ← mounted from ./frontend/shared
+#
+# This mirrors the local workspace so that:
+#   vite.config.ts: path.resolve(__dirname, '../../shared')
+#   = path.resolve('/app/apps/seller', '../../shared')
+#   = '/app/shared'   ✓
+
+FROM node:22-slim
+
+WORKDIR /app
+
+# Copy shared first to establish the directory structure
+COPY shared ./shared
+
+# Set working directory to app level
+WORKDIR /app/apps/seller
+
+COPY apps/seller/package.json ./
+RUN npm install
+
+EXPOSE 3001
+
+CMD ["npm", "run", "dev", "--", "--port", "3001", "--host"]

@@ -1,0 +1,206 @@
+﻿openapi: "3.0.3"
+info:
+  title: Product Service - Cart API
+  description: |
+    Cart retrieval and full cart deletion.
+    Cart is grouped by seller with real-time price/stock enrichment.
+    Base URL: `/api/v1`
+    Service: product-service (Port 8084)
+  version: "5.4.0"
+
+servers:
+  - url: https://api.marketplace.vn/api/v1
+    description: Production
+  - url: http://localhost:8084/api/v1
+    description: Local development
+
+paths:
+  /cart:
+    get:
+      operationId: getCart
+      summary: Get customer cart
+      description: |
+        Returns the customer's cart grouped by seller.
+        Each item is enriched with real-time variant data (lazy evaluation).
+        Flags indicate price_changed, out_of_stock, unavailable, insufficient_stock.
+        Expired flash sale items are removed by JOB-07 before display.
+      tags: [Cart]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Cart contents
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartResponse"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      operationId: clearCart
+      summary: Clear entire cart
+      description: |
+        Removes all items from the customer's cart.
+        Cart record itself is retained (status remains active).
+      tags: [Cart]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Cart cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart cleared successfully"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT from Identity Service
+
+  schemas:
+    CartResponse:
+      type: object
+      required: [cart_id, user_id, sellers, total_items, total]
+      properties:
+        cart_id:
+          type: string
+          format: uuid
+          example: "507f1f77bcf86cd799439014"
+        user_id:
+          type: integer
+          example: 42
+        sellers:
+          type: array
+          items:
+            $ref: "#/components/schemas/SellerGroup"
+        total_items:
+          type: integer
+          example: 3
+        total:
+          type: number
+          description: Sum of all selected item subtotals
+          example: 1200000
+
+    SellerGroup:
+      type: object
+      required: [seller_id, items, subtotal]
+      properties:
+        seller_id:
+          type: string
+          format: uuid
+          example: "5"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItemWithWarnings"
+        subtotal:
+          type: number
+          description: Sum of this seller's items
+          example: 700000
+
+    CartItemWithWarnings:
+      type: object
+      required: [cart_item_id, sku_code, product_id, product_name, variant_name, unit_price, quantity, subtotal, added_at, warnings]
+      properties:
+        cart_item_id:
+          type: integer
+          example: 201
+        sku_code:
+          type: string
+          example: "NK-AIR-RED-XL"
+        product_id:
+          type: string
+          format: uuid
+        product_name:
+          type: string
+          example: "Ao Thun Nike Air"
+        variant_name:
+          type: string
+          example: "Do / XL"
+        unit_price:
+          type: number
+          description: Current variant price (for display, not the snapshot)
+          example: 350000
+        price_snapshot:
+          type: number
+          description: Price at add time
+          example: 350000
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          example: 2
+        is_flash:
+          type: boolean
+          example: false
+        fs_item_id:
+          type: integer
+          nullable: true
+          example: null
+        flash_price:
+          type: number
+          nullable: true
+          example: null
+        subtotal:
+          type: number
+          example: 700000
+        added_at:
+          type: string
+          format: date-time
+          example: "2026-04-14T15:30:00Z"
+        warnings:
+          $ref: "#/components/schemas/CartItemWarnings"
+
+    CartItemWarnings:
+      type: object
+      properties:
+        price_changed:
+          type: boolean
+          description: True if current price differs from snapshot
+        old_price:
+          type: number
+          nullable: true
+          description: Original snapshot price when price changed
+        new_price:
+          type: number
+          nullable: true
+          description: Current variant price when price changed
+        out_of_stock:
+          type: boolean
+          description: True if variant stock_quantity = 0
+        unavailable:
+          type: boolean
+          description: True if variant status is inactive or deleted
+        insufficient_stock:
+          type: boolean
+          description: True if stock_quantity < requested quantity
+        available_stock:
+          type: integer
+          nullable: true
+          description: Current stock when insufficient
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

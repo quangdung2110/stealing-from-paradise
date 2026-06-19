@@ -1,0 +1,163 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Parent Refund Status API
+  description: |
+    Tra ve trang thai hoan tien tong hop cua parent order.
+    Gom trang thai tu tat ca sub-orders.
+  version: "5.4"
+  contact:
+    name: Order Service Team
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: order-service
+    description: Parent refund status endpoints
+paths:
+  /orders/parent/{parentOrderId}/refund:
+    get:
+      tags:
+        - order-service
+      summary: Xem trang thai hoan tien parent order
+      description: |
+        Tra ve trang thai hoan tien tong hop cua parent order,
+        bao gom groupRef va danh sach hoan tien cua tung sub-order.
+        Buyer cua parent order hoac admin moi co quyen truy cap.
+      operationId: getParentRefundStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: parentOrderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Parent order ID
+      responses:
+        "200":
+          description: Trang thai hoan tien parent order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FullRefundCreatedResponse"
+        "401":
+          description: Chua xac thuc
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Khong phai buyer hoac admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForbiddenError"
+        "404":
+          description: Khong tim thay parent order hoac chua co hoan tien
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    FullRefundCreatedResponse:
+      type: object
+      properties:
+        group_ref:
+          type: string
+          format: uuid
+          description: UUID nhom hoan tien
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        parent_order_id:
+          type: integer
+          format: int64
+          example: 55
+        type:
+          type: string
+          enum: [FULL, PARTIAL]
+          example: "FULL"
+        total_amount:
+          type: number
+          format: double
+          description: Tong so tien hoan
+          example: 1150000
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, COMPLETED, REJECTED]
+          description: Trang thai tong hop tu tat ca sub-orders
+          example: "PROCESSING"
+        refunds:
+          type: array
+          description: Danh sach hoan tien cho tung sub-order
+          items:
+            type: object
+            properties:
+              order_id:
+                type: integer
+                format: int64
+                example: 100
+              seller_id:
+                type: integer
+                format: int64
+                example: 5
+              amount:
+                type: number
+                format: double
+                example: 700000
+              item_count:
+                type: integer
+                example: 2
+              status:
+                type: string
+                enum: [PENDING, PROCESSING, COMPLETED, REJECTED]
+                example: "PROCESSING"
+        estimated_days:
+          type: integer
+          description: So ngay du kien xu ly
+          example: 7
+        message:
+          type: string
+          description: Thong bao cho nguoi dung
+          example: "Yeu cau hoan tien dang duoc xu ly."
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-06T09:00:00Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Ma loi
+        message:
+          type: string
+          description: Mo ta loi
+
+    ForbiddenError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "FORBIDDEN"
+        message:
+          type: string
+          example: "Ban khong co quyen truy cap tai nguyen nay"
+
+    NotFoundError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "Khong tim thay parent order hoac chua co hoan tien"

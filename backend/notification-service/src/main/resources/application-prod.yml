@@ -1,0 +1,16 @@
+# ============================================================
+# PROD Profile — notification-service
+# Active when SPRING_PROFILES_ACTIVE=prod
+# ============================================================
+logging:
+  level:
+    root: INFO
+    com.flashsale: INFO
+    org.springframework.data.mongodb: WARN
+    com.mongodb: WARN
+    org.apache.kafka: WARN
+    org.springframework.kafka: WARN
+    kafka: WARN
+
+dev-data:
+  enabled: false

@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BR-NOTIF-001: Notification Lifecycle Business Rules</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --doc-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      --doc-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --doc-bg: #f6f7f9;
+      --doc-panel: #ffffff;
+      --doc-border: #d9dee7;
+      --doc-muted: #5c6675;
+      --doc-text: #162033;
+      --doc-accent: #1d4ed8;
+      --doc-accent-soft: #eff6ff;
+    }
+
+    html { scroll-padding-top: 5rem; }
+    body {
+      background: var(--doc-bg);
+      color: var(--doc-text);
+      font-family: var(--doc-font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      letter-spacing: 0;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      text-rendering: optimizeLegibility;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      line-height: 1.22;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+
+    a { color: var(--doc-accent); }
+    a:hover { color: #123b9c; }
+
+    .doc-topbar {
+      background: rgba(255, 255, 255, .96);
+      border-bottom: 1px solid var(--doc-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .doc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    .doc-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .doc-sidebar {
+      position: sticky;
+      top: 5rem;
+      max-height: calc(100vh - 6rem);
+      overflow: auto;
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+    }
+
+    .doc-main {
+      min-width: 0;
+    }
+
+    .doc-hero,
+    .doc-panel {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+    }
+
+    .doc-hero {
+      padding: 1.25rem;
+    }
+
+    .doc-section {
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-kpi {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+      height: 100%;
+    }
+
+    .doc-card {
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      background: var(--doc-panel);
+      height: 100%;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .doc-card:hover {
+      border-color: #adc6ff;
+      box-shadow: 0 .5rem 1.5rem rgba(22, 32, 51, .08);
+      transform: translateY(-1px);
+    }
+
+    .doc-card:focus-visible,
+    .doc-link-list a:focus-visible,
+    .nav-link:focus-visible,
+    .btn:focus-visible {
+      outline: 3px solid rgba(29, 78, 216, .35);
+      outline-offset: 2px;
+    }
+
+    .doc-card .card-body {
+      padding: 1rem;
+    }
+
+    .doc-link-list {
+      display: grid;
+      gap: .5rem;
+      padding-left: 0;
+      margin-bottom: 0;
+      list-style: none;
+    }
+
+    .doc-link-list a {
+      display: block;
+      padding: .625rem .75rem;
+      border: 1px solid var(--doc-border);
+      border-radius: .5rem;
+      background: #fff;
+      text-decoration: none;
+    }
+
+    .doc-link-list a:hover {
+      background: var(--doc-accent-soft);
+      border-color: #bfdbfe;
+    }
+
+    .doc-table {
+      --bs-table-bg: #fff;
+      border: 1px solid var(--doc-border);
+    }
+
+    .doc-table thead th {
+      background: #eef2f7;
+      color: #283549;
+      white-space: nowrap;
+    }
+
+    pre {
+      background: #101827;
+      color: #f8fafc;
+      font-family: var(--doc-font-mono);
+      font-size: .875rem;
+      line-height: 1.55;
+      padding: 1rem;
+      border-radius: .75rem;
+      overflow: auto;
+    }
+
+    pre.mermaid {
+      background: #ffffff;
+      color: var(--doc-text);
+      border: 1px solid var(--doc-border);
+      min-height: 8rem;
+    }
+
+    code {
+      color: #9a3412;
+      font-family: var(--doc-font-mono);
+      font-size: .9em;
+    }
+
+    .doc-meta {
+      color: var(--doc-muted);
+      font-size: .875rem;
+    }
+
+    .doc-anchor {
+      scroll-margin-top: 5rem;
+    }
+
+    @media (max-width: 991.98px) {
+      .doc-shell { padding: .875rem; }
+      .doc-layout { grid-template-columns: 1fr; }
+      .doc-sidebar {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    @media print {
+      .doc-topbar,
+      .doc-sidebar,
+      .btn,
+      .nav-tabs {
+        display: none !important;
+      }
+      body { background: #fff; }
+      .doc-shell { max-width: none; padding: 0; }
+      .doc-layout { display: block; }
+      .doc-hero,
+      .doc-panel,
+      .doc-card,
+      .doc-kpi {
+        border: 1px solid #bbb;
+        box-shadow: none !important;
+      }
+    }
+      pre code { color: inherit; background: transparent; font-size: inherit; padding: 0; }
+    pre { white-space: pre; }
+  </style>
+</head>
+<body>
+  <header class="doc-topbar sticky-top">
+    <nav class="navbar navbar-expand-lg">
+      <div class="container-fluid px-3">
+        <a class="navbar-brand fw-semibold" href="../../index.html">Stealing-from-Paradise</a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <a class="btn btn-sm btn-outline-secondary" href="../../index.html">Home</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/overview.html">Overview</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/architecture.html">Architecture</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/domain.html">Domain Model and Rules</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/use-cases.html">Use Cases</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/business-flows.html">Business Flows</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/interfaces.html">Interfaces</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/messaging.html">Messaging and Realtime</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/traceability.html">Traceability</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="doc-shell">
+    <div class="doc-layout">
+      <aside class="doc-sidebar">
+        <div class="fw-semibold mb-2">Contents</div>
+        <nav class="nav nav-pills flex-column gap-1">
+          <a class="nav-link" href="../../groups/overview.html">Overview</a>
+<a class="nav-link" href="../../groups/architecture.html">Architecture</a>
+<a class="nav-link" href="../../groups/domain.html">Domain Model and Rules</a>
+<a class="nav-link" href="../../groups/business-flows.html">Business Flows</a>
+<a class="nav-link" href="../../groups/use-cases.html">Use Cases</a>
+<a class="nav-link" href="../../groups/interfaces.html">Interfaces</a>
+<a class="nav-link" href="../../groups/messaging.html">Messaging and Realtime</a>
+<a class="nav-link" href="../../groups/identity.html">Identity and Security</a>
+<a class="nav-link" href="../../groups/platform.html">Platform and Operations</a>
+<a class="nav-link" href="../../groups/deployment.html">Deployment</a>
+<a class="nav-link" href="../../groups/observability.html">Observability</a>
+<a class="nav-link" href="../../groups/integrations.html">Integrations</a>
+<a class="nav-link" href="../../groups/traceability.html">Traceability</a>
+<a class="nav-link" href="../../traceability/matrix.html">Traceability Matrix</a>
+        </nav>
+      </aside>
+
+      <main class="doc-main">
+        <section class="doc-hero doc-section">
+          <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div>
+              <h1 class="h2 mb-1">BR-NOTIF-001: Notification Lifecycle Business Rules</h1>
+              <div class="doc-meta">DOC-BUSINESS-RULES-NOTIFICATION-SERVICE-BR-NOTIFICATION | 2026-06-09</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2"><span class="badge text-bg-info">business-rule</span> <span class="badge text-bg-light">notification-service</span></div>
+          </div>
+        </section>
+
+        <section class="doc-section"><div class="doc-panel p-3 p-md-4 doc-prose"><h1>BR-NOTIF-001: Notification Lifecycle Business Rules</h1>
+<blockquote>
+<p><strong>Service</strong>: notification-service (Port 8092)
+<strong>Database</strong>: MongoDB
+<strong>Source</strong>: 02_API_notification_service.md, KAFKA_EVENTS.md</p>
+</blockquote>
+<hr>
+<h2>BR-NOTIF-001-01: Notification Creation</h2>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Kafka event received from any subscribed topic</td>
+<td>Create MG_NOTIFICATIONS document with <code>is_read = false</code></td>
+</tr>
+<tr>
+<td>Event payload contains <code>user_id</code></td>
+<td>Map directly to <code>user_id</code> field</td>
+</tr>
+<tr>
+<td>Event payload contains <code>title</code>/<code>body</code>/<code>type</code></td>
+<td>Store as-is in respective fields</td>
+</tr>
+<tr>
+<td>Event payload has extra data</td>
+<td>Store in <code>metadata</code> JSONB field</td>
+</tr>
+<tr>
+<td>Kafka event deserialization fails</td>
+<td>Log error, skip event, no notification created</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Trigger Topics</strong>: All 27 consumer topics (identity, product, order, payment, flash_sale, chat)</p>
+<hr>
+<h2>BR-NOTIF-001-02: SSE Real-Time Delivery</h2>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Notification created successfully</td>
+<td>Persist to MongoDB, then emit to the active per-user SSE sink when one exists</td>
+</tr>
+<tr>
+<td>User has active SSE connection</td>
+<td>Deliver event immediately via <code>text/event-stream</code></td>
+</tr>
+<tr>
+<td>User has no active SSE connection</td>
+<td>Notification remains available through MongoDB history/replay</td>
+</tr>
+<tr>
+<td>SSE connection established with <code>Last-Event-ID</code> header</td>
+<td>Replay missed events from MongoDB using persisted notification order</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>BR-NOTIF-001-03: Read Status Transitions</h2>
+<table>
+<thead>
+<tr>
+<th>IF</th>
+<th>THEN</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>is_read = false</code> AND user calls PUT /notifications/{id}/read</td>
+<td>Set <code>is_read = true</code></td>
+</tr>
+<tr>
+<td><code>is_read = false</code> AND user calls PUT /notifications/read-all</td>
+<td>Set <code>is_read = true</code> for ALL user's unread notifications</td>
+</tr>
+<tr>
+<td><code>is_read = true</code> AND user calls PUT /notifications/{id}/read</td>
+<td>Idempotent: no change, return 200</td>
+</tr>
+<tr>
+<td><code>is_read = true</code> AND user calls PUT /notifications/read-all</td>
+<td>No documents updated, <code>updated_count = 0</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>BR-NOTIF-001-04: TTL Expiry</h2>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>created_at</code> + 90 days &lt; NOW()</td>
+<td>MongoDB TTL index auto-deletes document</td>
+</tr>
+<tr>
+<td>User queries history beyond 90 days</td>
+<td>Results truncated (data no longer exists)</td>
+</tr>
+<tr>
+<td>Archived/deleted notification accessed by ID</td>
+<td>Return 404</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>BR-NOTIF-001-05: Authorization</h2>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JWT absent or invalid</td>
+<td>Return 401</td>
+</tr>
+<tr>
+<td>JWT valid, user requests own notifications</td>
+<td>Authorized</td>
+</tr>
+<tr>
+<td>JWT valid, user attempts another user's notifications</td>
+<td>Return 403</td>
+</tr>
+<tr>
+<td>JWT valid, admin role</td>
+<td>Authorized for any user's notifications</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>BR-NOTIF-001-06: Pagination</h2>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Default</th>
+<th>Max</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>page</code></td>
+<td>0</td>
+<td>N/A</td>
+<td>0-based page index</td>
+</tr>
+<tr>
+<td><code>size</code></td>
+<td>20</td>
+<td>100</td>
+<td>If size &gt; 100, clamp to 100</td>
+</tr>
+<tr>
+<td><code>is_read</code> filter</td>
+<td>null (all)</td>
+<td>N/A</td>
+<td>true = read only, false = unread only</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>BR-NOTIF-001-07: Priority Handling</h2>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>SSE Delivery</th>
+<th>UI Treatment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>URGENT</td>
+<td>Immediate, no batching</td>
+<td>Push notification + badge</td>
+</tr>
+<tr>
+<td>HIGH</td>
+<td>Immediate</td>
+<td>Badge increment</td>
+</tr>
+<tr>
+<td>NORMAL</td>
+<td>Immediate</td>
+<td>Badge increment</td>
+</tr>
+<tr>
+<td>LOW</td>
+<td>Immediate, may be batched in UI</td>
+<td>Badge increment</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>BR-NOTIF-001-08: Notification Templates Catalog</h2>
+<p>Each Kafka event mapped to a notification has a stable template ID. Templates define recipient, title, body interpolation, priority, and source event.</p>
+<h3>Order-related templates</h3>
+<table>
+<thead>
+<tr>
+<th>Template ID</th>
+<th>Recipient</th>
+<th>Source Event</th>
+<th>Priority</th>
+<th>Title (vi)</th>
+<th>Body (vi)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NOTIF-ORDER-CREATED</td>
+<td>BUYER</td>
+<td><code>order.created</code></td>
+<td>NORMAL</td>
+<td>Đơn hàng đã tạo</td>
+<td>Đơn #{order_code} của bạn đã được tạo, vui lòng thanh toán trong {timeout} phút.</td>
+</tr>
+<tr>
+<td>NOTIF-ORDER-PAID</td>
+<td>BUYER, SELLER</td>
+<td><code>order.paid</code></td>
+<td>NORMAL</td>
+<td>Thanh toán thành công</td>
+<td>Đơn #{order_code} đã được thanh toán.</td>
+</tr>
+<tr>
+<td>NOTIF-ORDER-SHIPPED</td>
+<td>BUYER</td>
+<td><code>order.shipped</code></td>
+<td>NORMAL</td>
+<td>Đơn hàng đang giao</td>
+<td>Đơn #{order_code} đang được giao bởi {carrier}, mã {tracking_number}.</td>
+</tr>
+<tr>
+<td>NOTIF-ORDER-DELIVERED</td>
+<td>BUYER, SELLER</td>
+<td><code>order.delivered</code></td>
+<td>NORMAL</td>
+<td>Giao hàng thành công</td>
+<td>Đơn #{order_code} đã giao thành công.</td>
+</tr>
+<tr>
+<td>NOTIF-ORDER-CANCELLED-BY-BUYER</td>
+<td>SELLER</td>
+<td><code>order.cancelled</code> (cancelled_by=BUYER)</td>
+<td>HIGH</td>
+<td>Buyer đã hủy đơn</td>
+<td>Đơn #{order_code} đã bị buyer hủy. Lý do: "{cancel_reason}". Stock đã được giải phóng.</td>
+</tr>
+<tr>
+<td>NOTIF-ORDER-AUTO-CANCELLED</td>
+<td>BUYER</td>
+<td><code>order.auto_cancelled</code></td>
+<td>HIGH</td>
+<td>Đơn hàng bị hủy tự động</td>
+<td>Đơn #{order_code} đã bị hủy do hết thời gian thanh toán.</td>
+</tr>
+<tr>
+<td>NOTIF-ORDER-CANCELLED-BY-SELLER</td>
+<td>BUYER</td>
+<td><code>seller.order_cancelled</code></td>
+<td>URGENT</td>
+<td>Người bán đã hủy đơn — sẽ hoàn tiền</td>
+<td>Rất tiếc, người bán không thể fulfill đơn #{order_code}. Lý do: "{cancel_reason}". Số tiền {refund_amount} {currency} sẽ được hoàn về phương thức thanh toán gốc trong 5–10 ngày làm việc. Mã giao dịch refund: #{transaction_id}.</td>
+</tr>
+<tr>
+<td>NOTIF-ORDER-RETURNED</td>
+<td>BUYER</td>
+<td><code>order.returned</code></td>
+<td>HIGH</td>
+<td>Đơn đã trả về người bán</td>
+<td>Đơn #{order_code} đã được trả về. Refund sẽ được xử lý tự động.</td>
+</tr>
+<tr>
+<td>NOTIF-REFUND-APPROVED</td>
+<td>BUYER, SELLER</td>
+<td><code>refund.admin_approved</code></td>
+<td>HIGH</td>
+<td>Yêu cầu refund được duyệt</td>
+<td>Refund cho đơn #{order_code} đã được admin duyệt ({type}).</td>
+</tr>
+</tbody>
+</table>
+<h3>Product-related templates (admin review workflow — re-activated 2026-05-10 v3, P3-11 applied)</h3>
+<table>
+<thead>
+<tr>
+<th>Template ID</th>
+<th>Recipient</th>
+<th>Source Event</th>
+<th>Priority</th>
+<th>Title (vi)</th>
+<th>Body (vi)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NOTIF-PRODUCT-PENDING-REVIEW</td>
+<td>ADMIN (broadcast)</td>
+<td><code>product.pending_review</code></td>
+<td>NORMAL</td>
+<td>Sản phẩm chờ duyệt</td>
+<td>Sản phẩm "{product_name}" của seller {seller_name} vừa được submit chờ admin duyệt. SLA: 24h.</td>
+</tr>
+<tr>
+<td>NOTIF-PRODUCT-APPROVED</td>
+<td>SELLER</td>
+<td><code>product.approved</code></td>
+<td>HIGH</td>
+<td>Sản phẩm đã được duyệt</td>
+<td>Sản phẩm "{product_name}" đã được admin duyệt. Bạn có thể publish để đưa sản phẩm lên marketplace.</td>
+</tr>
+<tr>
+<td>NOTIF-PRODUCT-REJECTED</td>
+<td>SELLER</td>
+<td><code>product.rejected</code></td>
+<td>URGENT</td>
+<td>Sản phẩm bị từ chối</td>
+<td>Sản phẩm "{product_name}" bị từ chối. Lý do: "{reject_reason}". Bạn có thể chỉnh sửa và submit lại (còn {remaining_attempts} lần — đã từ chối {reject_count}/3 lần).</td>
+</tr>
+</tbody>
+</table>
+<h3>Template rules</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TPL-01</td>
+<td>Every notification persisted to MG_NOTIFICATIONS MUST set <code>metadata.template_id</code> to one of the above IDs. Allows audit + UI grouping.</td>
+</tr>
+<tr>
+<td>TPL-02</td>
+<td>Body interpolation uses <code>{field}</code> placeholders matched 1:1 with Kafka event payload <code>data.*</code> keys.</td>
+</tr>
+<tr>
+<td>TPL-03</td>
+<td>Missing required field in payload → log warning, fall back to generic body, do NOT skip notification.</td>
+</tr>
+<tr>
+<td>TPL-04</td>
+<td>URGENT templates (e.g., NOTIF-ORDER-CANCELLED-BY-SELLER) bypass batching and trigger an immediate SSE push + badge.</td>
+</tr>
+<tr>
+<td>TPL-05</td>
+<td>Templates can be localized (i18n key) but body strings stored in MG_NOTIFICATIONS are pre-rendered server-side at create time, not at read time.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>When a new Kafka event is added to the system, a corresponding template entry MUST be added here before the event consumer is enabled in production.</p>
+</blockquote>
+<hr>
+<h2>Cross-References</h2>
+<table>
+<thead>
+<tr>
+<th>Ref ID</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UC-NOTIF-001</td>
+<td>Stream notifications (SSE)</td>
+</tr>
+<tr>
+<td>UC-NOTIF-002</td>
+<td>View history</td>
+</tr>
+<tr>
+<td>UC-NOTIF-003</td>
+<td>Mark read</td>
+</tr>
+<tr>
+<td>FR-NOTIF-001</td>
+<td>SSE delivery</td>
+</tr>
+<tr>
+<td>FR-NOTIF-002</td>
+<td>Paginated history</td>
+</tr>
+<tr>
+<td>FR-NOTIF-003</td>
+<td>Read management</td>
+</tr>
+<tr>
+<td>STATE-NOTIFICATION-001</td>
+<td><a href="../../state-diagrams/notification-service/state-notification.html">state-notification.md</a></td>
+</tr>
+<tr>
+<td>UC-ORDER-008</td>
+<td>Seller cancel order (drives NOTIF-ORDER-CANCELLED-BY-SELLER)</td>
+</tr>
+<tr>
+<td>UC-PRODUCT-012</td>
+<td>Submit product for review (drives NOTIF-PRODUCT-PENDING-REVIEW)</td>
+</tr>
+<tr>
+<td>UC-PRODUCT-014</td>
+<td>Approve product (drives NOTIF-PRODUCT-APPROVED)</td>
+</tr>
+<tr>
+<td>UC-PRODUCT-015</td>
+<td>Reject product (drives NOTIF-PRODUCT-REJECTED)</td>
+</tr>
+</tbody>
+</table></div></section>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    function normalizeDocSearchText(value) {
+      return (value || '').toString().toLowerCase();
+    }
+
+    function escapeDocHtml(value) {
+      return (value || '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderSearchIndexResults(container, items, query) {
+      if (!container) return;
+      var normalized = normalizeDocSearchText(query);
+      if (!normalized) {
+        container.innerHTML = '';
+        container.classList.add('d-none');
+        return;
+      }
+      var matches = items.filter(function(item) {
+        var haystack = [
+          item.id,
+          item.title,
+          item.type,
+          item.group,
+          item.status,
+          item.summary,
+          (item.tags || []).join(' '),
+          (item.related_ids || []).join(' '),
+          item.search_text
+        ].map(normalizeDocSearchText).join(' ');
+        return haystack.indexOf(normalized) !== -1;
+      }).slice(0, 12);
+
+      if (!matches.length) {
+        container.innerHTML = '<div class="text-secondary small">No indexed results found.</div>';
+        container.classList.remove('d-none');
+        return;
+      }
+
+      container.innerHTML = matches.map(function(item) {
+        var title = escapeDocHtml(item.title || item.id || 'Untitled');
+        var path = escapeDocHtml(item.path || '#');
+        var meta = escapeDocHtml([item.type, item.group, item.status].filter(Boolean).join(' | '));
+        return '<a class="d-block border rounded p-2 mb-2 text-decoration-none bg-white" href="' + path + '">' +
+          '<div class="fw-semibold">' + title + '</div>' +
+          '<div class="text-secondary small">' + meta + '</div>' +
+          '</a>';
+      }).join('');
+      container.classList.remove('d-none');
+    }
+
+    var searchIndexPromise = null;
+    function loadDocSearchIndex(path, inlineSelector) {
+      var inlineNode = inlineSelector ? document.querySelector(inlineSelector) : null;
+      if (inlineNode && inlineNode.textContent.trim()) {
+        try {
+          return Promise.resolve(JSON.parse(inlineNode.textContent));
+        } catch (error) {
+          return Promise.resolve(null);
+        }
+      }
+      if (!path) return Promise.resolve(null);
+      if (!searchIndexPromise) {
+        searchIndexPromise = fetch(path).then(function(response) {
+          if (!response.ok) return null;
+          return response.json();
+        }).catch(function() { return null; });
+      }
+      return searchIndexPromise;
+    }
+
+    document.querySelectorAll('[data-doc-filter-target]').forEach(function(input) {
+      var selector = input.getAttribute('data-doc-filter-target');
+      var items = Array.prototype.slice.call(document.querySelectorAll(selector));
+      var indexPath = input.getAttribute('data-doc-search-index');
+      var inlineIndexSelector = input.getAttribute('data-doc-search-inline');
+      var resultSelector = input.getAttribute('data-doc-search-results');
+      var resultContainer = resultSelector ? document.querySelector(resultSelector) : null;
+      input.addEventListener('input', function() {
+        var query = input.value.trim().toLowerCase();
+        items.forEach(function(item) {
+          var haystack = (item.getAttribute('data-doc-filter-text') || item.textContent || '').toLowerCase();
+          item.classList.toggle('d-none', query && haystack.indexOf(query) === -1);
+        });
+        loadDocSearchIndex(indexPath, inlineIndexSelector).then(function(index) {
+          if (index && Array.isArray(index.items)) {
+            renderSearchIndexResults(resultContainer, index.items, query);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# ============================================================
+# DEV Profile — identity-service
+# ============================================================
+# Activated by default (application.yml has active: dev when
+# SPRING_PROFILES_ACTIVE env var is not set).
+#
+# Reset (wipe + reseed): set dev-data.reset=true here, then
+# restart the identity-service container.
+# ============================================================
+
+dev-data:
+  enabled: true
+  # reset=true drops all users/roles/addresses before seeding.
+  # CAUTION: This destroys ALL data in the identity schema.
+  reset: ${DEV_DATA_RESET:false}

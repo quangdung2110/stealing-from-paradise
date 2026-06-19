@@ -1,0 +1,9 @@
+﻿# ============================================================
+# DEV Profile — search-service
+# ============================================================
+
+dev-data:
+  enabled: true
+  # reset=true wipes all ES documents before seeding.
+  # CAUTION: This will destroy ALL documents in the skus index.
+  reset: false

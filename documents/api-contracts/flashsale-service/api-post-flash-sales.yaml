@@ -1,0 +1,506 @@
+﻿openapi: "3.0.3"
+info:
+  title: Flash Sale Session API
+  description: |
+    Flash Sale Session management endpoints.
+    Service: flashsale-service (port :8086)
+    Base URL: /api/v1
+  version: "1.0.0"
+  contact:
+    name: Stealing From Paradise Engineering
+
+servers:
+  - url: http://localhost:8086/api/v1
+    description: Local development
+
+paths:
+  /flash-sales:
+    post:
+      summary: Create Flash Sale Session
+      description: |
+        Admin creates a new flash sale session. The system auto-calculates
+        `registration_deadline = start_time - 15 minutes` and registers
+        time-based triggers in Redis ZSET for automatic status transitions.
+      operationId: createFlashSaleSession
+      tags:
+        - Admin Flash Sales
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+            example:
+              name: "Flash Sale 20h Thu 6"
+              start_time: "2026-04-15T20:00:00Z"
+              end_time: "2026-04-15T22:00:00Z"
+              discount_percentage: 20.00
+      responses:
+        '201':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+              example:
+                id: 3
+                name: "Flash Sale 20h Thu 6"
+                start_time: "2026-04-15T20:00:00Z"
+                end_time: "2026-04-15T22:00:00Z"
+                registration_deadline: "2026-04-15T19:45:00Z"
+                discount_percentage: 20.00
+                status: "UPCOMING"
+                deleted_at: null
+                created_at: "2026-04-15T10:00:00Z"
+                updated_at: "2026-04-15T10:00:00Z"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_time:
+                  value:
+                    error: "INVALID_TIME_RANGE"
+                    message: "End time must be after start time"
+                invalid_discount:
+                  value:
+                    error: "INVALID_DISCOUNT"
+                    message: "Discount must be between 0 and 100"
+        '401':
+          description: Unauthorized - invalid or missing JWT
+        '403':
+          description: Forbidden - not an ADMIN
+
+    get:
+      summary: List Flash Sale Sessions (Public)
+      description: |
+        Returns UPCOMING and ACTIVE sessions. ENDED sessions are excluded.
+        Response includes `server_time` for client-side countdown.
+      operationId: listFlashSaleSessions
+      tags:
+        - Public Flash Sales
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [UPCOMING, ACTIVE]
+          description: Filter by session status
+      responses:
+        '200':
+          description: Session list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListResponse'
+              example:
+                server_time: "2026-04-15T19:58:00Z"
+                sessions:
+                  - session_id: 3
+                    name: "Flash Sale 20h Thu 6"
+                    status: "ACTIVE"
+                    start_time: "2026-04-15T20:00:00Z"
+                    end_time: "2026-04-15T22:00:00Z"
+                    seconds_remaining: 120
+                    is_ended: false
+
+  /flash-sales/{sessionId}:
+    get:
+      summary: Get Session Detail
+      description: Returns session details with all registered FS_ITEMS.
+      operationId: getFlashSaleSession
+      tags:
+        - Public Flash Sales
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Session detail with items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetailResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "SESSION_NOT_FOUND"
+                message: "Session does not exist"
+
+    put:
+      summary: Update Flash Sale Session (Admin)
+      description: |
+        Update session details. Only allowed when status is UPCOMING.
+        Updating time fields recalculates `registration_deadline`.
+      operationId: updateFlashSaleSession
+      tags:
+        - Admin Flash Sales
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionRequest'
+            example:
+              name: "Flash Sale 20h Thu 6 - Updated"
+              start_time: "2026-04-15T20:00:00Z"
+              end_time: "2026-04-15T22:30:00Z"
+      responses:
+        '200':
+          description: Session updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '400':
+          description: Session not in UPCOMING status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "SESSION_NOT_UPCOMING"
+                message: "Cannot update ACTIVE or ENDED session"
+        '404':
+          description: Session not found
+
+  /flash-sales/{sessionId}/items:
+    post:
+      summary: Register Product in Flash Sale (Seller)
+      description: |
+        Seller registers a product in an upcoming session. Auto-approved.
+        Must be before `registration_deadline` (BR-FLASHSALE-002).
+      operationId: registerFlashSaleItem
+      tags:
+        - Seller Flash Sales
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterItemRequest'
+            example:
+              product_id: "550e8400-e29b-41d4-a716-446655440000"
+              discount_applied: 20.00
+      responses:
+        '201':
+          description: Product registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponse'
+              example:
+                id: 1001
+                session_id: 3
+                product_id: "550e8400-e29b-41d4-a716-446655440000"
+                discount_applied: 20.00
+                seller_id: "660e8400-e29b-41d4-a716-446655440001"
+                registered_at: "2026-04-15T10:00:00Z"
+                created_at: "2026-04-15T10:00:00Z"
+                updated_at: "2026-04-15T10:00:00Z"
+        '400':
+          description: Registration closed or session not upcoming
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                registration_closed:
+                  value:
+                    error: "REGISTRATION_CLOSED"
+                    message: "Registration closed at 07:45. Cannot register past deadline."
+                session_not_upcoming:
+                  value:
+                    error: "SESSION_NOT_UPCOMING"
+                    message: "Session is not in UPCOMING status"
+        '403':
+          description: Product does not belong to seller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "PRODUCT_NOT_OWNED"
+                message: "Product does not belong to this seller"
+        '409':
+          description: Product already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "PRODUCT_ALREADY_REGISTERED"
+                message: "Product already registered in this session"
+
+    get:
+      summary: List Items in Session
+      description: Returns all registered FS_ITEMS for a session.
+      operationId: listFlashSaleItems
+      tags:
+        - Public Flash Sales
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: List of flash sale items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ItemResponse'
+
+  /flash-sales/active:
+    get:
+      summary: Get Active Sessions (Redis)
+      description: |
+        Returns currently ACTIVE sessions.
+        Optimized for high-concurrency reads.
+      operationId: getActiveFlashSales
+      tags:
+        - Public Flash Sales
+      responses:
+        '200':
+          description: Active sessions from Redis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateSessionRequest:
+      type: object
+      required:
+        - name
+        - start_time
+        - end_time
+        - discount_percentage
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          description: Human-readable session name
+          example: "Flash Sale 20h Thu 6"
+        start_time:
+          type: string
+          format: date-time
+          description: ISO 8601 start time
+          example: "2026-04-15T20:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          description: ISO 8601 end time. Must be > start_time (BR-FLASHSALE-001)
+          example: "2026-04-15T22:00:00Z"
+        discount_percentage:
+          type: number
+          format: decimal
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 100
+          description: Session-wide default discount %. Must be in (0, 100] (BR-FLASHSALE-003)
+          example: 20.00
+
+    UpdateSessionRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        discount_percentage:
+          type: number
+          format: decimal
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 100
+
+    RegisterItemRequest:
+      type: object
+      required:
+        - product_id
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          description: UUID of the product to register
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        discount_applied:
+          type: number
+          format: decimal
+          exclusiveMinimum: 0
+          description: |
+            Discount % for this item. If omitted, uses session.discount_percentage.
+            Must be > 0.
+          example: 20.00
+
+    SessionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        registration_deadline:
+          type: string
+          format: date-time
+          description: Auto-calculated = start_time - 15 min (BR-FLASHSALE-002)
+        discount_percentage:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum: [UPCOMING, ACTIVE, ENDED]
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SessionListResponse:
+      type: object
+      properties:
+        server_time:
+          type: string
+          format: date-time
+          description: Server time for client countdown (do NOT use client clock)
+        sessions:
+          type: array
+          items:
+            type: object
+            properties:
+              session_id:
+                type: integer
+                format: int64
+              name:
+                type: string
+              status:
+                type: string
+                enum: [UPCOMING, ACTIVE]
+              start_time:
+                type: string
+                format: date-time
+              end_time:
+                type: string
+                format: date-time
+              seconds_remaining:
+                type: integer
+              is_ended:
+                type: boolean
+
+    SessionDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/SessionResponse'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ItemResponse'
+
+    ItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        session_id:
+          type: integer
+          format: int64
+        product_id:
+          type: string
+          format: uuid
+        discount_applied:
+          type: number
+          format: decimal
+        seller_id:
+          type: string
+          format: uuid
+        registered_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error description
+
+tags:
+  - name: Public Flash Sales
+    description: Publicly accessible session listing and detail
+  - name: Admin Flash Sales
+    description: Admin-only session CRUD
+  - name: Seller Flash Sales
+    description: Seller product registration
+  - name: Buyer Flash Sales
+    description: Customer flash sale interactions

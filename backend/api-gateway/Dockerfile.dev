@@ -1,0 +1,8 @@
+# Dev image — expects JAR pre-built on the host (mvn package)
+# Build on host first: cd backend && mvn package -DskipTests
+# Context: ./backend/api-gateway
+FROM eclipse-temurin:25-jre-alpine
+WORKDIR /app
+COPY target/api-gateway-*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]

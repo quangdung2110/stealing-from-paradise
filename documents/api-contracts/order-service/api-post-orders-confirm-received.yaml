@@ -1,0 +1,103 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Confirm Received API
+  description: |
+    Buyer xac nhan da nhan duoc hang. Chi ap dung cho don hang o trang thai SHIPPING.
+    Chuyen trang thai don hang sang DELIVERED.
+  version: "5.4"
+  contact:
+    name: Order Service Team
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: order-service
+    description: Order delivery confirmation endpoints
+paths:
+  /orders/{orderId}/confirm-received:
+    post:
+      tags:
+        - order-service
+      summary: Xac nhan da nhan hang
+      description: |
+        Buyer xac nhan don hang da duoc giao thanh cong.
+        Chi ap dung cho don hang o trang thai SHIPPING.
+        Tao su kien Kafka `order.delivered`.
+      operationId: confirmReceived
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Sub-order ID can xac nhan
+      responses:
+        "200":
+          description: Xac nhan nhan hang thanh cong
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfirmReceivedResponse"
+        "401":
+          description: Chua xac thuc
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Chi co the xac nhan don hang o trang thai SHIPPING
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ConfirmReceivedResponse:
+      type: object
+      properties:
+        order_id:
+          type: integer
+          format: int64
+          example: 100
+        order_code:
+          type: string
+          example: "OR-20251001-100"
+        status:
+          type: string
+          enum: [DELIVERED]
+          example: "DELIVERED"
+        delivered_at:
+          type: string
+          format: date-time
+          description: Thoi diem xac nhan da nhan hang
+          example: "2025-10-05T14:30:00Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Ma loi
+        message:
+          type: string
+          description: Mo ta loi
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "VALIDATION_FAILED"
+        message:
+          type: string
+          example: "Chi co the xac nhan don hang o trang thai SHIPPING"

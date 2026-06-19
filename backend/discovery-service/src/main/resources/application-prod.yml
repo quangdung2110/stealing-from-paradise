@@ -1,0 +1,12 @@
+# ============================================================
+# PROD Profile — discovery-service (Eureka Server)
+# Active when SPRING_PROFILES_ACTIVE=prod
+# ============================================================
+# Eureka server is stateless — no special prod config needed.
+# This file exists for consistency across all services.
+# ============================================================
+
+logging:
+  level:
+    root: INFO
+    com.netflix.eureka: INFO

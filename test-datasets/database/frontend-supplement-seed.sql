@@ -1,0 +1,9 @@
+-- ============================================================================
+-- FRONTEND SUPPLEMENT SEED (DEPRECATED)
+-- ============================================================================
+-- Supplement seed migrated: wishlist + cart now seeded in ProductDevDataLoader.
+-- Java loaders handle all transactional data (orders, payments, refunds, etc.)
+-- across all 8 services.
+--
+-- This file kept as placeholder for reference only.
+-- ============================================================================

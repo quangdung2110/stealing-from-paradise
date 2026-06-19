@@ -1,0 +1,27 @@
+# ============================================================
+# Production image — multi-stage build
+# JAR pre-built on host via GitHub Actions (mvn package)
+# Context: ./backend/payment-service
+# ============================================================
+FROM eclipse-temurin:25-jre-alpine AS builder
+WORKDIR /build
+COPY target/payment-service-*.jar app.jar
+RUN java -Djarmode=layertools -jar app.jar extract
+
+FROM eclipse-temurin:25-jre-alpine
+WORKDIR /app
+
+COPY --from=builder /build/dependencies/ ./
+COPY --from=builder /build/spring-boot-loader/ ./
+COPY --from=builder /build/snapshot-dependencies/ ./
+COPY --from=builder /build/application/ ./
+
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring:spring
+
+EXPOSE 8082
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=8 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8082/actuator/health || exit 1
+
+ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "org.springframework.boot.loader.launch.JarLauncher"]

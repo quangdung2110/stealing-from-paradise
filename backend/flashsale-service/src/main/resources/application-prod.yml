@@ -1,0 +1,22 @@
+# ============================================================
+# PROD Profile — flashsale-service
+# Active when SPRING_PROFILES_ACTIVE=prod
+# ============================================================
+spring:
+  r2dbc:
+    pool:
+      initial-size: 10
+      max-size: 50
+
+logging:
+  level:
+    root: INFO
+    com.flashsale: INFO
+    org.springframework.r2dbc: WARN
+    io.r2dbc.postgresql: WARN
+    org.apache.kafka: WARN
+    org.springframework.kafka: WARN
+    kafka: WARN
+
+dev-data:
+  enabled: false

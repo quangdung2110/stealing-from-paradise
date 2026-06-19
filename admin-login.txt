@@ -1,0 +1,20 @@
+- generic [ref=e2]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e9]: ⚡
+      - generic [ref=e10]: FlashSale
+    - generic [ref=e11]:
+      - heading "Admin Login" [level=2] [ref=e12]
+      - paragraph [ref=e13]: Đăng nhập để quản lý
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]: Tên đăng nhập hoặc Email
+          - textbox "username hoặc email@example.com" [ref=e17]
+        - generic [ref=e18]:
+          - generic [ref=e19]: Mật khẩu
+          - generic [ref=e20]:
+            - textbox "••••••••" [ref=e21]
+            - button [ref=e22] [cursor=pointer]:
+              - img [ref=e23]
+        - button "Đăng nhập" [ref=e26] [cursor=pointer]
+  - region "Notifications alt+T"

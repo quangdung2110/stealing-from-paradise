@@ -1,0 +1,180 @@
+[
+  {
+    "transactionId": 1,
+    "parentOrderId": 1,
+    "amount": 250000.00,
+    "applicationFee": 12500.00,
+    "transRef": "TX000001",
+    "status": "PAID",
+    "stripeConnectMode": "DESTINATION",
+    "sellerTransfer": {
+      "sellerId": 1,
+      "transferAmount": 250000.00,
+      "status": "COMPLETED"
+    },
+    "refund": {
+      "refundId": 1,
+      "type": "FULL",
+      "initiatedBy": "BUYER",
+      "refundReasonType": "ITEM_BROKEN",
+      "amount": 250000.00,
+      "reason": "Sản phẩm bị vỡ màn hình khi mở hộp.",
+      "status": "RTS_COMPLETED",
+      "refundRef": "re_test_001_AABBCC"
+    }
+  },
+  {
+    "transactionId": 2,
+    "parentOrderId": 2,
+    "amount": 1590000.00,
+    "applicationFee": 79500.00,
+    "transRef": "TX000002",
+    "status": "PAID",
+    "stripeConnectMode": "DESTINATION",
+    "sellerTransfer": {
+      "sellerId": 2,
+      "transferAmount": 1590000.00,
+      "status": "COMPLETED"
+    },
+    "refund": {
+      "refundId": 2,
+      "type": "PARTIAL",
+      "initiatedBy": "BUYER",
+      "refundReasonType": "MISSING_ITEM",
+      "amount": 600000.00,
+      "reason": "Thiếu 2 MagSafe Charger trong đơn.",
+      "status": "PENDING",
+      "items": [
+        {
+          "itemId": 1,
+          "quantity": 2,
+          "refundAmount": 600000.00,
+          "itemReason": "Thiếu hàng so với đơn đặt."
+        }
+      ]
+    }
+  },
+  {
+    "transactionId": 3,
+    "parentOrderId": 3,
+    "amount": 899000.00,
+    "applicationFee": 44950.00,
+    "transRef": "TX000003",
+    "status": "PAID",
+    "stripeConnectMode": "DESTINATION",
+    "sellerTransfer": {
+      "sellerId": 3,
+      "transferAmount": 899000.00,
+      "status": "COMPLETED"
+    }
+  },
+  {
+    "transactionId": 4,
+    "parentOrderId": 4,
+    "amount": 3450000.00,
+    "applicationFee": 172500.00,
+    "transRef": "TX000004",
+    "status": "PAID",
+    "stripeConnectMode": "DESTINATION",
+    "sellerTransfer": {
+      "sellerId": 1,
+      "transferAmount": 3450000.00,
+      "status": "COMPLETED"
+    },
+    "refund": {
+      "refundId": 3,
+      "type": "FULL",
+      "initiatedBy": "BUYER",
+      "refundReasonType": "CHANGE_OF_MIND",
+      "amount": 3450000.00,
+      "reason": "Đổi ý sau khi mở hộp, hàng còn nguyên seal.",
+      "status": "RTS_COMPLETED",
+      "refundRef": "re_test_003_GGHHII",
+      "items": [
+        {
+          "itemId": 4,
+          "quantity": 1,
+          "refundAmount": 2450000.00,
+          "returnTrackingNumber": "GHN-RTS-001"
+        },
+        {
+          "itemId": 5,
+          "quantity": 1,
+          "refundAmount": 1000000.00,
+          "returnTrackingNumber": "GHN-RTS-001"
+        }
+      ]
+    }
+  },
+  {
+    "transactionId": 5,
+    "parentOrderId": 5,
+    "amount": 459000.00,
+    "applicationFee": 22950.00,
+    "transRef": "TX000005",
+    "status": "PENDING",
+    "stripeConnectMode": "DESTINATION"
+  },
+  {
+    "transactionId": 6,
+    "parentOrderId": 7,
+    "amount": 6800000.00,
+    "applicationFee": 340000.00,
+    "transRef": "TX000006",
+    "status": "PAID",
+    "stripeConnectMode": "DESTINATION",
+    "sellerTransfer": {
+      "sellerId": 4,
+      "transferAmount": 6800000.00,
+      "status": "COMPLETED"
+    }
+  },
+  {
+    "transactionId": 7,
+    "parentOrderId": 8,
+    "amount": 1200000.00,
+    "applicationFee": 60000.00,
+    "transRef": "TX000007",
+    "status": "PAID",
+    "stripeConnectMode": "DESTINATION",
+    "sellerTransfer": {
+      "sellerId": 5,
+      "transferAmount": 1200000.00,
+      "status": "COMPLETED"
+    }
+  },
+  {
+    "transactionId": 8,
+    "parentOrderId": 9,
+    "amount": 4200000.00,
+    "applicationFee": 210000.00,
+    "transRef": "TX000008",
+    "status": "PAID",
+    "stripeConnectMode": "DESTINATION",
+    "sellerTransfer": {
+      "sellerId": 1,
+      "transferAmount": 4200000.00,
+      "status": "COMPLETED"
+    },
+    "refund": {
+      "refundId": 4,
+      "type": "PARTIAL",
+      "initiatedBy": "BUYER",
+      "refundReasonType": "ITEM_NOT_AS_DESCRIBED",
+      "amount": 1200000.00,
+      "reason": "Sản phẩm khác mô tả.",
+      "status": "REJECTED",
+      "rejectReason": "Không cung cấp đủ ảnh chứng minh sản phẩm khác mô tả.",
+      "adminNote": "Yêu cầu khách gửi thêm video unbox."
+    }
+  },
+  {
+    "transactionId": 9,
+    "parentOrderId": 10,
+    "amount": 8500000.00,
+    "applicationFee": 425000.00,
+    "transRef": "TX000009",
+    "status": "PENDING",
+    "stripeConnectMode": "DESTINATION"
+  }
+]

@@ -1,0 +1,66 @@
+server:
+  port: 0
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  profiles:
+    active: test
+  autoconfigure:
+    exclude:
+      - org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration
+      - org.springframework.cloud.netflix.eureka.EurekaDiscoveryClientConfiguration
+  datasource:
+    url: jdbc:h2:mem:orders_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+    hikari:
+      auto-commit: true
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    schemas: orders
+    default-schema: orders
+    create-schemas: true
+    clean-disabled: true
+  jpa:
+    defer-datasource-initialization: true
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        show_sql: false
+  kafka:
+    bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
+    admin:
+      auto-create: false
+    consumer:
+      group-id: test-group
+    producer:
+      acks: all
+axon:
+  axonserver:
+    enabled: false
+    servers: localhost:8124
+  serializer:
+    general: xstream
+  eventhandling:
+    processors:
+      OrderProcessingSagaProcessor:
+        mode: subscribing
+      ParentOrderPaymentSagaProcessor:
+        mode: subscribing
+eureka:
+  client:
+    enabled: false
+dev-data:
+  enabled: false
+logging:
+  level:
+    root: WARN
+    com.flashsale: INFO

@@ -1,0 +1,115 @@
+openapi: "3.0.3"
+info:
+  title: Identity Service - POST /auth/login
+  description: Authenticate user and receive JWT tokens
+  version: "5.4"
+servers:
+  - url: http://localhost:8081/api/v1
+    description: Identity Service (local)
+paths:
+  /auth/login:
+    post:
+      operationId: loginUser
+      summary: Login and receive JWT tokens
+      description: >
+        Authenticates via credential (username/email/phone) + password.
+        Returns access_token (15 min) and refresh_token (7 days).
+        Referenced by UC-IDENTITY-002, FR-IDENTITY-003.
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - credential
+                - password
+              properties:
+                credential:
+                  type: string
+                  description: username | email | phone
+                password:
+                  type: string
+                  minLength: 1
+              example:
+                credential: "a@example.com"
+                password: "SecurePass123!"
+      responses:
+        "200":
+          description: Login successful, JWT tokens issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: RS256 JWT, 15 min lifetime (BR-IDENTITY-004)
+                  refresh_token:
+                    type: string
+                    description: RS256 JWT, 7 day lifetime, rotated on refresh
+                  token_type:
+                    type: string
+                    enum: [Bearer]
+                  expires_in:
+                    type: integer
+                    description: Access token TTL in seconds (900)
+                  refresh_expires_in:
+                    type: integer
+                    description: Refresh token TTL in seconds (604800)
+                  user_id:
+                    type: integer
+                    format: int64
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  phone:
+                    type: string
+                  full_name:
+                    type: string
+                  status:
+                    type: string
+                    enum: [ACTIVE]
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                access_token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+                refresh_token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+                token_type: "Bearer"
+                expires_in: 900
+                refresh_expires_in: 604800
+                user_id: 42
+                username: "nguyen_van_a"
+                email: "a@example.com"
+                phone: "0901234567"
+                full_name: "Nguyen Van A"
+                status: "ACTIVE"
+                created_at: "2026-04-15T08:05:00Z"
+        "400":
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Invalid credentials (wrong password or user not found)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        status_code:
+          type: integer

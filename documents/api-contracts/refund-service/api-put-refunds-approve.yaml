@@ -1,0 +1,436 @@
+openapi: "3.0.3"
+info:
+  title: Payment Service - Admin Refund Approval
+  description: |
+    Admin review endpoints for refund management. Admins approve or reject
+    pending refund requests. Approval triggers Stripe refund execution.
+  version: "1.0.0"
+  contact:
+    name: Payment Service Team
+
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local development server
+
+paths:
+  /refunds/{refundId}/approve:
+    put:
+      tags:
+        - Admin Refunds
+      summary: Admin approve refund
+      description: |
+        Admin approves a pending refund request. On approval, the system executes
+        the refund via Stripe API:
+        - Pre-payout: Stripe Refund.create() from platform balance
+        - Post-payout: Stripe Transfer reversal
+
+        Publishes `refund.admin_approved` Kafka event. Notifies buyer and seller.
+      operationId: approveRefund
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: refundId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: REFUNDS.id to approve
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveRefundRequest"
+            example:
+              tracking_number: "VT123456789"
+              admin_note: "Evidence verified, refund approved"
+      responses:
+        "200":
+          description: Refund approved and processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApproveRefundResponse"
+              example:
+                refund_id: 401
+                status: "SUCCESS"
+                refund_ref: "re_3PxABC2K98765432"
+                message: "Refund processed successfully"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Refund not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Refund already processed (not in PENDING status)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "CONFLICT"
+                message: "Refund already processed"
+        "502":
+          description: Stripe API error during refund execution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "STRIPE_ERROR"
+                message: "Stripe refund execution failed"
+
+  /refunds/{refundId}/reject:
+    put:
+      tags:
+        - Admin Refunds
+      summary: Admin reject refund
+      description: |
+        Admin rejects a pending refund request. Sets status to REJECTED with
+        a mandatory rejection reason. Publishes `refund.rejected` Kafka event.
+        Notifies buyer with the rejection reason.
+      operationId: rejectRefund
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: refundId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: REFUNDS.id to reject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectRefundRequest"
+            example:
+              reason: "Item does not meet refund eligibility criteria"
+      responses:
+        "200":
+          description: Refund rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RejectRefundResponse"
+              example:
+                refund_id: 401
+                status: "REJECTED"
+                message: "Refund rejected"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Refund not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Refund already processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /refunds:
+    get:
+      tags:
+        - Admin Refunds
+      summary: List all refunds (admin)
+      description: Admin view of all refund requests across all buyers and sellers.
+      operationId: listAllRefunds
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, SUCCESS, FAILED, REJECTED]
+        - name: from_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of all refunds
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminRefundSummary"
+                  totalPages:
+                    type: integer
+                  totalElements:
+                    type: integer
+
+  /refunds/{refundId}:
+    get:
+      tags:
+        - Admin Refunds
+      summary: Get refund detail (admin)
+      description: Admin detailed view of a single refund with all items and review history.
+      operationId: getRefundDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: refundId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Refund detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRefundDetail"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token with ADMIN role
+
+  schemas:
+    ApproveRefundRequest:
+      type: object
+      properties:
+        tracking_number:
+          type: string
+          description: Return tracking number (optional)
+          example: "VT123456789"
+        admin_note:
+          type: string
+          maxLength: 1000
+          description: Internal admin note
+          example: "Evidence verified, refund approved"
+
+    ApproveRefundResponse:
+      type: object
+      properties:
+        refund_id:
+          type: integer
+          format: int64
+        status:
+          type: string
+          example: "SUCCESS"
+        refund_ref:
+          type: string
+          description: Stripe refund ID (re_xxx)
+          example: "re_3PxABC2K98765432"
+        message:
+          type: string
+          example: "Refund processed successfully"
+
+    RejectRefundRequest:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+          description: Reason for rejection
+          example: "Item does not meet refund eligibility criteria"
+
+    RejectRefundResponse:
+      type: object
+      properties:
+        refund_id:
+          type: integer
+          format: int64
+        status:
+          type: string
+          example: "REJECTED"
+        message:
+          type: string
+          example: "Refund rejected"
+
+    AdminRefundSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        order_id:
+          type: integer
+          format: int64
+        buyer_id:
+          type: integer
+          format: int64
+        seller_id:
+          type: integer
+          format: int64
+        type:
+          type: string
+        amount:
+          type: number
+          format: double
+        status:
+          type: string
+        reason:
+          type: string
+        reviewed_by:
+          type: integer
+          format: int64
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    AdminRefundDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        transaction_id:
+          type: integer
+          format: int64
+        order_id:
+          type: integer
+          format: int64
+        group_ref:
+          type: string
+          format: uuid
+        type:
+          type: string
+        amount:
+          type: number
+          format: double
+        status:
+          type: string
+        reason:
+          type: string
+        evidence_images:
+          type: array
+          items:
+            type: string
+        reject_reason:
+          type: string
+          nullable: true
+        admin_note:
+          type: string
+          nullable: true
+        reviewed_by:
+          type: integer
+          format: int64
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        refund_ref:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RefundItemDetail"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RefundItemDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        item_id:
+          type: integer
+          format: int64
+        refund_amount:
+          type: number
+          format: double
+        reason:
+          type: string
+        status:
+          type: string
+        return_tracking_number:
+          type: string
+          nullable: true
+        carrier:
+          type: string
+          nullable: true
+        returned_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Missing/invalid JWT
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: ADMIN role required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+tags:
+  - name: Admin Refunds
+    description: Admin refund review and management

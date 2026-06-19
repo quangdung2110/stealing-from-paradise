@@ -1,0 +1,175 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Cancel Order API
+  description: |
+    Huy don hang theo BR-ORDER-011 va BR-ORDER-026.
+    - BUYER: huy duoc khi orders.status IN (PENDING, PAID) va seller chua ship.
+    - SELLER: huy duoc khi orders.status = PAID va tracking_number IS NULL.
+    Sau SHIPPING phai dung RTS (return-to-sender), khong duoc cancel.
+    Server tu xac dinh actor tu JWT role + ownership; client khong gui truong actor.
+    Sinh order.cancelled. Neu actor=SELLER se sinh them seller.order_cancelled.
+  version: "5.5"
+  contact:
+    name: Order Service Team
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: order-service
+    description: Order cancellation endpoints
+paths:
+  /orders/{orderId}/cancel:
+    post:
+      tags:
+        - order-service
+      summary: Huy don hang (Buyer hoac Seller)
+      description: |
+        Huy mot sub-order theo BR-ORDER-011 (BUYER) hoac BR-ORDER-026 (SELLER).
+        Server kiem tra role + ownership, sau do tu set cancelled_by.
+        Kafka events:
+        - order.cancelled (luon emit)
+        - seller.order_cancelled (chi khi cancelled_by=SELLER)
+      operationId: cancelOrder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Sub-order ID can huy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelOrderRequest"
+            examples:
+              buyerCancel:
+                summary: Buyer huy don
+                value:
+                  reason: "Sai dia chi giao hang"
+                  note: "Toi muon dat lai voi dia chi khac"
+              sellerCancel:
+                summary: Seller huy don da PAID (chua ship)
+                value:
+                  reason: "Het hang, khong the fulfill"
+                  note: "Buyer se duoc refund toan bo trong 5-10 ngay"
+      responses:
+        "200":
+          description: Huy don hang thanh cong
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelOrderResponse"
+        "401":
+          description: Chua xac thuc
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User khong phai buyer va cung khong phai seller cua sub-order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: |
+            Trang thai khong cho phep cancel. Vi du:
+            - SELLER co cancel khi orders.status != PAID
+            - BUYER co cancel khi orders.status NOT IN (PENDING, PAID)
+            - tracking_number da set (da ship) -> phai dung RTS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Reason thieu hoac qua ngan (SELLER yeu cau >=10 chars)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CancelOrderRequest:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: |
+            Ly do huy don.
+            - BUYER: bat buoc, min 1 char.
+            - SELLER: bat buoc, min 10 chars (BR-ORDER-026).
+          example: "Het hang, khong the fulfill"
+        note:
+          type: string
+          maxLength: 1000
+          description: Ghi chu bo sung (tuy chon)
+          example: "Buyer se duoc refund toan bo"
+
+    CancelOrderResponse:
+      type: object
+      properties:
+        order_id:
+          type: integer
+          format: int64
+          example: 100
+        order_code:
+          type: string
+          example: "OR-20260510-100"
+        status:
+          type: string
+          enum: [CANCELLED]
+          example: "CANCELLED"
+        cancelled_by:
+          type: string
+          enum: [BUYER, SELLER, SYSTEM]
+          description: Server set tu JWT role + ownership; client khong gui truong nay.
+          example: "SELLER"
+        cancel_reason:
+          type: string
+          example: "Het hang, khong the fulfill"
+        cancelled_at:
+          type: string
+          format: date-time
+          example: "2026-05-10T11:00:00Z"
+        kafka_events_emitted:
+          type: array
+          items:
+            type: string
+          description: Danh sach Kafka topic da emit (de debug, optional in response)
+          example: ["order.cancelled", "seller.order_cancelled"]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Ma loi
+        message:
+          type: string
+          description: Mo ta loi
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "VALIDATION_FAILED"
+        message:
+          type: string
+          example: "Reason phai co toi thieu 10 ky tu khi seller huy"

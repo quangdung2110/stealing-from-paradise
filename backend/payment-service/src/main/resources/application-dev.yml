@@ -1,0 +1,52 @@
+# ============================================================
+# DEV Profile — payment-service
+# Chỉ active khi SPRING_PROFILES_ACTIVE=dev
+# ============================================================
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:flashsale_platform}?currentSchema=payment
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres123!}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        show_sql: false
+
+# Dev data loader — bật khi profile=dev
+dev-data:
+  enabled: true
+  # reset=true xóa toàn bộ data cũ rồi seed lại từ đầu
+  reset: ${DEV_DATA_RESET:false}
+
+# Payment-service does NOT use AxonServer (no sagas, no Axon event handlers).
+# It processes Kafka events directly and uses local JPA stores only.
+# Disabling the AxonServer client prevents the "UNABLE TO CONNECT" banner
+# when running outside Docker where axonserver isn't accessible.
+axon:
+  axonserver:
+    enabled: false
+
+# Actuator — enable health endpoint for docker healthcheck
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    db:
+      enabled: true
+    axonserver:
+      enabled: false
+
+payout:
+  schedule:
+    cron: "*/5 * * * * *"

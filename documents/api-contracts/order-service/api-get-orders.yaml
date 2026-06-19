@@ -1,0 +1,336 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Order Listing & Detail API
+  description: |
+    Buyer order listing, order detail, parent order detail, and seller order listing.
+    Supports status/date filtering and pagination.
+  version: "5.4"
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: Buyer Orders
+    description: Buyer-facing order endpoints
+  - name: Seller Orders
+    description: Seller-facing order endpoints
+paths:
+  /orders:
+    get:
+      tags:
+        - Buyer Orders
+      summary: List buyer's orders
+      description: |
+        Returns paginated list of sub-orders for the authenticated buyer.
+        Supports filtering by status and date range.
+      operationId: listBuyerOrders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by order status
+          required: false
+          schema:
+            type: string
+            enum: [PENDING, PAID, SHIPPING, DELIVERED, RETURNED, CANCELLED, PARTIALLY_REFUNDED, REFUNDED]
+        - name: from_date
+          in: query
+          description: Filter orders created after this date (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          description: Filter orders created before this date (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          description: Page number (zero-indexed)
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          description: Page size (max 100)
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        "200":
+          description: Paginated order list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderPage"
+        "401":
+          description: Not authenticated
+
+  /orders/{orderId}:
+    get:
+      tags:
+        - Buyer Orders
+      summary: Get order detail
+      description: |
+        Returns full detail of a sub-order including items, shipping, and refund info.
+        Accessible by the order's buyer or seller.
+      operationId: getOrderDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Sub-order ID
+      responses:
+        "200":
+          description: Order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderDetail"
+        "403":
+          description: Not the order owner
+        "404":
+          description: Order not found
+
+  /orders/parent/{parentOrderId}:
+    get:
+      tags:
+        - Buyer Orders
+      summary: Get parent order detail
+      description: Returns parent order with all sub-orders and payment info.
+      operationId: getParentOrder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: parentOrderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Parent order with sub-orders
+        "403":
+          description: Parent order does not belong to buyer
+
+  /sellers/me/orders:
+    get:
+      tags:
+        - Seller Orders
+      summary: List seller's orders
+      description: Returns paginated list of sub-orders for the authenticated seller.
+      operationId: listSellerOrders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [PENDING, PAID, SHIPPING, DELIVERED, RETURNED, CANCELLED, PARTIALLY_REFUNDED, REFUNDED]
+        - name: from_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated seller order list
+        "401":
+          description: Not authenticated
+
+  /sellers/me/dashboard:
+    get:
+      tags:
+        - Seller Orders
+      summary: Seller order dashboard
+      description: Returns order counts by status, revenue, and payout summary.
+      operationId: getSellerDashboard
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard data
+        "401":
+          description: Not authenticated
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    OrderPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderListEntry"
+        total_elements:
+          type: integer
+          example: 12
+        total_pages:
+          type: integer
+          example: 1
+        page_number:
+          type: integer
+          example: 0
+        page_size:
+          type: integer
+          example: 20
+
+    OrderListEntry:
+      type: object
+      properties:
+        order_id:
+          type: integer
+          format: int64
+          example: 100
+        parent_order_id:
+          type: integer
+          format: int64
+          example: 55
+        order_code:
+          type: string
+          example: "OR-20251001-100"
+        seller_id:
+          type: integer
+          format: int64
+          example: 5
+        status:
+          type: string
+          enum: [PENDING, PAID, SHIPPING, DELIVERED, RETURNED, CANCELLED, PARTIALLY_REFUNDED, REFUNDED]
+          example: "PAID"
+        total_amt:
+          type: number
+          format: double
+          example: 700000
+        final_amt:
+          type: number
+          format: double
+          example: 700000
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-01T10:00:00Z"
+
+    OrderDetail:
+      type: object
+      properties:
+        order_id:
+          type: integer
+          format: int64
+        parent_order_id:
+          type: integer
+          format: int64
+        order_code:
+          type: string
+        seller_id:
+          type: integer
+          format: int64
+        customer_id:
+          type: integer
+          format: int64
+        status:
+          type: string
+        total_amt:
+          type: number
+          format: double
+        final_amt:
+          type: number
+          format: double
+        cancelled_by:
+          type: string
+          nullable: true
+        cancel_reason:
+          type: string
+          nullable: true
+        shipping_address:
+          $ref: "#/components/schemas/ShippingAddress"
+        tracking_number:
+          type: string
+          nullable: true
+        shipping_deadline:
+          type: string
+          format: date-time
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemDetail"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    OrderItemDetail:
+      type: object
+      properties:
+        order_item_id:
+          type: integer
+          format: int64
+        sku_code:
+          type: string
+        name_snapshot:
+          type: string
+        image_snapshot:
+          type: string
+        price_snapshot:
+          type: number
+          format: double
+        quantity:
+          type: integer
+        refunded_quantity:
+          type: integer
+          example: 0
+        fs_item_id:
+          type: integer
+          format: int64
+          nullable: true
+
+    ShippingAddress:
+      type: object
+      properties:
+        full_address:
+          type: string
+        province_id:
+          type: integer
+        district_id:
+          type: integer

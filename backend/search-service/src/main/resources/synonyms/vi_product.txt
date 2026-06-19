@@ -1,0 +1,47 @@
+# Vietnamese product synonym file for Elasticsearch
+# Format: term1, term2, term3 => canonical_term
+# Each line is processed as a synonym set
+#
+# Clothing
+ao, áo, shirt, blouse => ao
+thun, t-shirt, tee => thun
+khoac, áo khoác, jacket, coat => khoac
+ni, nì, jeans, quần => quan
+quan, quần, pants => quan
+vay, váy, skirt, dress => vay
+dam, đầm, gown => dam
+
+# Gender
+nam, male, men, man, men => nam
+nu, nữ, nù, female, women, woman => nu
+tre, trẻ, kid, kids, child, children => tre
+
+# Material
+bong, bông, cotton, poly => cotton
+len, lên, wool => wool
+linen, lanh => linen
+kaki, cady, khaki => kaki
+
+# Size
+size, sz, số, so => size
+nho, nhỏ, small, sm, xs => nho
+vua, vừa, medium, md, m => vua
+lon, lớn, large, lg, l => lon
+xl, extra large => xl
+
+# Color (basic)
+do, đỏ, red => do
+xanh, blue, green => xanh
+vang, vàng, yellow => vang
+tim, tím, purple => tim
+cam, orange => cam
+den, đen, black => den
+trang, trắng, white => trang
+hong, hồng, pink => hong
+nau, nâu, brown => nau
+xam, xám, gray => xam
+
+# Sale/discount
+giam, giảm, sale, off, discount => sale
+flash, flash sale, flashsale => flash_sale
+khuyen_mai, khuyến mãi, promo, promotion => khuyen_mai

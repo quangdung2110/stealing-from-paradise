@@ -1,0 +1,345 @@
+openapi: "3.0.3"
+info:
+  title: Payment Service - Seller Payments
+  description: >
+    Seller earnings overview, Stripe Express dashboard URL, transfer history,
+    and available/pending/total balance.
+    Payment Service (Port 8082). All endpoints require SELLER role.
+  version: "5.4"
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local development
+tags:
+  - name: Seller Payments
+    description: Seller earnings, transfers, and balance endpoints
+paths:
+  /seller/payments/earnings:
+    get:
+      tags:
+        - Seller Payments
+      summary: Seller earnings overview
+      description: >
+        Returns an overview of seller earnings including total earned,
+        total refunded, and net payout summary.
+        Referenced by FR-PAYMENT-010.
+      operationId: getSellerEarnings
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Seller earnings overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EarningsResponse"
+              example:
+                success: true
+                data:
+                  seller_id: 5
+                  total_earned: 15000000
+                  total_refunded: 500000
+                  net_earned: 14500000
+                  total_orders: 245
+                  payout_eligible: 3500000
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not a SELLER
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /seller/payments/stripe-dashboard:
+    get:
+      tags:
+        - Seller Payments
+      summary: Get Stripe Express dashboard URL
+      description: >
+        Returns the Stripe Express dashboard URL for the seller
+        to manage their Stripe account directly.
+        Referenced by FR-PAYMENT-011.
+      operationId: getStripeDashboard
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Stripe Express dashboard URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardUrlResponse"
+              example:
+                dashboard_url: "https://dashboard.stripe.com/express/..."
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not a SELLER
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Seller has no Stripe account (not onboarded)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /seller/payments/transfers:
+    get:
+      tags:
+        - Seller Payments
+      summary: Transfer history
+      description: >
+        Returns paginated list of seller transfers with filtering
+        by status and date range.
+        Referenced by FR-PAYMENT-012.
+      operationId: getSellerTransfers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [PENDING, SUCCESS, FAILED, REVERSED]
+          description: Filter by transfer status
+        - name: from_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Filter by transfer date (ISO 8601)
+        - name: to_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Filter by transfer date (ISO 8601)
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Page number (zero-indexed)
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Page size
+      responses:
+        "200":
+          description: Paginated transfer list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TransferEntry"
+                  totalPages:
+                    type: integer
+                  totalElements:
+                    type: integer
+                  pageNumber:
+                    type: integer
+                  pageSize:
+                    type: integer
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not a SELLER
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /seller/payments/balance:
+    get:
+      tags:
+        - Seller Payments
+      summary: Seller balance
+      description: >
+        Returns current balance breakdown: pending, available, and total earned.
+        Referenced by FR-PAYMENT-013.
+      operationId: getSellerBalance
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Seller balance breakdown
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BalanceResponse"
+              example:
+                success: true
+                data:
+                  seller_id: 10
+                  pending_balance: 1500000
+                  available_balance: 5000000
+                  total_earned: 15000000
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not a SELLER
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token with SELLER role
+
+  schemas:
+    EarningsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            seller_id:
+              type: integer
+              format: int64
+            total_earned:
+              type: number
+              format: double
+              description: Total gross earnings before refunds
+            total_refunded:
+              type: number
+              format: double
+              description: Total amount refunded
+            net_earned:
+              type: number
+              format: double
+              description: Net earnings after refunds
+            total_orders:
+              type: integer
+              description: Total orders fulfilled
+            payout_eligible:
+              type: number
+              format: double
+              description: Amount eligible for next payout
+
+    DashboardUrlResponse:
+      type: object
+      properties:
+        dashboard_url:
+          type: string
+          format: uri
+          description: Stripe Express dashboard login URL
+
+    TransferEntry:
+      type: object
+      properties:
+        transfer_id:
+          type: integer
+          format: int64
+        order_id:
+          type: integer
+          format: int64
+        order_code:
+          type: string
+          description: Display order code
+        transaction_id:
+          type: integer
+          format: int64
+        transfer_amount:
+          type: number
+          format: double
+        refunded_amount:
+          type: number
+          format: double
+        stripe_transfer_id:
+          type: string
+        net_payout_amount:
+          type: number
+          format: double
+        platform_commission_amt:
+          type: number
+          format: double
+        status:
+          type: string
+          enum: [PENDING, SUCCESS, FAILED, REVERSED]
+        payout_eligible_at:
+          type: string
+          format: date-time
+          description: When payout becomes eligible (delivered_at + 3 days)
+        payout_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When payout was actually made
+        created_at:
+          type: string
+          format: date-time
+
+    BalanceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            seller_id:
+              type: integer
+              format: int64
+            pending_balance:
+              type: number
+              format: double
+              description: Amount pending (in payout window)
+            available_balance:
+              type: number
+              format: double
+              description: Amount available for immediate payout
+            total_earned:
+              type: number
+              format: double
+              description: Lifetime total earned
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string

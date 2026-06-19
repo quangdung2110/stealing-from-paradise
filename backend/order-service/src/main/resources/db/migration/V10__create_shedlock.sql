@@ -1,0 +1,9 @@
+-- ShedLock table for distributed locking of @Scheduled jobs (JdbcTemplateLockProvider).
+-- Created in the service schema (Flyway default-schema = orders).
+CREATE TABLE IF NOT EXISTS shedlock (
+    name       VARCHAR(64)  NOT NULL,
+    lock_until TIMESTAMP    NOT NULL,
+    locked_at  TIMESTAMP    NOT NULL,
+    locked_by  VARCHAR(255) NOT NULL,
+    PRIMARY KEY (name)
+);

@@ -1,0 +1,258 @@
+[
+  {
+    "id": 1,
+    "username": "techworld",
+    "email": "techworld@example.com",
+    "phone": "0901111222",
+    "fullName": "Nguyễn Văn Tèo",
+    "role": "SELLER",
+    "status": "ACTIVE",
+    "stripeAccountId": "acct_test_SELLER001_AABBCC",
+    "addresses": [
+      {
+        "fullAddress": "123 Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh",
+        "provinceId": 1,
+        "districtId": 1,
+        "isDefault": true
+      },
+      {
+        "fullAddress": "Số 150 Đường Phụ, TP. Hồ Chí Minh",
+        "provinceId": 2,
+        "districtId": 2,
+        "isDefault": false
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "username": "fashionhub",
+    "email": "fashionhub@example.com",
+    "phone": "0902333444",
+    "fullName": "Trần Thị Mỹ Linh",
+    "role": "SELLER",
+    "status": "ACTIVE",
+    "stripeAccountId": "acct_test_SELLER002_DDEEFF",
+    "addresses": [
+      {
+        "fullAddress": "456 Lê Đại Hành, Quận 11, TP. Hồ Chí Minh",
+        "provinceId": 1,
+        "districtId": 1,
+        "isDefault": true
+      },
+      {
+        "fullAddress": "Số 200 Đường Phụ, TP. Hồ Chí Minh",
+        "provinceId": 2,
+        "districtId": 2,
+        "isDefault": false
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "username": "gadgetpro",
+    "email": "gadgetpro@example.com",
+    "phone": "0903555666",
+    "fullName": "Lê Hoàng Nam",
+    "role": "SELLER",
+    "status": "ACTIVE",
+    "stripeAccountId": "acct_test_SELLER003_GGHHII",
+    "addresses": [
+      {
+        "fullAddress": "789 Hoàng Quốc Việt, Quận Cầu Giấy, Hà Nội",
+        "provinceId": 2,
+        "districtId": 1,
+        "isDefault": true
+      },
+      {
+        "fullAddress": "Số 300 Đường Phụ, Hà Nội",
+        "provinceId": 3,
+        "districtId": 2,
+        "isDefault": false
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "username": "homeliving",
+    "email": "homeliving@example.com",
+    "phone": "0904777888",
+    "fullName": "Phạm Minh Đức",
+    "role": "SELLER",
+    "status": "ACTIVE",
+    "stripeAccountId": "acct_test_SELLER004_JJKKLL",
+    "addresses": [
+      {
+        "fullAddress": "101 Phạm Hùng, Quận Nam Từ Liêm, Hà Nội",
+        "provinceId": 2,
+        "districtId": 1,
+        "isDefault": true
+      },
+      {
+        "fullAddress": "Số 400 Đường Phụ, Hà Nội",
+        "provinceId": 3,
+        "districtId": 2,
+        "isDefault": false
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "username": "sportoutdoor",
+    "email": "sportoutdoor@example.com",
+    "phone": "0905999000",
+    "fullName": "Võ Thị Hà My",
+    "role": "SELLER",
+    "status": "ACTIVE",
+    "stripeAccountId": "acct_test_SELLER005_MMNOPP",
+    "addresses": [
+      {
+        "fullAddress": "202 Điện Biên Phủ, Quận Thanh Khê, Đà Nẵng",
+        "provinceId": 3,
+        "districtId": 1,
+        "isDefault": true
+      },
+      {
+        "fullAddress": "Số 500 Đường Phụ, Đà Nẵng",
+        "provinceId": 4,
+        "districtId": 2,
+        "isDefault": false
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "username": "minhhoa",
+    "email": "minhhoa@example.com",
+    "phone": "0906111222",
+    "fullName": "Hoàng Minh Hòa",
+    "role": "BUYER",
+    "status": "ACTIVE",
+    "addresses": [
+      {
+        "fullAddress": "303 Ba Hué, Quận Hải Châu, Đà Nẵng",
+        "provinceId": 3,
+        "districtId": 1,
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "username": "phuongthao",
+    "email": "phuongthao@example.com",
+    "phone": "0907222333",
+    "fullName": "Đặng Phương Thảo",
+    "role": "BUYER",
+    "status": "ACTIVE",
+    "addresses": [
+      {
+        "fullAddress": "404 Lê Lợi, Quận Hồng Bàng, Hải Phòng",
+        "provinceId": 4,
+        "districtId": 1,
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "username": "ductran",
+    "email": "ductran@example.com",
+    "phone": "0908333444",
+    "fullName": "Trần Đức Anh",
+    "role": "BUYER",
+    "status": "ACTIVE",
+    "addresses": [
+      {
+        "fullAddress": "505 Nguyễn Văn Linh, Quận Ninh Kiều, Cần Thơ",
+        "provinceId": 5,
+        "districtId": 1,
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "username": "linhnguyen",
+    "email": "linhnguyen@example.com",
+    "phone": "0909444555",
+    "fullName": "Nguyễn Thị Linh",
+    "role": "BUYER",
+    "status": "ACTIVE",
+    "addresses": [
+      {
+        "fullAddress": "606 Đại lộ Bình Dương, Thủ Dầu Một, Bình Dương",
+        "provinceId": 6,
+        "districtId": 1,
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "username": "admin",
+    "email": "admin@flashsale.dev",
+    "phone": "0901000000",
+    "fullName": "Quản Trị Viên",
+    "role": "ADMIN",
+    "status": "ACTIVE",
+    "addresses": [
+      {
+        "fullAddress": "707 Ngô Mây, TP. Biên Hòa, Đồng Nai",
+        "provinceId": 7,
+        "districtId": 1,
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "username": "huyenvu",
+    "email": "huyenvu@example.com",
+    "phone": "0901555666",
+    "fullName": "Vũ Thị Huyền",
+    "role": "BUYER",
+    "status": "ACTIVE",
+    "addresses": [
+      {
+        "fullAddress": "808 Lê Hồng Phong, Quận 5, TP. Hồ Chí Minh",
+        "provinceId": 1,
+        "districtId": 1,
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "username": "tuananh",
+    "email": "tuananh@example.com",
+    "phone": "0902666777",
+    "fullName": "Ngô Tuấn Anh",
+    "role": "BUYER",
+    "status": "ACTIVE",
+    "addresses": [
+      {
+        "fullAddress": "909 Trần Hưng Đạo, Quận 1, TP. Hồ Chí Minh",
+        "provinceId": 1,
+        "districtId": 1,
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "username": "thanhhuyen",
+    "email": "thanhhuyen@example.com",
+    "phone": "0903777888",
+    "fullName": "Huyền Thanh",
+    "role": "BUYER",
+    "status": "ACTIVE",
+    "addresses": [
+      {
+        "fullAddress": "1010 Âu Cơ, Quận Tân Bình, TP. Hồ Chí Minh",
+        "provinceId": 1,
+        "districtId": 1,
+        "isDefault": true
+      }
+    ]
+  }
+]

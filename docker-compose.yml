@@ -1,0 +1,700 @@
+# ============================================================
+# FLASH SALE E-COMMERCE — ROOT DOCKER COMPOSE
+# ============================================================
+# Entry point: infra + backend + frontend + nginx.
+# Reads configuration from ../.env (the root .env).
+#
+# DEPLOYMENT MODES:
+#
+#   .dev  (local dev with Stripe CLI):
+#     docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
+#     → infra + backend + frontend + stripe-listener (Stripe CLI webhook)
+#
+#   .prod (staging/prod, no Stripe CLI):
+#     docker compose -f docker-compose.yml up --build -d
+#     → infra + backend + frontend (Stripe events from Dashboard/Servers)
+#
+#   Frontend mock only (no backend):
+#     cd frontend && docker compose -f docker-compose.yml up --build -d
+#     → 3 frontend apps with mock data (VITE_BACKEND_MODE=mock)
+#
+# PARTIAL STARTS:
+#   docker compose -f docker-compose-infrastructure.yml up --build -d   # infra only
+#   docker compose -f docker-compose.yml -f docker-compose-backend.yml up --build -d  # infra + backend
+#
+# ============================================================
+
+x-network: &network flashsale-net
+
+services:
+  # ================================================================
+  # 1. INFRASTRUCTURE
+  # ================================================================
+
+  postgres:
+    image: postgres:${POSTGRES_VER:-15.4-alpine}
+    container_name: fs-postgres
+    restart: unless-stopped
+    ports: ["${PORT_POSTGRES:-5432}:5432"]
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    command: postgres -c wal_level=logical -c max_replication_slots=10 -c max_wal_senders=10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    networks: [*network]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:${MONGO_VER:-6.0.8}
+    container_name: fs-mongo
+    restart: unless-stopped
+    ports: ["${PORT_MONGO:-27017}:27017"]
+    env_file: .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+      - ./backend/docker/mongo/init:/docker-entrypoint-initdb.d:ro
+    networks: [*network]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:${REDIS_VER:-7.2.1-alpine}
+    container_name: fs-redis
+    restart: unless-stopped
+    ports: ["${PORT_REDIS:-6379}:6379"]
+    env_file: .env
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks: [*network]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+  elasticsearch:
+    build:
+      context: ./backend/docker/elasticsearch
+      args:
+        ES_VERSION: ${ELASTIC_VER:-8.10.2}
+    image: flashsale-elasticsearch:${ELASTIC_VER:-8.10.2}
+    container_name: fs-elasticsearch
+    restart: unless-stopped
+    ports: ["${PORT_ELASTIC:-9200}:9200"]
+    env_file: .env
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=${ES_JAVA_OPTS:--Xms512m -Xmx512m}
+    volumes:
+      - elastic_data:/usr/share/elasticsearch/data
+      # Mount synonyms dir even though current code doesn't use it — keeps the
+      # path valid if the analyzer is re-enabled later (ES 9.x search-time only).
+      - ./backend/search-service/src/main/resources/synonyms:/usr/share/elasticsearch/config/synonyms:ro
+    networks: [*network]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | grep -qv '\"status\":\"red\"'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: fs-minio
+    restart: unless-stopped
+    ports:
+      - "${PORT_MINIO:-9000}:9000"
+      - "${PORT_MINIO_CONSOLE:-9001}:9001"
+    env_file: .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BROWSER_CORS_ALLOW_ORIGIN: "*"
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks: [*network]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: fs-minio-init
+    depends_on:
+      minio: { condition: service_healthy }
+    env_file: .env
+    entrypoint: >
+      /bin/sh -c '
+      mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
+      mc mb --ignore-existing local/product-images;
+      mc mb --ignore-existing local/refund-evidences;
+      mc anonymous set download local/product-images;
+      mc anonymous set download local/refund-evidences;
+      echo "MinIO buckets initialized";
+      '
+    networks: [*network]
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:${KAFKA_VER:-7.4.0}
+    container_name: fs-zookeeper
+    restart: unless-stopped
+    ports: ["${PORT_ZOOKEEPER:-2181}:2181"]
+    env_file: .env
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+    networks: [*network]
+
+  kafka:
+    image: confluentinc/cp-kafka:${KAFKA_VER:-7.4.0}
+    container_name: fs-kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper: { condition: service_started }
+    ports: ["${PORT_KAFKA:-9092}:9092"]
+    env_file: .env
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks: [*network]
+    command: >
+      bash -c "sleep 10 &&
+               rm -f /var/lib/kafka/data/meta.properties &&
+               /etc/confluent/docker/run"
+
+  kafka-init:
+    image: confluentinc/cp-kafka:${KAFKA_VER:-7.4.0}
+    container_name: fs-kafka-init
+    depends_on:
+      kafka: { condition: service_started }
+    networks: [*network]
+    volumes:
+      - ./backend/docker/kafka/create-topics.sh:/create-topics.sh
+    command: bash /create-topics.sh
+    restart: on-failure
+    env_file: .env
+
+  kafka-connect:
+    image: debezium/connect:2.4
+    container_name: fs-kafka-connect
+    restart: unless-stopped
+    ports: ["${PORT_KAFKA_CONNECT:-18083}:8083"]
+    env_file: .env
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: my_connect_configs
+      OFFSET_STORAGE_TOPIC: my_connect_offsets
+      STATUS_STORAGE_TOPIC: my_connect_statuses
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+    depends_on:
+      kafka: { condition: service_started }
+      postgres: { condition: service_healthy }
+    networks: [*network]
+
+  axonserver:
+    image: axoniq/axonserver:${AXON_VER:-latest}
+    container_name: fs-axonserver
+    restart: unless-stopped
+    ports:
+      - "${PORT_AXON_GUI:-8024}:8024"
+      - "${PORT_AXON_GRPC:-8124}:8124"
+    env_file: .env
+    environment:
+      - AXONIQ_AXONSERVER_CONTEXTS=default
+      - AXONIQ_AXONSERVER_STANDALONE=true
+      - AXONIQ_AXONSERVER_DEVMODE_ENABLED=true
+      - AXONIQ_AXONSERVER_HOSTNAME=axonserver
+      - server.servlet.context-path=/
+    volumes:
+      - ./backend/docker/axon-init:/docker-entrypoint-initdb.d
+      - axon_data:/axonserver/data
+    networks: [*network]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f -s http://localhost:8024/actuator/health > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+
+  # ================================================================
+  # 2. BACKEND MICROSERVICES
+  # ================================================================
+
+  discovery-service:
+    build:
+      context: ./backend/discovery-service
+      dockerfile: Dockerfile.dev
+    container_name: fs-discovery
+    restart: unless-stopped
+    ports: ["${PORT_DISCOVERY:-8761}:8761"]
+    env_file: .env
+    networks: [*network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8761/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 150s
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile.dev
+    container_name: fs-gateway
+    restart: unless-stopped
+    ports: []
+    env_file: .env
+    environment:
+      - SERVER_BIND=${SERVER_BIND:-0.0.0.0}
+      - EUREKA_URI=${EUREKA_URI}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION_MS}
+      - TZ=${TZ}
+      - JVM_OPTS=${JVM_OPTS_GATEWAY}
+    depends_on:
+      redis: { condition: service_started }
+    networks: [*network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  identity-service:
+    build:
+      context: ./backend/identity-service
+      dockerfile: Dockerfile.dev
+    container_name: fs-identity
+    restart: unless-stopped
+    ports: ["${PORT_IDENTITY:-8081}:8081"]
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - EUREKA_URI=${EUREKA_URI}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - KAFKA_SERVER=${KAFKA_SERVER}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION_MS}
+      - TZ=${TZ}
+      - JVM_OPTS=${JVM_OPTS_IDENTITY}
+    depends_on:
+      postgres: { condition: service_started }
+      redis: { condition: service_started }
+      kafka: { condition: service_started }
+      kafka-init: { condition: service_completed_successfully }
+    networks: [*network]
+
+  payment-service:
+    build:
+      context: ./backend/payment-service
+      dockerfile: Dockerfile.dev
+    container_name: fs-payment
+    restart: unless-stopped
+    ports: ["${PORT_PAYMENT:-8082}:8082"]
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - EUREKA_URI=${EUREKA_URI}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - KAFKA_SERVER=${KAFKA_SERVER}
+      - AXON_SERVER=${AXON_SERVER}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - STRIPE_PLATFORM_FEE_PERCENTAGE=${STRIPE_PLATFORM_FEE_PERCENTAGE}
+      - STRIPE_DEFAULT_COUNTRY=${STRIPE_DEFAULT_COUNTRY:-US}
+      - JWT_SECRET=${JWT_SECRET}
+      - TZ=${TZ}
+      - JVM_OPTS=${JVM_OPTS_PAYMENT}
+    depends_on:
+      postgres: { condition: service_started }
+      kafka: { condition: service_started }
+      axonserver: { condition: service_started }
+    networks: [*network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8082/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 8
+      start_period: 150s
+
+  refund-service:
+    build:
+      context: ./backend/refund-service
+      dockerfile: Dockerfile.dev
+    container_name: fs-refund
+    restart: unless-stopped
+    ports: ["${PORT_REFUND:-8094}:8094"]
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - EUREKA_URI=${EUREKA_URI}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - KAFKA_SERVER=${KAFKA_SERVER}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - STRIPE_PLATFORM_FEE_PERCENTAGE=${STRIPE_PLATFORM_FEE_PERCENTAGE}
+      - AXON_SERVER=${AXON_SERVER}
+      - JWT_SECRET=${JWT_SECRET}
+      - TZ=${TZ}
+      - JVM_OPTS=${JVM_OPTS_REFUND}
+      - MINIO_URL=${MINIO_URL}
+      - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL}
+    depends_on:
+      postgres: { condition: service_started }
+      kafka: { condition: service_started }
+      axonserver: { condition: service_started }
+    networks: [*network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8094/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 8
+      start_period: 150s
+
+  order-service:
+    build:
+      context: ./backend/order-service
+      dockerfile: Dockerfile.dev
+    container_name: fs-order
+    restart: unless-stopped
+    ports: ["${PORT_ORDER:-8083}:8083"]
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - EUREKA_URI=${EUREKA_URI}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - KAFKA_SERVER=${KAFKA_SERVER}
+      - AXON_SERVER=${AXON_SERVER}
+      - JWT_SECRET=${JWT_SECRET}
+      - MINIO_URL=${MINIO_URL}
+      - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-http://localhost:9000}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - TZ=${TZ}
+      - JVM_OPTS=${JVM_OPTS_ORDER}
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_started }
+      axonserver: { condition: service_healthy }
+      minio: { condition: service_healthy }
+    networks: [*network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8083/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 8
+      start_period: 120s
+
+  flashsale-service:
+    build:
+      context: ./backend/flashsale-service
+      dockerfile: Dockerfile.dev
+    container_name: fs-flashsale
+    restart: unless-stopped
+    ports: ["${PORT_FLASHSALE:-8086}:8086"]
+    env_file: .env
+    environment:
+      - EUREKA_URI=${EUREKA_URI}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - KAFKA_SERVER=${KAFKA_SERVER}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - AXON_SERVER=${AXON_SERVER}
+      - JWT_SECRET=${JWT_SECRET}
+      - TZ=${TZ}
+      - JVM_OPTS=${JVM_OPTS_FLASHSALE}
+      # Direct in-network URL to product-service. Default in FlashSalePurchaseService
+      # is http://localhost:8084 (the flashsale container itself) — that fails.
+      - PRODUCT_SERVICE_URL=http://product-service:8084
+    depends_on:
+      postgres: { condition: service_started }
+      redis: { condition: service_started }
+      kafka: { condition: service_started }
+      axonserver: { condition: service_started }
+      kafka-init: { condition: service_completed_successfully }
+    networks: [*network]
+
+  product-service:
+    build:
+      context: ./backend/product-service
+      dockerfile: Dockerfile.dev
+    container_name: fs-product
+    restart: unless-stopped
+    ports: ["${PORT_PRODUCT:-8084}:8084"]
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - EUREKA_URI=${EUREKA_URI}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - KAFKA_SERVER=${KAFKA_SERVER}
+      - MINIO_URL=${MINIO_URL}
+      - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - TZ=${TZ}
+      - JVM_OPTS=${JVM_OPTS_PRODUCT}
+    depends_on:
+      postgres: { condition: service_started }
+      kafka: { condition: service_started }
+      minio: { condition: service_started }
+      redis: { condition: service_started }
+    networks: [*network]
+
+  search-service:
+    build:
+      context: ./backend/search-service
+      dockerfile: Dockerfile.dev
+    container_name: fs-search
+    restart: unless-stopped
+    ports: ["${PORT_SEARCH:-8087}:8087"]
+    env_file: .env
+    environment:
+      - EUREKA_URI=${EUREKA_URI}
+      - ELASTIC_URI=${ELASTIC_URI}
+      - KAFKA_SERVER=${KAFKA_SERVER}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - TZ=${TZ}
+      - JVM_OPTS=${JVM_OPTS_SEARCH}
+      # Direct in-network URL to product-service. Default in application.yml
+      # is http://localhost:8080 (the search container itself) — that fails.
+      - PRODUCT_SERVICE_URL=http://product-service:8084
+    depends_on:
+      elasticsearch: { condition: service_started }
+      kafka: { condition: service_started }
+      redis: { condition: service_started }
+    networks: [*network]
+
+  notification-service:
+    build:
+      context: ./backend/notification-service
+      dockerfile: Dockerfile.dev
+    container_name: fs-notification
+    restart: unless-stopped
+    ports: ["${PORT_NOTIFICATION:-8092}:8092"]
+    env_file: .env
+    environment:
+      - EUREKA_URI=${EUREKA_URI}
+      - MONGO_HOST=${MONGO_HOST}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - DB_NAME_NOTIFICATION=${DB_NAME_NOTIFICATION}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - KAFKA_SERVER=${KAFKA_SERVER}
+      - JWT_SECRET=${JWT_SECRET}
+      - TZ=${TZ}
+      - JVM_OPTS=${JVM_OPTS_NOTIFICATION}
+    depends_on:
+      mongo: { condition: service_started }
+      redis: { condition: service_started }
+      kafka: { condition: service_started }
+    networks: [*network]
+
+  chat-service:
+    build:
+      context: ./backend/chat-service
+      dockerfile: Dockerfile.dev
+    container_name: fs-chat
+    restart: unless-stopped
+    ports: ["${PORT_CHAT:-8093}:8093"]
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - EUREKA_URI=${EUREKA_URI}
+      - MONGO_HOST=${MONGO_HOST}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - DB_NAME_CHAT=${DB_NAME_CHAT:-fs_chat}
+      - KAFKA_SERVER=${KAFKA_SERVER}
+      - JWT_SECRET=${JWT_SECRET}
+      - TZ=${TZ}
+      - JVM_OPTS=${JVM_OPTS_CHAT}
+      - SPRING_AI_OPENAI_API_KEY=${SPRING_AI_OPENAI_API_KEY}
+      - SPRING_AI_OPENAI_BASE_URL=${SPRING_AI_OPENAI_BASE_URL}
+      - SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL=${SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL}
+    depends_on:
+      mongo: { condition: service_started }
+      kafka: { condition: service_started }
+    networks: [*network]
+
+  # ================================================================
+  # 3. FRONTEND APPLICATIONS
+  # ================================================================
+
+  customer-app:
+    build:
+      context: ./frontend
+      dockerfile: ./apps/customer/Dockerfile.dev
+    container_name: fs-customer-fe
+    restart: unless-stopped
+    # No host port binding by default — reverse-proxy routes / to this container
+    # over the Docker network. docker-compose.dev.yml exposes ports for local dev.
+    expose:
+      - "3000"
+    env_file: .env
+    # Don't duplicate VITE_API_URL here — env_file already provides it.
+    # VITE_PROXY_TARGET tells Vite's dev-server proxy where to forward /api
+    # requests. Inside Docker, localhost is the container itself — the gateway
+    # lives at fs-gateway:8080 on the Docker network.
+    environment:
+      - VITE_BACKEND_MODE=real
+      - VITE_PROXY_TARGET=http://fs-gateway:8080
+      - NODE_ENV=development
+      - VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY}
+    networks: [*network]
+    healthcheck:
+      disable: true
+
+  seller-app:
+    build:
+      context: ./frontend
+      dockerfile: ./apps/seller/Dockerfile.dev
+    container_name: fs-seller-fe
+    restart: unless-stopped
+    expose:
+      - "3001"
+    env_file: .env
+    environment:
+      - VITE_BACKEND_MODE=real
+      - VITE_PROXY_TARGET=http://fs-gateway:8080
+      - NODE_ENV=development
+      - VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY}
+    networks: [*network]
+    healthcheck:
+      disable: true
+
+  admin-app:
+    build:
+      context: ./frontend
+      dockerfile: ./apps/admin/Dockerfile.dev
+    container_name: fs-admin-fe
+    restart: unless-stopped
+    expose:
+      - "3002"
+    env_file: .env
+    environment:
+      - VITE_BACKEND_MODE=real
+      - VITE_PROXY_TARGET=http://fs-gateway:8080
+      - NODE_ENV=development
+      - VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY}
+    networks: [*network]
+    healthcheck:
+      disable: true
+
+  # ================================================================
+  # 4. REVERSE PROXY (nginx — entry point for all traffic)
+  # ================================================================
+
+  reverse-proxy:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: fs-reverse-proxy
+    restart: unless-stopped
+    ports: ["${PORT_REVERSE_PROXY:-80}:${NGINX_PORT:-80}"]
+    env_file: .env
+    environment:
+      - NGINX_PORT=${NGINX_PORT:-80}
+      - GATEWAY_HOST=${REVERSE_PROXY_GATEWAY_HOST:-fs-gateway}
+      - GATEWAY_PORT=${REVERSE_PROXY_GATEWAY_PORT:-8080}
+      - CUSTOMER_HOST=${REVERSE_PROXY_CUSTOMER_HOST:-fs-customer-fe}
+      - CUSTOMER_PORT=${REVERSE_PROXY_CUSTOMER_PORT:-3000}
+      - SELLER_HOST=${REVERSE_PROXY_SELLER_HOST:-fs-seller-fe}
+      - SELLER_PORT=${REVERSE_PROXY_SELLER_PORT:-3001}
+      - ADMIN_HOST=${REVERSE_PROXY_ADMIN_HOST:-fs-admin-fe}
+      - ADMIN_PORT=${REVERSE_PROXY_ADMIN_PORT:-3002}
+    depends_on:
+      api-gateway: { condition: service_started }
+      customer-app: { condition: service_started }
+    networks: [*network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:${NGINX_PORT:-80}/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+# ================================================================
+# VOLUMES & NETWORKS
+# ================================================================
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:
+  elastic_data:
+  minio_data:
+  kafka_data:
+  zookeeper_data:
+  axon_data:
+  customer_nm:
+  seller_nm:
+  admin_nm:
+
+networks:
+  flashsale-net:
+    name: flashsale-net
+    driver: bridge

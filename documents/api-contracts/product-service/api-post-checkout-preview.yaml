@@ -1,0 +1,232 @@
+﻿openapi: "3.0.3"
+info:
+  title: Product Service - Checkout Preview API
+  description: |
+    Validates cart items before checkout and generates a preview_token (TTL 10 min).
+    This is the first step of the two-step checkout flow.
+  version: "5.5"
+  contact:
+    name: Product Service Team
+servers:
+  - url: http://localhost:8084/api/v1
+    description: Local development
+tags:
+  - name: Checkout
+    description: Checkout preview operations
+paths:
+  /checkout/preview:
+    post:
+      tags:
+        - Checkout
+      summary: Generate checkout preview with token
+      description: |
+        Validates ALL cart items: price must match snapshot, stock sufficient, variant active.
+        If all pass, returns a preview_token (TTL 10 min) stored in Redis.
+        If any check fails, returns 409 Conflict with per-item error details.
+      operationId: generateCheckoutPreview
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutPreviewRequest"
+            example:
+              item_ids: ["507f1f77bcf86cd799439011", "507f1f77bcf86cd799439012"]
+      responses:
+        "200":
+          description: Preview generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutPreviewResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Cart or cart items not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Cart items changed â€” price/stock/status mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutPreviewErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CheckoutPreviewRequest:
+      type: object
+      required:
+        - item_ids
+      properties:
+        item_ids:
+          type: array
+          description: Cart item IDs to validate (1-50, no duplicates)
+          minItems: 1
+          maxItems: 50
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          example: ["507f1f77bcf86cd799439011", "507f1f77bcf86cd799439012"]
+
+    CheckoutPreviewResponse:
+      type: object
+      properties:
+        previewToken:
+          type: string
+          description: Token for checkout submit (TTL 10 min)
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        expiresAt:
+          type: string
+          format: date-time
+          description: Token expiration time (10 min from generation)
+          example: "2026-05-23T17:00:00Z"
+        customerId:
+          type: integer
+          format: int64
+          example: 42
+        sellers:
+          type: array
+          description: Validated items grouped by seller
+          items:
+            $ref: "#/components/schemas/PreviewSellerGroup"
+        totalItems:
+          type: integer
+          description: Total quantity of all items
+          example: 3
+        totalAmount:
+          type: number
+          format: double
+          description: Sum of all item subtotals
+          example: 1200000
+        allValid:
+          type: boolean
+          description: Always true when response is 200
+          example: true
+
+    PreviewSellerGroup:
+      type: object
+      properties:
+        sellerId:
+          type: integer
+          format: int64
+          example: 5
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PreviewItem"
+        subtotal:
+          type: number
+          format: double
+          example: 700000
+
+    PreviewItem:
+      type: object
+      properties:
+        cartItemId:
+          type: string
+          format: uuid
+          example: "507f1f77bcf86cd799439011"
+        variantId:
+          type: string
+          format: uuid
+        skuCode:
+          type: string
+          example: "NK-AIR-RED-XL"
+        productName:
+          type: string
+          example: "Ao Thun Nike Air"
+        variantName:
+          type: string
+          example: "Do / XL"
+        priceSnapshot:
+          type: number
+          format: double
+          description: Confirmed price (must match current)
+          example: 350000
+        quantity:
+          type: integer
+          example: 2
+        imageUrl:
+          type: string
+          format: uri
+          example: "https://cdn.marketplace.vn/products/5/101/uuid.jpg"
+        subtotal:
+          type: number
+          format: double
+          example: 700000
+        fsItemId:
+          type: integer
+          format: int64
+          nullable: true
+          example: null
+
+    CheckoutPreviewErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "CONFLICT"
+        message:
+          type: string
+          description: Human-readable message (JSON string)
+          example: "{\"error\":\"CART_ITEMS_CHANGED\",\"message\":\"...\",\"details\":[...]}"
+        details:
+          type: array
+          description: Per-item errors
+          items:
+            $ref: "#/components/schemas/PreviewItemError"
+
+    PreviewItemError:
+      type: object
+      properties:
+        cartItemId:
+          type: string
+          format: uuid
+        variantId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          enum: [PRICE_CHANGED, INSUFFICIENT_STOCK, OUT_OF_STOCK, VARIANT_INACTIVE, VARIANT_UNAVAILABLE]
+          example: "PRICE_CHANGED"
+        currentValue:
+          type: string
+          description: Actual value at validation time
+          example: "400000"
+        expectedValue:
+          type: string
+          description: Expected value from cart snapshot
+          example: "350000"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "Cart not found"
+        data:
+          type: object
+          nullable: true

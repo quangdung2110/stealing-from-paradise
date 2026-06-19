@@ -1,0 +1,200 @@
+﻿openapi: "3.0.3"
+info:
+  title: Product Service - Stock Reservation API
+  description: |
+    Reserve stock cho 1 variant trong 15 phÃºt khi checkout.
+    Checkout stock validation now runs in Product Service preview/submit;
+    the old `order.stock_check.*` request-reply pair has been removed.
+    Base URL: `/api/v1`
+    Service: product-service (Port 8084)
+  version: "6.0.0"
+
+servers:
+  - url: https://api.marketplace.vn/api/v1
+    description: Production
+  - url: http://localhost:8084/api/v1
+    description: Local development
+
+paths:
+  /inventory/{variantId}/reserve:
+    post:
+      operationId: reserveStock
+      summary: Reserve stock cho checkout
+      description: |
+        Táº¡o báº£n ghi `stock_reservation` vá»›i TTL 15 phÃºt vÃ  trá»« táº¡m vÃ o
+        `stock_locked` cá»§a variant. Náº¿u Ä‘Ã£ cÃ³ reservation cho cÃ¹ng `session_id`
+        thÃ¬ lÃ  idempotent (tráº£ vá» reservation hiá»‡n cÃ³).
+
+        LiÃªn quan: UC-PRODUCT-007, BR-PRODUCT-012.
+
+        Lifecycle: pending â†’ confirmed (khi `payment.success`) hoáº·c released
+        (khi `payment.failed` / háº¿t TTL â†’ emit `stock.reservation.expired`).
+      tags: [Inventory, StockReservation]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: variantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID variant cáº§n reserve
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReserveStockRequest"
+      responses:
+        "201":
+          description: ÄÃ£ táº¡o reservation má»›i
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationResponse"
+        "200":
+          description: Reservation Ä‘Ã£ tá»“n táº¡i (idempotent â€” trÃ¹ng session_id)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationResponse"
+        "401":
+          description: JWT missing/invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Variant khÃ´ng tá»“n táº¡i hoáº·c inactive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: |
+            Conflict â€” khÃ´ng Ä‘á»§ stock_available.
+            `stock_available = stock_total - stock_locked - stock_flash_reserved`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "INSUFFICIENT_STOCK"
+                code: "ERR_PRODUCT_010"
+                message: "YÃªu cáº§u 5, chá»‰ cÃ²n 2"
+                requested: 5
+                available: 2
+        "422":
+          description: |
+            Validation lá»—i:
+            - quantity < 1 hoáº·c > 1000
+            - session_id sai Ä‘á»‹nh dáº¡ng
+
+  /inventory/reservations/{reservationId}/release:
+    post:
+      operationId: releaseReservation
+      summary: Giáº£i phÃ³ng reservation thá»§ cÃ´ng
+      description: |
+        DÃ¹ng khi buyer rá»i khá»i checkout hoáº·c payment.failed.
+        Idempotent â€” gá»i láº§n thá»© 2 tráº£ 200 khÃ´ng thay Ä‘á»•i.
+      tags: [Inventory, StockReservation]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: ÄÃ£ release
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationResponse"
+        "404":
+          description: Reservation khÃ´ng tá»“n táº¡i
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ReserveStockRequest:
+      type: object
+      required: [session_id, quantity]
+      properties:
+        session_id:
+          type: string
+          maxLength: 100
+          description: Checkout session ID (Ä‘áº¿n tá»« order-service)
+          example: "chk_2026_05_10_abc123"
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          example: 2
+        ttl_seconds:
+          type: integer
+          minimum: 60
+          maximum: 1800
+          default: 900
+          description: Thá»i gian giá»¯ chá»— (máº·c Ä‘á»‹nh 15 phÃºt)
+
+    ReservationResponse:
+      type: object
+      required:
+        - reservation_id
+        - variant_id
+        - session_id
+        - quantity
+        - status
+        - expires_at
+      properties:
+        reservation_id:
+          type: string
+          format: uuid
+          example: "11111111-2222-3333-4444-555555555555"
+        variant_id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+        quantity:
+          type: integer
+        status:
+          type: string
+          enum: [pending, confirmed, released]
+          example: "pending"
+        expires_at:
+          type: string
+          format: date-time
+          example: "2026-05-10T10:15:00Z"
+        created_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        requested:
+          type: integer
+        available:
+          type: integer

@@ -1,0 +1,92 @@
+# ============================================================
+# FLASH SALE — .dev OVERRIDE (local dev with Stripe CLI)
+# ============================================================
+# Adds dev-only services to the base docker-compose.yml stack.
+# Contains: stripe-listener (Stripe CLI forwarding events to payment-service)
+#
+# MODE SUMMARY:
+#   .dev  → docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
+#           → infra + backend + frontend + stripe-listener (Stripe CLI webhook)
+#
+#   .prod → docker compose -f docker-compose.yml up --build -d
+#           → infra + backend + frontend (Stripe events from Dashboard/Servers)
+#
+#   Frontend mock → cd frontend && docker compose -f docker-compose.yml up --build -d
+#
+# HOW IT WORKS:
+#   docker compose reads docker-compose.yml automatically.
+#   Adding -f docker-compose.dev.yml MERGES the dev services on top.
+#   So stripe-listener only starts when you explicitly include this file.
+#
+# NOTE: This file is intentionally NOT referenced by any prod override.
+#       Prod deploy uses: docker-compose.yml + docker-compose-backend.yml + backend/docker-compose.prod-pulled.yml
+#       → stripe-listener is never started in production.
+# ============================================================
+
+services:
+  # ================================================================
+  # FRONTEND & GATEWAY HOST PORT BINDINGS (dev only)
+  # ================================================================
+  # In prod the reverse-proxy is the only public entry point. For local dev
+  # we expose ports directly so devs can hit Vite dev server (HMR) and the
+  # gateway without going through nginx.
+  api-gateway:
+    ports: ["${PORT_GATEWAY:-8080}:8080"]
+
+  # Vite dev server hot-reload requires source mounts. Volumes are dev-only —
+  # prod containers run nginx serving a baked-in /usr/share/nginx/html.
+  customer-app:
+    ports: ["${PORT_CUSTOMER:-3000}:3000"]
+    volumes:
+      - ./frontend/apps/customer:/app/apps/customer:cached
+      - ./frontend/shared:/app/shared:cached
+      - customer_nm:/app/apps/customer/node_modules
+  seller-app:
+    ports: ["${PORT_SELLER:-3001}:3001"]
+    volumes:
+      - ./frontend/apps/seller:/app/apps/seller:cached
+      - ./frontend/shared:/app/shared:cached
+      - seller_nm:/app/apps/seller/node_modules
+  admin-app:
+    ports: ["${PORT_ADMIN:-3002}:3002"]
+    volumes:
+      - ./frontend/apps/admin:/app/apps/admin:cached
+      - ./frontend/shared:/app/shared:cached
+      - admin_nm:/app/apps/admin/node_modules
+
+  # ================================================================
+  # STRIPE WEBHOOK LISTENER (dev only — NOT for production)
+  # ================================================================
+  # Forwards Stripe events to payment-service webhook endpoint.
+  # Uses Stripe CLI inside Docker — no host installation needed.
+  #
+  # HOW IT WORKS:
+  #   Stripe CLI listens for events from Stripe's servers and forwards
+  #   them to the payment-service /api/v1/stripe/webhooks endpoint.
+  #   It signs every forwarded request so payment-service can verify
+  #   the signature using STRIPE_WEBHOOK_SECRET.
+  #
+  #   DEV:  Stripe CLI → forwards events → fs-gateway:8080 → payment-service
+  #         (must go through gateway so /api prefix is stripped, matching prod)
+  #   PROD: Stripe Dashboard → sends directly → your-server/api/v1/stripe/webhooks
+  #
+  # REQUIREMENTS:
+  #   - STRIPE_SECRET_KEY must be set in .env (Stripe test/live secret key)
+  #   - STRIPE_WEBHOOK_SECRET must be set in .env (from: stripe listen output)
+  #   - payment-service must be healthy before Stripe CLI starts
+  # ================================================================
+  stripe-listener:
+    image: stripe/stripe-cli:latest
+    container_name: fs-stripe-listener
+    restart: unless-stopped
+    command: >
+      listen
+      --api-key ${STRIPE_SECRET_KEY}
+      --forward-to fs-gateway:8080/api/v1/stripe/webhooks
+      --log-level debug
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+    networks: [flashsale-net]

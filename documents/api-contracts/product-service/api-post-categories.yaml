@@ -1,0 +1,299 @@
+﻿openapi: "3.0.3"
+info:
+  title: Product Service - Admin Category Management
+  description: >
+    Admin CRUD operations for product categories.
+    All endpoints require JWT with ADMIN role.
+    Product Service (Port 8084).
+  version: "5.4.0"
+servers:
+  - url: http://localhost:8084/api/v1
+    description: Local development
+paths:
+  /admin/categories:
+    post:
+      operationId: createCategory
+      summary: Create a new category (Admin)
+      description: >
+        Creates a category entry. Can be root (parent_id=null) or child.
+        Slug must be unique. Emits category.created event for search indexing.
+        Referenced by FR-PRODUCT-001.
+      tags:
+        - Admin Categories
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryRequest"
+            example:
+              name: "Ao Thun Nam"
+              slug: "ao-thun-nam"
+              parent_id: "507f1f77bcf86cd799439010"
+              level: 2
+      responses:
+        "201":
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryResponse"
+              example:
+                id: "507f1f77bcf86cd799439011"
+                name: "Ao Thun Nam"
+                slug: "ao-thun-nam"
+                parent_id: "507f1f77bcf86cd799439010"
+                level: 2
+                is_active: true
+                created_at: "2026-04-15T10:00:00Z"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not an ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Slug already exists (BR-PRODUCT-003)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/categories/{categoryId}:
+    put:
+      operationId: updateCategory
+      summary: Update a category (Admin)
+      description: >
+        Updates category fields. All fields optional.
+        Emits category.updated event for search index sync.
+        Referenced by FR-PRODUCT-002.
+      tags:
+        - Admin Categories
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Category UUID to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryRequest"
+            example:
+              name: "Ao Thun Nam Cao Cap"
+              slug: "ao-thun-nam-cao-cap"
+              is_active: true
+      responses:
+        "200":
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryResponse"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not an ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: New slug already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      operationId: deleteCategory
+      summary: Delete a category (Admin)
+      description: >
+        Deletes a category. Cannot delete categories that have child categories
+        or products attached. Emits category.deleted event.
+        Referenced by FR-PRODUCT-003.
+      tags:
+        - Admin Categories
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Category UUID to delete
+      responses:
+        "200":
+          description: Category deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  deleted_id:
+                    type: string
+                    format: uuid
+              example:
+                message: "Category deleted successfully"
+                deleted_id: "507f1f77bcf86cd799439011"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not an ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Category has children or products attached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT from Identity Service with ADMIN role
+
+  schemas:
+    CreateCategoryRequest:
+      type: object
+      required:
+        - name
+        - slug
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 255
+          description: Category display name
+        slug:
+          type: string
+          maxLength: 255
+          description: URL-friendly unique identifier
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Parent category UUID (null for root)
+        level:
+          type: integer
+          minimum: 0
+          description: Depth in category tree (0 = root)
+        description:
+          type: string
+          maxLength: 2000
+          description: Category description
+        image_url:
+          type: string
+          format: uri
+          description: Category banner/image URL
+        sort_order:
+          type: integer
+          default: 0
+          description: Display sort order
+
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 2000
+        image_url:
+          type: string
+          format: uri
+        sort_order:
+          type: integer
+        is_active:
+          type: boolean
+          description: Soft enable/disable category display
+
+    CategoryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+          nullable: true
+        image_url:
+          type: string
+          nullable: true
+        level:
+          type: integer
+        sort_order:
+          type: integer
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

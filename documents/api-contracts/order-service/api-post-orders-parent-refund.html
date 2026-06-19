@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Order Service - Full Parent Refund API</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --doc-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      --doc-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --doc-bg: #f6f7f9;
+      --doc-panel: #ffffff;
+      --doc-border: #d9dee7;
+      --doc-muted: #5c6675;
+      --doc-text: #162033;
+      --doc-accent: #1d4ed8;
+      --doc-accent-soft: #eff6ff;
+    }
+
+    html { scroll-padding-top: 5rem; }
+    body {
+      background: var(--doc-bg);
+      color: var(--doc-text);
+      font-family: var(--doc-font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      letter-spacing: 0;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      text-rendering: optimizeLegibility;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      line-height: 1.22;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+
+    a { color: var(--doc-accent); }
+    a:hover { color: #123b9c; }
+
+    .doc-topbar {
+      background: rgba(255, 255, 255, .96);
+      border-bottom: 1px solid var(--doc-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .doc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    .doc-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .doc-sidebar {
+      position: sticky;
+      top: 5rem;
+      max-height: calc(100vh - 6rem);
+      overflow: auto;
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+    }
+
+    .doc-main {
+      min-width: 0;
+    }
+
+    .doc-hero,
+    .doc-panel {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+    }
+
+    .doc-hero {
+      padding: 1.25rem;
+    }
+
+    .doc-section {
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-kpi {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+      height: 100%;
+    }
+
+    .doc-card {
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      background: var(--doc-panel);
+      height: 100%;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .doc-card:hover {
+      border-color: #adc6ff;
+      box-shadow: 0 .5rem 1.5rem rgba(22, 32, 51, .08);
+      transform: translateY(-1px);
+    }
+
+    .doc-card:focus-visible,
+    .doc-link-list a:focus-visible,
+    .nav-link:focus-visible,
+    .btn:focus-visible {
+      outline: 3px solid rgba(29, 78, 216, .35);
+      outline-offset: 2px;
+    }
+
+    .doc-card .card-body {
+      padding: 1rem;
+    }
+
+    .doc-link-list {
+      display: grid;
+      gap: .5rem;
+      padding-left: 0;
+      margin-bottom: 0;
+      list-style: none;
+    }
+
+    .doc-link-list a {
+      display: block;
+      padding: .625rem .75rem;
+      border: 1px solid var(--doc-border);
+      border-radius: .5rem;
+      background: #fff;
+      text-decoration: none;
+    }
+
+    .doc-link-list a:hover {
+      background: var(--doc-accent-soft);
+      border-color: #bfdbfe;
+    }
+
+    .doc-table {
+      --bs-table-bg: #fff;
+      border: 1px solid var(--doc-border);
+    }
+
+    .doc-table thead th {
+      background: #eef2f7;
+      color: #283549;
+      white-space: nowrap;
+    }
+
+    pre {
+      background: #101827;
+      color: #f8fafc;
+      font-family: var(--doc-font-mono);
+      font-size: .875rem;
+      line-height: 1.55;
+      padding: 1rem;
+      border-radius: .75rem;
+      overflow: auto;
+    }
+
+    pre.mermaid {
+      background: #ffffff;
+      color: var(--doc-text);
+      border: 1px solid var(--doc-border);
+      min-height: 8rem;
+    }
+
+    code {
+      color: #9a3412;
+      font-family: var(--doc-font-mono);
+      font-size: .9em;
+    }
+
+    .doc-meta {
+      color: var(--doc-muted);
+      font-size: .875rem;
+    }
+
+    .doc-anchor {
+      scroll-margin-top: 5rem;
+    }
+
+    @media (max-width: 991.98px) {
+      .doc-shell { padding: .875rem; }
+      .doc-layout { grid-template-columns: 1fr; }
+      .doc-sidebar {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    @media print {
+      .doc-topbar,
+      .doc-sidebar,
+      .btn,
+      .nav-tabs {
+        display: none !important;
+      }
+      body { background: #fff; }
+      .doc-shell { max-width: none; padding: 0; }
+      .doc-layout { display: block; }
+      .doc-hero,
+      .doc-panel,
+      .doc-card,
+      .doc-kpi {
+        border: 1px solid #bbb;
+        box-shadow: none !important;
+      }
+    }
+      pre code { color: inherit; background: transparent; font-size: inherit; padding: 0; }
+    pre { white-space: pre; }
+  </style>
+</head>
+<body>
+  <header class="doc-topbar sticky-top">
+    <nav class="navbar navbar-expand-lg">
+      <div class="container-fluid px-3">
+        <a class="navbar-brand fw-semibold" href="../../index.html">Stealing-from-Paradise</a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <a class="btn btn-sm btn-outline-secondary" href="../../index.html">Home</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/overview.html">Overview</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/architecture.html">Architecture</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/domain.html">Domain Model and Rules</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/use-cases.html">Use Cases</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/business-flows.html">Business Flows</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/interfaces.html">Interfaces</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/messaging.html">Messaging and Realtime</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/traceability.html">Traceability</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="doc-shell">
+    <div class="doc-layout">
+      <aside class="doc-sidebar">
+        <div class="fw-semibold mb-2">Contents</div>
+        <nav class="nav nav-pills flex-column gap-1">
+          <a class="nav-link" href="../../groups/overview.html">Overview</a>
+<a class="nav-link" href="../../groups/architecture.html">Architecture</a>
+<a class="nav-link" href="../../groups/domain.html">Domain Model and Rules</a>
+<a class="nav-link" href="../../groups/business-flows.html">Business Flows</a>
+<a class="nav-link" href="../../groups/use-cases.html">Use Cases</a>
+<a class="nav-link" href="../../groups/interfaces.html">Interfaces</a>
+<a class="nav-link" href="../../groups/messaging.html">Messaging and Realtime</a>
+<a class="nav-link" href="../../groups/identity.html">Identity and Security</a>
+<a class="nav-link" href="../../groups/platform.html">Platform and Operations</a>
+<a class="nav-link" href="../../groups/deployment.html">Deployment</a>
+<a class="nav-link" href="../../groups/observability.html">Observability</a>
+<a class="nav-link" href="../../groups/integrations.html">Integrations</a>
+<a class="nav-link" href="../../groups/traceability.html">Traceability</a>
+<a class="nav-link" href="../../traceability/matrix.html">Traceability Matrix</a>
+        </nav>
+      </aside>
+
+      <main class="doc-main">
+        <section class="doc-hero doc-section">
+          <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div>
+              <h1 class="h2 mb-1">Order Service - Full Parent Refund API</h1>
+              <div class="doc-meta">DOC-API-CONTRACTS-ORDER-SERVICE-API-POST-ORDERS-PARENT-REFUND | 2026-06-09</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2"><span class="badge text-bg-info">api</span> <span class="badge text-bg-light">order-service</span></div>
+          </div>
+        </section>
+
+        <section class="doc-section"><div class="doc-panel p-3 p-md-4"><p class='lead'>Buyer yeu cau hoan tien toan bo parent order.
+Tao groupRef UUID de theo doi hoan tien tren tat ca sub-orders.</p><ul class='doc-link-list' style='list-style:none'><li><span class='text-secondary'>Spec version</span><div class='fw-semibold'>5.4</div></li><li><span class='text-secondary'>Server(s)</span><div class='fw-semibold'>http://localhost:8083/api/v1</div></li><li><span class='text-secondary'>Source</span><div class='fw-semibold'><code>api-contracts/order-service/api-post-orders-parent-refund.yaml</code></div></li></ul><h2 class="h5 mt-4">Operations</h2><div class="table-responsive"><table class="table doc-table table-sm align-middle"><thead><tr><th>Method</th><th>Path</th><th>Summary</th></tr></thead><tbody><tr><td><span class='badge text-bg-primary'>POST</span></td><td><code>/orders/parent/{parentOrderId}/refund</code></td><td>Yeu cau hoan tien toan bo parent order</td></tr></tbody></table></div><h2 class="h5 mt-4">OpenAPI Specification</h2><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css"><style>.openapi-ui{background:#fff;border:1px solid rgba(15,23,42,.12);border-radius:.5rem;padding:.75rem;overflow:auto}.openapi-ui .swagger-ui{font-family:inherit}.openapi-ui .swagger-ui .topbar,.openapi-ui .swagger-ui .information-container.wrapper{display:none}.openapi-ui .swagger-ui .wrapper{padding:0;max-width:none}.openapi-ui .swagger-ui .scheme-container{box-shadow:none;margin:0 0 1rem;padding:0}</style><div id="openapi-ui-api-contracts-order-service-api-post-orders-parent-refund-yaml" class="openapi-ui"></div><script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script><script>window.addEventListener('load',function(){var el=document.getElementById('openapi-ui-api-contracts-order-service-api-post-orders-parent-refund-yaml');if(!window.SwaggerUIBundle){el.innerHTML='<div class="alert alert-warning mb-0">Swagger UI could not load from CDN.</div>';return;}SwaggerUIBundle({dom_id:'#openapi-ui-api-contracts-order-service-api-post-orders-parent-refund-yaml',spec:{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Order Service - Full Parent Refund API",
+    "description": "Buyer yeu cau hoan tien toan bo parent order.\nTao groupRef UUID de theo doi hoan tien tren tat ca sub-orders.\n",
+    "version": "5.4",
+    "contact": {
+      "name": "Order Service Team"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8083/api/v1",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    {
+      "name": "order-service",
+      "description": "Full parent-order refund endpoints"
+    }
+  ],
+  "paths": {
+    "/orders/parent/{parentOrderId}/refund": {
+      "post": {
+        "tags": [
+          "order-service"
+        ],
+        "summary": "Yeu cau hoan tien toan bo parent order",
+        "description": "Buyer yeu cau hoan tien toan bo cho parent order.\nTao mot groupRef UUID va yeu cau hoan tien cho tung sub-order.\nTao su kien Kafka `refund.requested`.\n",
+        "operationId": "requestFullParentRefund",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "parentOrderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "Parent order ID can hoan tien"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FullRefundRequest"
+              },
+              "example": {
+                "reason": "San pham bi loi",
+                "evidence_images": [
+                  "https://cdn.marketplace.vn/refund-evidence/orders/55/img1.jpg",
+                  "https://cdn.marketplace.vn/refund-evidence/orders/55/img2.jpg"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Yeu cau hoan tien da duoc tao",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullRefundCreatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chua xac thuc hoac khong phai BUYER",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Khong the hoan tien (trang thai khong hop le)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "FullRefundRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Ly do hoan tien",
+            "example": "San pham bi loi"
+          },
+          "evidence_images": {
+            "type": "array",
+            "maxItems": 10,
+            "description": "Danh sach URL anh bang chung",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "example": [
+              "https://cdn.marketplace.vn/refund-evidence/orders/55/img1.jpg"
+            ]
+          }
+        }
+      },
+      "FullRefundCreatedResponse": {
+        "type": "object",
+        "properties": {
+          "group_ref": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID nhom hoan tien de theo doi",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "parent_order_id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 55
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "FULL"
+            ],
+            "example": "FULL"
+          },
+          "total_amount": {
+            "type": "number",
+            "format": "double",
+            "description": "Tong so tien hoan",
+            "example": 1150000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "COMPLETED",
+              "REJECTED"
+            ],
+            "example": "PENDING"
+          },
+          "refunds": {
+            "type": "array",
+            "description": "Danh sach hoan tien cho tung sub-order",
+            "items": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "integer",
+                  "format": "int64",
+                  "example": 100
+                },
+                "seller_id": {
+                  "type": "integer",
+                  "format": "int64",
+                  "example": 5
+                },
+                "amount": {
+                  "type": "number",
+                  "format": "double",
+                  "example": 700000
+                },
+                "item_count": {
+                  "type": "integer",
+                  "example": 2
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "PENDING",
+                    "PROCESSING",
+                    "COMPLETED",
+                    "REJECTED"
+                  ],
+                  "example": "PENDING"
+                }
+              }
+            }
+          },
+          "estimated_days": {
+            "type": "integer",
+            "description": "So ngay du kien xu ly",
+            "example": 7
+          },
+          "message": {
+            "type": "string",
+            "description": "Thong bao cho nguoi dung",
+            "example": "Yeu cau hoan tien cua ban da duoc ghi nhan. Chung toi se xu ly trong vong 7 ngay."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-10-06T09:00:00Z"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Ma loi"
+          },
+          "message": {
+            "type": "string",
+            "description": "Mo ta loi"
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "VALIDATION_FAILED"
+          },
+          "message": {
+            "type": "string",
+            "example": "Khong the yeu cau hoan tien cho don hang nay"
+          }
+        }
+      }
+    }
+  }
+},deepLinking:true,docExpansion:'list',defaultModelsExpandDepth:1,displayRequestDuration:true});});</script></div></section>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    function normalizeDocSearchText(value) {
+      return (value || '').toString().toLowerCase();
+    }
+
+    function escapeDocHtml(value) {
+      return (value || '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderSearchIndexResults(container, items, query) {
+      if (!container) return;
+      var normalized = normalizeDocSearchText(query);
+      if (!normalized) {
+        container.innerHTML = '';
+        container.classList.add('d-none');
+        return;
+      }
+      var matches = items.filter(function(item) {
+        var haystack = [
+          item.id,
+          item.title,
+          item.type,
+          item.group,
+          item.status,
+          item.summary,
+          (item.tags || []).join(' '),
+          (item.related_ids || []).join(' '),
+          item.search_text
+        ].map(normalizeDocSearchText).join(' ');
+        return haystack.indexOf(normalized) !== -1;
+      }).slice(0, 12);
+
+      if (!matches.length) {
+        container.innerHTML = '<div class="text-secondary small">No indexed results found.</div>';
+        container.classList.remove('d-none');
+        return;
+      }
+
+      container.innerHTML = matches.map(function(item) {
+        var title = escapeDocHtml(item.title || item.id || 'Untitled');
+        var path = escapeDocHtml(item.path || '#');
+        var meta = escapeDocHtml([item.type, item.group, item.status].filter(Boolean).join(' | '));
+        return '<a class="d-block border rounded p-2 mb-2 text-decoration-none bg-white" href="' + path + '">' +
+          '<div class="fw-semibold">' + title + '</div>' +
+          '<div class="text-secondary small">' + meta + '</div>' +
+          '</a>';
+      }).join('');
+      container.classList.remove('d-none');
+    }
+
+    var searchIndexPromise = null;
+    function loadDocSearchIndex(path, inlineSelector) {
+      var inlineNode = inlineSelector ? document.querySelector(inlineSelector) : null;
+      if (inlineNode && inlineNode.textContent.trim()) {
+        try {
+          return Promise.resolve(JSON.parse(inlineNode.textContent));
+        } catch (error) {
+          return Promise.resolve(null);
+        }
+      }
+      if (!path) return Promise.resolve(null);
+      if (!searchIndexPromise) {
+        searchIndexPromise = fetch(path).then(function(response) {
+          if (!response.ok) return null;
+          return response.json();
+        }).catch(function() { return null; });
+      }
+      return searchIndexPromise;
+    }
+
+    document.querySelectorAll('[data-doc-filter-target]').forEach(function(input) {
+      var selector = input.getAttribute('data-doc-filter-target');
+      var items = Array.prototype.slice.call(document.querySelectorAll(selector));
+      var indexPath = input.getAttribute('data-doc-search-index');
+      var inlineIndexSelector = input.getAttribute('data-doc-search-inline');
+      var resultSelector = input.getAttribute('data-doc-search-results');
+      var resultContainer = resultSelector ? document.querySelector(resultSelector) : null;
+      input.addEventListener('input', function() {
+        var query = input.value.trim().toLowerCase();
+        items.forEach(function(item) {
+          var haystack = (item.getAttribute('data-doc-filter-text') || item.textContent || '').toLowerCase();
+          item.classList.toggle('d-none', query && haystack.indexOf(query) === -1);
+        });
+        loadDocSearchIndex(indexPath, inlineIndexSelector).then(function(index) {
+          if (index && Array.isArray(index.items)) {
+            renderSearchIndexResults(resultContainer, index.items, query);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

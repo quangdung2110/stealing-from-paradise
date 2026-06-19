@@ -1,0 +1,1472 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kafka Events -- Notification Service</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --doc-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      --doc-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --doc-bg: #f6f7f9;
+      --doc-panel: #ffffff;
+      --doc-border: #d9dee7;
+      --doc-muted: #5c6675;
+      --doc-text: #162033;
+      --doc-accent: #1d4ed8;
+      --doc-accent-soft: #eff6ff;
+    }
+
+    html { scroll-padding-top: 5rem; }
+    body {
+      background: var(--doc-bg);
+      color: var(--doc-text);
+      font-family: var(--doc-font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      letter-spacing: 0;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      text-rendering: optimizeLegibility;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      line-height: 1.22;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+
+    a { color: var(--doc-accent); }
+    a:hover { color: #123b9c; }
+
+    .doc-topbar {
+      background: rgba(255, 255, 255, .96);
+      border-bottom: 1px solid var(--doc-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .doc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    .doc-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .doc-sidebar {
+      position: sticky;
+      top: 5rem;
+      max-height: calc(100vh - 6rem);
+      overflow: auto;
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+    }
+
+    .doc-main {
+      min-width: 0;
+    }
+
+    .doc-hero,
+    .doc-panel {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+    }
+
+    .doc-hero {
+      padding: 1.25rem;
+    }
+
+    .doc-section {
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-kpi {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+      height: 100%;
+    }
+
+    .doc-card {
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      background: var(--doc-panel);
+      height: 100%;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .doc-card:hover {
+      border-color: #adc6ff;
+      box-shadow: 0 .5rem 1.5rem rgba(22, 32, 51, .08);
+      transform: translateY(-1px);
+    }
+
+    .doc-card:focus-visible,
+    .doc-link-list a:focus-visible,
+    .nav-link:focus-visible,
+    .btn:focus-visible {
+      outline: 3px solid rgba(29, 78, 216, .35);
+      outline-offset: 2px;
+    }
+
+    .doc-card .card-body {
+      padding: 1rem;
+    }
+
+    .doc-link-list {
+      display: grid;
+      gap: .5rem;
+      padding-left: 0;
+      margin-bottom: 0;
+      list-style: none;
+    }
+
+    .doc-link-list a {
+      display: block;
+      padding: .625rem .75rem;
+      border: 1px solid var(--doc-border);
+      border-radius: .5rem;
+      background: #fff;
+      text-decoration: none;
+    }
+
+    .doc-link-list a:hover {
+      background: var(--doc-accent-soft);
+      border-color: #bfdbfe;
+    }
+
+    .doc-table {
+      --bs-table-bg: #fff;
+      border: 1px solid var(--doc-border);
+    }
+
+    .doc-table thead th {
+      background: #eef2f7;
+      color: #283549;
+      white-space: nowrap;
+    }
+
+    pre {
+      background: #101827;
+      color: #f8fafc;
+      font-family: var(--doc-font-mono);
+      font-size: .875rem;
+      line-height: 1.55;
+      padding: 1rem;
+      border-radius: .75rem;
+      overflow: auto;
+    }
+
+    pre.mermaid {
+      background: #ffffff;
+      color: var(--doc-text);
+      border: 1px solid var(--doc-border);
+      min-height: 8rem;
+    }
+
+    code {
+      color: #9a3412;
+      font-family: var(--doc-font-mono);
+      font-size: .9em;
+    }
+
+    .doc-meta {
+      color: var(--doc-muted);
+      font-size: .875rem;
+    }
+
+    .doc-anchor {
+      scroll-margin-top: 5rem;
+    }
+
+    @media (max-width: 991.98px) {
+      .doc-shell { padding: .875rem; }
+      .doc-layout { grid-template-columns: 1fr; }
+      .doc-sidebar {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    @media print {
+      .doc-topbar,
+      .doc-sidebar,
+      .btn,
+      .nav-tabs {
+        display: none !important;
+      }
+      body { background: #fff; }
+      .doc-shell { max-width: none; padding: 0; }
+      .doc-layout { display: block; }
+      .doc-hero,
+      .doc-panel,
+      .doc-card,
+      .doc-kpi {
+        border: 1px solid #bbb;
+        box-shadow: none !important;
+      }
+    }
+      pre code { color: inherit; background: transparent; font-size: inherit; padding: 0; }
+    pre { white-space: pre; }
+  </style>
+</head>
+<body>
+  <header class="doc-topbar sticky-top">
+    <nav class="navbar navbar-expand-lg">
+      <div class="container-fluid px-3">
+        <a class="navbar-brand fw-semibold" href="../../index.html">Stealing-from-Paradise</a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <a class="btn btn-sm btn-outline-secondary" href="../../index.html">Home</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/overview.html">Overview</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/architecture.html">Architecture</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/domain.html">Domain Model and Rules</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/use-cases.html">Use Cases</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/business-flows.html">Business Flows</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/interfaces.html">Interfaces</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/messaging.html">Messaging and Realtime</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/traceability.html">Traceability</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="doc-shell">
+    <div class="doc-layout">
+      <aside class="doc-sidebar">
+        <div class="fw-semibold mb-2">Contents</div>
+        <nav class="nav nav-pills flex-column gap-1">
+          <a class="nav-link" href="../../groups/overview.html">Overview</a>
+<a class="nav-link" href="../../groups/architecture.html">Architecture</a>
+<a class="nav-link" href="../../groups/domain.html">Domain Model and Rules</a>
+<a class="nav-link" href="../../groups/business-flows.html">Business Flows</a>
+<a class="nav-link" href="../../groups/use-cases.html">Use Cases</a>
+<a class="nav-link" href="../../groups/interfaces.html">Interfaces</a>
+<a class="nav-link" href="../../groups/messaging.html">Messaging and Realtime</a>
+<a class="nav-link" href="../../groups/identity.html">Identity and Security</a>
+<a class="nav-link" href="../../groups/platform.html">Platform and Operations</a>
+<a class="nav-link" href="../../groups/deployment.html">Deployment</a>
+<a class="nav-link" href="../../groups/observability.html">Observability</a>
+<a class="nav-link" href="../../groups/integrations.html">Integrations</a>
+<a class="nav-link" href="../../groups/traceability.html">Traceability</a>
+<a class="nav-link" href="../../traceability/matrix.html">Traceability Matrix</a>
+        </nav>
+      </aside>
+
+      <main class="doc-main">
+        <section class="doc-hero doc-section">
+          <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div>
+              <h1 class="h2 mb-1">Kafka Events -- Notification Service</h1>
+              <div class="doc-meta">DOC-MESSAGING-NOTIFICATION-SERVICE-KAFKA-EVENTS | 2026-06-09</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2"><span class="badge text-bg-info">message</span> <span class="badge text-bg-light">notification-service</span></div>
+          </div>
+        </section>
+
+        <section class="doc-section"><div class="doc-panel p-3 p-md-4 doc-prose"><h1>Kafka Events -- Notification Service</h1>
+<blockquote>
+<p>Service: notification-service (Port 8092)
+Database: MongoDB (collection: mg_notifications)
+Source: <code>documents/data-models/notification-service/entity-notification.md</code>, <code>documents/business-rules/notification-service/br-notification.md</code>
+Generated: 2026-05-10</p>
+</blockquote>
+<hr>
+<h2>Events Consumed</h2>
+<p>Notification Service is a consumer-only service. It listens to Kafka topics from all backend domains and pushes SSE real-time notifications to users. It produces <strong>zero</strong> events.</p>
+<hr>
+<h3>From Identity Service</h3>
+<h4>seller.registered</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>SYSTEM</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify user that the seller account is ready</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3>From Product Service</h3>
+<h4>product.pending_review</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>SYSTEM</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify seller that product is awaiting admin review</td>
+</tr>
+</tbody>
+</table>
+<h4>product.approved</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>SYSTEM</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify seller that product has been approved</td>
+</tr>
+</tbody>
+</table>
+<h4>product.rejected</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>SYSTEM</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify seller that product has been rejected</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3>From Order Service</h3>
+<h4>order.created</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>ORDER_STATUS</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify buyer: order placed successfully; Notify seller: new order received</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;order.created&quot;,
+  &quot;payload&quot;: {
+    &quot;order_id&quot;: 5,
+    &quot;parent_order_id&quot;: 1,
+    &quot;customer_id&quot;: 42,
+    &quot;seller_id&quot;: 99,
+    &quot;items&quot;: [
+      { &quot;variant_id&quot;: &quot;uuid-abc123&quot;, &quot;quantity&quot;: 2, &quot;price&quot;: 150000 }
+    ],
+    &quot;total_amount&quot;: 300000,
+    &quot;timestamp&quot;: &quot;2026-05-10T08:00:00Z&quot;
+  }
+}
+</code></pre>
+<h4>order.shipped</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>ORDER_STATUS</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify buyer with tracking number and carrier</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;order.shipped&quot;,
+  &quot;payload&quot;: {
+    &quot;order_id&quot;: 5,
+    &quot;tracking_number&quot;: &quot;SPX123456789&quot;,
+    &quot;carrier&quot;: &quot;SPX&quot;,
+    &quot;timestamp&quot;: &quot;2026-05-10T10:00:00Z&quot;
+  }
+}
+</code></pre>
+<h4>order.delivered</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>ORDER_STATUS</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify buyer: order delivered; Notify seller: delivery confirmed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;order.delivered&quot;,
+  &quot;payload&quot;: {
+    &quot;order_id&quot;: 5,
+    &quot;delivered_at&quot;: &quot;2026-05-12T14:30:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-05-12T14:30:00Z&quot;
+  }
+}
+</code></pre>
+<h4>order.cancelled</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>ORDER_STATUS</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify buyer and seller of cancellation with reason</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;order.cancelled&quot;,
+  &quot;payload&quot;: {
+    &quot;order_id&quot;: 5,
+    &quot;parent_order_id&quot;: 1,
+    &quot;cancel_reason&quot;: &quot;BUYER_REQUEST&quot;,
+    &quot;cancelled_by&quot;: &quot;BUYER&quot;,
+    &quot;timestamp&quot;: &quot;2026-05-10T08:30:00Z&quot;
+  }
+}
+</code></pre>
+<h4>order.returned</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>ORDER_STATUS</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify buyer and seller that return has been processed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;order.returned&quot;,
+  &quot;payload&quot;: {
+    &quot;order_id&quot;: 5,
+    &quot;return_tracking_number&quot;: &quot;RN987654321&quot;,
+    &quot;evidence_images&quot;: [&quot;https://cdn.marketplace.vn/evidence/img1.jpg&quot;],
+    &quot;timestamp&quot;: &quot;2026-05-15T14:00:00Z&quot;
+  }
+}
+</code></pre>
+<h4>seller.order_cancelled</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>ORDER_STATUS</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify buyer: order cancelled by seller with apology message</td>
+</tr>
+</tbody>
+</table>
+<h4>order.payment_timeout</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>ORDER_STATUS</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify buyer: payment timeout, order will be cancelled</td>
+</tr>
+</tbody>
+</table>
+<h4>order.auto_cancelled</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>ORDER_AUTO_CANCELLED</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify buyer: order was automatically cancelled after payment timeout</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;order.auto_cancelled&quot;,
+  &quot;payload&quot;: {
+    &quot;order_id&quot;: 5,
+    &quot;parent_order_id&quot;: 1,
+    &quot;user_id&quot;: 42,
+    &quot;seller_id&quot;: 99,
+    &quot;session_id&quot;: &quot;checkout-session-abc&quot;,
+    &quot;cancelled_by&quot;: &quot;SYSTEM&quot;,
+    &quot;cancel_reason&quot;: &quot;Payment timeout&quot;,
+    &quot;timestamp&quot;: &quot;2026-05-10T08:30:00Z&quot;
+  }
+}
+</code></pre>
+<hr>
+<h3>From Payment Service</h3>
+<h4>payment.success</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>PAYMENT_UPDATE</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify buyer: payment successful</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;payment.success&quot;,
+  &quot;payload&quot;: {
+    &quot;parent_order_id&quot;: 1,
+    &quot;transaction_id&quot;: &quot;txn_abc123&quot;,
+    &quot;stripe_payment_intent_id&quot;: &quot;pi_3NqX...&quot;,
+    &quot;amount&quot;: 450000,
+    &quot;currency&quot;: &quot;vnd&quot;,
+    &quot;payment_method&quot;: &quot;card&quot;,
+    &quot;timestamp&quot;: &quot;2026-05-10T08:05:00Z&quot;
+  }
+}
+</code></pre>
+<h4>payment.failed</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>PAYMENT_UPDATE</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify buyer: payment failed with reason</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;payment.failed&quot;,
+  &quot;payload&quot;: {
+    &quot;parent_order_id&quot;: 1,
+    &quot;reason&quot;: &quot;card_declined&quot;,
+    &quot;timestamp&quot;: &quot;2026-05-10T08:05:00Z&quot;
+  }
+}
+</code></pre>
+<h4>seller.stripe_requirement</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>SYSTEM</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify seller that Stripe requires additional verification</td>
+</tr>
+</tbody>
+</table>
+<h4>stripe.account_suspended</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>STRIPE_ACCOUNT_SUSPENDED</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>URGENT</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify seller that the Stripe account is suspended</td>
+</tr>
+</tbody>
+</table>
+<h4>refund.requested</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>REFUND_UPDATE</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify buyer: refund request submitted; Notify seller: refund request pending</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;refund.requested&quot;,
+  &quot;payload&quot;: {
+    &quot;refund_type&quot;: &quot;PARTIAL&quot;,
+    &quot;order_id&quot;: 5,
+    &quot;parent_order_id&quot;: 1,
+    &quot;user_id&quot;: 42,
+    &quot;seller_id&quot;: 99,
+    &quot;reason&quot;: &quot;San pham bi loi&quot;,
+    &quot;amount&quot;: 150000,
+    &quot;group_ref&quot;: &quot;uuid-def456&quot;,
+    &quot;items&quot;: [{ &quot;order_item_id&quot;: 10, &quot;quantity&quot;: 1, &quot;refund_amount&quot;: 150000 }],
+    &quot;evidence_images&quot;: [],
+    &quot;timestamp&quot;: &quot;2026-05-12T10:00:00Z&quot;
+  }
+}
+</code></pre>
+<h4>refund.admin_approved</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>REFUND_UPDATE</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify buyer: refund approved; Notify seller: refund processed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;refund.admin_approved&quot;,
+  &quot;payload&quot;: {
+    &quot;refund_id&quot;: 7,
+    &quot;order_id&quot;: 5,
+    &quot;type&quot;: &quot;FULL&quot;,
+    &quot;amount&quot;: 150000,
+    &quot;adjust_amount&quot;: 140000,
+    &quot;tracking_number&quot;: &quot;RN123456789VN&quot;,
+    &quot;approved_by&quot;: 1,
+    &quot;timestamp&quot;: &quot;2026-05-12T14:00:00Z&quot;
+  }
+}
+</code></pre>
+<h4>refund.rejected</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>REFUND_UPDATE</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify buyer: refund rejected with reason</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;refund.rejected&quot;,
+  &quot;payload&quot;: {
+    &quot;refund_id&quot;: 7,
+    &quot;order_id&quot;: 5,
+    &quot;rejected_by&quot;: 1,
+    &quot;reason&quot;: &quot;Khong du dieu kien hoan tien&quot;,
+    &quot;timestamp&quot;: &quot;2026-05-12T14:00:00Z&quot;
+  }
+}
+</code></pre>
+<hr>
+<h3>From Flash Sale Service</h3>
+<h4>flash_sale.session_started</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>FLASH_SALE_ALERT</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify users that the flash sale session has started</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;flash_sale.session_started&quot;,
+  &quot;payload&quot;: {
+    &quot;event&quot;: &quot;flash_sale.session_started&quot;,
+    &quot;session_id&quot;: 1,
+    &quot;name&quot;: &quot;Flash Sale 8h sang&quot;,
+    &quot;start_time&quot;: &quot;2026-05-10T08:00:00Z&quot;,
+    &quot;end_time&quot;: &quot;2026-05-10T10:00:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-05-10T08:00:00Z&quot;
+  }
+}
+</code></pre>
+<h4>flash_sale.session_ended</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>FLASH_SALE_ALERT</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>LOW</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify users: flash sale session has ended</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;flash_sale.session_ended&quot;,
+  &quot;payload&quot;: {
+    &quot;event&quot;: &quot;flash_sale.session_ended&quot;,
+    &quot;session_id&quot;: 1,
+    &quot;name&quot;: &quot;Flash Sale 8h sang&quot;,
+    &quot;timestamp&quot;: &quot;2026-05-10T10:00:00Z&quot;
+  }
+}
+</code></pre>
+<h4>flash_sale.item_registered</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>FLASH_SALE_ALERT</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify seller: product registered for flash sale session</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;flash_sale.item_registered&quot;,
+  &quot;payload&quot;: {
+    &quot;event&quot;: &quot;flash_sale.item_registered&quot;,
+    &quot;session_id&quot;: 1,
+    &quot;fs_item_id&quot;: 123,
+    &quot;product_id&quot;: &quot;uuid-prod-789&quot;,
+    &quot;seller_id&quot;: &quot;uuid-seller-456&quot;,
+    &quot;discount_applied&quot;: 20.00,
+    &quot;registered_at&quot;: &quot;2026-05-09T07:50:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-05-09T07:50:00Z&quot;
+  }
+}
+</code></pre>
+<h4>flash_sale.item_approved</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>FS_ITEM_APPROVED</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify seller that the flash-sale item was approved</td>
+</tr>
+</tbody>
+</table>
+<h4>flash_sale.item_rejected</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>FS_ITEM_REJECTED</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify seller that the flash-sale item was rejected</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3>From AI Chat Service</h3>
+<h4>ai_chat.message_sent</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>CHAT_MESSAGE</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify user: new AI chat message received (fallback when user is offline)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;ai_chat.message_sent&quot;,
+  &quot;payload&quot;: {
+    &quot;session_id&quot;: &quot;uuid-session-001&quot;,
+    &quot;user_id&quot;: 42,
+    &quot;message_id&quot;: &quot;uuid-msg-001&quot;,
+    &quot;role&quot;: &quot;ASSISTANT&quot;,
+    &quot;content_preview&quot;: &quot;Don hang cua ban dang duoc giao...&quot;,
+    &quot;sequence_no&quot;: 15,
+    &quot;timestamp&quot;: &quot;2026-05-10T09:00:00Z&quot;
+  }
+}
+</code></pre>
+<h4>ai_chat.tool_call_executed</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>CHAT_MESSAGE</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Log only -- no user-facing notification for tool execution</td>
+</tr>
+</tbody>
+</table>
+<h4>ai_chat.confirmation_resolved</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>CHAT_MESSAGE</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>NORMAL</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Notify user: pending confirmation (CONFIRMED or REJECTED) resolved</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;ai_chat.confirmation_resolved&quot;,
+  &quot;payload&quot;: {
+    &quot;session_id&quot;: &quot;uuid-session-001&quot;,
+    &quot;user_id&quot;: 42,
+    &quot;confirmation_id&quot;: &quot;uuid-confirm-001&quot;,
+    &quot;action&quot;: &quot;CONFIRMED&quot;,
+    &quot;tool_name&quot;: &quot;cancelOrder&quot;,
+    &quot;timestamp&quot;: &quot;2026-05-10T09:05:00Z&quot;
+  }
+}
+</code></pre>
+<hr>
+<h2>SSE Streaming Mechanism</h2>
+<h3>Architecture</h3>
+<pre><code>Kafka Topic (any service)
+    |
+    v
+Notification Service Consumer (Spring Kafka)
+    |
+    v
+Create MG_NOTIFICATIONS document (MongoDB)
+    |
+    v
+Emit to active per-user SSE sink when connected
+    |
+    v
+SSE Emitter (Spring WebFlux SseEmitter)
+    |
+    v
+Browser receives via EventSource /text/event-stream
+</code></pre>
+<h3>Endpoint</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Endpoint</strong></td>
+<td><code>GET /v1/notifications/stream</code></td>
+</tr>
+<tr>
+<td><strong>Content-Type</strong></td>
+<td><code>text/event-stream</code></td>
+</tr>
+<tr>
+<td><strong>Auth</strong></td>
+<td>JWT Bearer [redacted] required</td>
+</tr>
+<tr>
+<td><strong>Reconnection</strong></td>
+<td>Client sends <code>Last-Event-ID</code> header to replay missed events</td>
+</tr>
+</tbody>
+</table>
+<h3>SSE Event Format</h3>
+<pre><code>id: 507f1f77bcf86cd799439011
+event: ORDER_STATUS
+data: {&quot;title&quot;:&quot;Don hang #5 da duoc giao&quot;,&quot;body&quot;:&quot;Don hang cua ban da duoc giao thanh cong vao luc 14:30&quot;,&quot;type&quot;:&quot;ORDER_STATUS&quot;,&quot;metadata&quot;:{&quot;order_id&quot;:5,&quot;deeplink&quot;:&quot;/orders/5&quot;},&quot;created_at&quot;:&quot;2026-05-12T14:30:00Z&quot;}
+
+</code></pre>
+<h3>Replay and Live Delivery</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Live Channel</strong></td>
+<td>In-memory per-user Reactor sink</td>
+</tr>
+<tr>
+<td><strong>Sink Backpressure Buffer</strong></td>
+<td>64 notifications per connected user</td>
+</tr>
+<tr>
+<td><strong>Replay Mechanism</strong></td>
+<td><code>Last-Event-ID</code> header on SSE reconnect</td>
+</tr>
+<tr>
+<td><strong>Missed Events</strong></td>
+<td>Replayed from MongoDB after the last seen notification timestamp</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>REST Endpoints (Non-Kafka)</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/notifications/stream</code></td>
+<td>SSE stream of real-time notifications</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/notifications</code> or <code>/v1/notifications/history</code></td>
+<td>Paginated notification history (<code>?page=0&amp;size=20</code>)</td>
+</tr>
+<tr>
+<td><code>PUT</code> / <code>PATCH</code></td>
+<td><code>/v1/notifications/{notifId}/read</code></td>
+<td>Mark one notification as read</td>
+</tr>
+<tr>
+<td><code>PUT</code> / <code>PATCH</code></td>
+<td><code>/v1/notifications/read-all</code></td>
+<td>Mark all unread notifications as read for authenticated user</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/notifications/unread-count</code></td>
+<td>Unread notification count</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Events Produced</h2>
+<p>Notification Service does <strong>NOT</strong> produce any Kafka events. It is a pure consumer that translates incoming events into user-facing SSE notifications.</p>
+<hr>
+<h2>Notification Type Catalog</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Priority Range</th>
+<th>Kafka Source Services</th>
+<th>UI Treatment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ORDER_STATUS</strong></td>
+<td>NORMAL -- HIGH</td>
+<td>Order Service (order.*)</td>
+<td>Badge increment, deeplink to order detail</td>
+</tr>
+<tr>
+<td><strong>PAYMENT_UPDATE</strong></td>
+<td>HIGH</td>
+<td>Payment Service (payment.*)</td>
+<td>Badge increment, deeplink to payment/transaction</td>
+</tr>
+<tr>
+<td><strong>REFUND_UPDATE</strong></td>
+<td>NORMAL -- HIGH</td>
+<td>Payment Service (refund.*)</td>
+<td>Badge increment, deeplink to refund detail</td>
+</tr>
+<tr>
+<td><strong>FLASH_SALE_ALERT</strong></td>
+<td>LOW -- HIGH</td>
+<td>Flash Sale Service (flash_sale.*)</td>
+<td>Push notification + badge for HIGH, badge only for NORMAL/LOW</td>
+</tr>
+<tr>
+<td><strong>CHAT_MESSAGE</strong></td>
+<td>NORMAL</td>
+<td>AI Chat Service (ai_chat.*)</td>
+<td>Badge increment, deeplink to chat session</td>
+</tr>
+<tr>
+<td><strong>SYSTEM</strong></td>
+<td>NORMAL -- HIGH</td>
+<td>Product Service (product.*)</td>
+<td>Push notification for HIGH, badge for NORMAL</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Consumer Groups</h2>
+<table>
+<thead>
+<tr>
+<th>Group ID</th>
+<th>Topics</th>
+<th>Concurrency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>notification-service-product-group</code></td>
+<td><code>product.*</code></td>
+<td>3</td>
+</tr>
+<tr>
+<td><code>notification-service-order-group</code></td>
+<td><code>order.*</code></td>
+<td>5</td>
+</tr>
+<tr>
+<td><code>notification-service-payment-group</code></td>
+<td><code>payment.*</code>, <code>refund.*</code></td>
+<td>3</td>
+</tr>
+<tr>
+<td><code>notification-service-flashsale-group</code></td>
+<td><code>flash_sale.*</code></td>
+<td>3</td>
+</tr>
+<tr>
+<td><code>notification-service-chat-group</code></td>
+<td><code>ai_chat.*</code></td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Data Retention</h2>
+<table>
+<thead>
+<tr>
+<th>Policy</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TTL Index</strong></td>
+<td><code>created_at</code> + 90 days (MongoDB TTL index auto-delete)</td>
+</tr>
+<tr>
+<td><strong>Replay Source</strong></td>
+<td>MongoDB persisted notifications</td>
+</tr>
+<tr>
+<td><strong>SSE Timeout</strong></td>
+<td>30 minutes (SseEmitter timeout, client reconnects)</td>
+</tr>
+</tbody>
+</table></div></section>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    function normalizeDocSearchText(value) {
+      return (value || '').toString().toLowerCase();
+    }
+
+    function escapeDocHtml(value) {
+      return (value || '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderSearchIndexResults(container, items, query) {
+      if (!container) return;
+      var normalized = normalizeDocSearchText(query);
+      if (!normalized) {
+        container.innerHTML = '';
+        container.classList.add('d-none');
+        return;
+      }
+      var matches = items.filter(function(item) {
+        var haystack = [
+          item.id,
+          item.title,
+          item.type,
+          item.group,
+          item.status,
+          item.summary,
+          (item.tags || []).join(' '),
+          (item.related_ids || []).join(' '),
+          item.search_text
+        ].map(normalizeDocSearchText).join(' ');
+        return haystack.indexOf(normalized) !== -1;
+      }).slice(0, 12);
+
+      if (!matches.length) {
+        container.innerHTML = '<div class="text-secondary small">No indexed results found.</div>';
+        container.classList.remove('d-none');
+        return;
+      }
+
+      container.innerHTML = matches.map(function(item) {
+        var title = escapeDocHtml(item.title || item.id || 'Untitled');
+        var path = escapeDocHtml(item.path || '#');
+        var meta = escapeDocHtml([item.type, item.group, item.status].filter(Boolean).join(' | '));
+        return '<a class="d-block border rounded p-2 mb-2 text-decoration-none bg-white" href="' + path + '">' +
+          '<div class="fw-semibold">' + title + '</div>' +
+          '<div class="text-secondary small">' + meta + '</div>' +
+          '</a>';
+      }).join('');
+      container.classList.remove('d-none');
+    }
+
+    var searchIndexPromise = null;
+    function loadDocSearchIndex(path, inlineSelector) {
+      var inlineNode = inlineSelector ? document.querySelector(inlineSelector) : null;
+      if (inlineNode && inlineNode.textContent.trim()) {
+        try {
+          return Promise.resolve(JSON.parse(inlineNode.textContent));
+        } catch (error) {
+          return Promise.resolve(null);
+        }
+      }
+      if (!path) return Promise.resolve(null);
+      if (!searchIndexPromise) {
+        searchIndexPromise = fetch(path).then(function(response) {
+          if (!response.ok) return null;
+          return response.json();
+        }).catch(function() { return null; });
+      }
+      return searchIndexPromise;
+    }
+
+    document.querySelectorAll('[data-doc-filter-target]').forEach(function(input) {
+      var selector = input.getAttribute('data-doc-filter-target');
+      var items = Array.prototype.slice.call(document.querySelectorAll(selector));
+      var indexPath = input.getAttribute('data-doc-search-index');
+      var inlineIndexSelector = input.getAttribute('data-doc-search-inline');
+      var resultSelector = input.getAttribute('data-doc-search-results');
+      var resultContainer = resultSelector ? document.querySelector(resultSelector) : null;
+      input.addEventListener('input', function() {
+        var query = input.value.trim().toLowerCase();
+        items.forEach(function(item) {
+          var haystack = (item.getAttribute('data-doc-filter-text') || item.textContent || '').toLowerCase();
+          item.classList.toggle('d-none', query && haystack.indexOf(query) === -1);
+        });
+        loadDocSearchIndex(indexPath, inlineIndexSelector).then(function(index) {
+          if (index && Array.isArray(index.items)) {
+            renderSearchIndexResults(resultContainer, index.items, query);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

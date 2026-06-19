@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cross-Service Flow Diagrams</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --doc-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      --doc-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --doc-bg: #f6f7f9;
+      --doc-panel: #ffffff;
+      --doc-border: #d9dee7;
+      --doc-muted: #5c6675;
+      --doc-text: #162033;
+      --doc-accent: #1d4ed8;
+      --doc-accent-soft: #eff6ff;
+    }
+
+    html { scroll-padding-top: 5rem; }
+    body {
+      background: var(--doc-bg);
+      color: var(--doc-text);
+      font-family: var(--doc-font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      letter-spacing: 0;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      text-rendering: optimizeLegibility;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      line-height: 1.22;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+
+    a { color: var(--doc-accent); }
+    a:hover { color: #123b9c; }
+
+    .doc-topbar {
+      background: rgba(255, 255, 255, .96);
+      border-bottom: 1px solid var(--doc-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .doc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    .doc-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .doc-sidebar {
+      position: sticky;
+      top: 5rem;
+      max-height: calc(100vh - 6rem);
+      overflow: auto;
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+    }
+
+    .doc-main {
+      min-width: 0;
+    }
+
+    .doc-hero,
+    .doc-panel {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+    }
+
+    .doc-hero {
+      padding: 1.25rem;
+    }
+
+    .doc-section {
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-kpi {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+      height: 100%;
+    }
+
+    .doc-card {
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      background: var(--doc-panel);
+      height: 100%;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .doc-card:hover {
+      border-color: #adc6ff;
+      box-shadow: 0 .5rem 1.5rem rgba(22, 32, 51, .08);
+      transform: translateY(-1px);
+    }
+
+    .doc-card:focus-visible,
+    .doc-link-list a:focus-visible,
+    .nav-link:focus-visible,
+    .btn:focus-visible {
+      outline: 3px solid rgba(29, 78, 216, .35);
+      outline-offset: 2px;
+    }
+
+    .doc-card .card-body {
+      padding: 1rem;
+    }
+
+    .doc-link-list {
+      display: grid;
+      gap: .5rem;
+      padding-left: 0;
+      margin-bottom: 0;
+      list-style: none;
+    }
+
+    .doc-link-list a {
+      display: block;
+      padding: .625rem .75rem;
+      border: 1px solid var(--doc-border);
+      border-radius: .5rem;
+      background: #fff;
+      text-decoration: none;
+    }
+
+    .doc-link-list a:hover {
+      background: var(--doc-accent-soft);
+      border-color: #bfdbfe;
+    }
+
+    .doc-table {
+      --bs-table-bg: #fff;
+      border: 1px solid var(--doc-border);
+    }
+
+    .doc-table thead th {
+      background: #eef2f7;
+      color: #283549;
+      white-space: nowrap;
+    }
+
+    pre {
+      background: #101827;
+      color: #f8fafc;
+      font-family: var(--doc-font-mono);
+      font-size: .875rem;
+      line-height: 1.55;
+      padding: 1rem;
+      border-radius: .75rem;
+      overflow: auto;
+    }
+
+    pre.mermaid {
+      background: #ffffff;
+      color: var(--doc-text);
+      border: 1px solid var(--doc-border);
+      min-height: 8rem;
+    }
+
+    code {
+      color: #9a3412;
+      font-family: var(--doc-font-mono);
+      font-size: .9em;
+    }
+
+    .doc-meta {
+      color: var(--doc-muted);
+      font-size: .875rem;
+    }
+
+    .doc-anchor {
+      scroll-margin-top: 5rem;
+    }
+
+    @media (max-width: 991.98px) {
+      .doc-shell { padding: .875rem; }
+      .doc-layout { grid-template-columns: 1fr; }
+      .doc-sidebar {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    @media print {
+      .doc-topbar,
+      .doc-sidebar,
+      .btn,
+      .nav-tabs {
+        display: none !important;
+      }
+      body { background: #fff; }
+      .doc-shell { max-width: none; padding: 0; }
+      .doc-layout { display: block; }
+      .doc-hero,
+      .doc-panel,
+      .doc-card,
+      .doc-kpi {
+        border: 1px solid #bbb;
+        box-shadow: none !important;
+      }
+    }
+      pre code { color: inherit; background: transparent; font-size: inherit; padding: 0; }
+    pre { white-space: pre; }
+  </style>
+</head>
+<body>
+  <header class="doc-topbar sticky-top">
+    <nav class="navbar navbar-expand-lg">
+      <div class="container-fluid px-3">
+        <a class="navbar-brand fw-semibold" href="../index.html">Stealing-from-Paradise</a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <a class="btn btn-sm btn-outline-secondary" href="../index.html">Home</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/overview.html">Overview</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/architecture.html">Architecture</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/domain.html">Domain Model and Rules</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/use-cases.html">Use Cases</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/business-flows.html">Business Flows</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/interfaces.html">Interfaces</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/messaging.html">Messaging and Realtime</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/traceability.html">Traceability</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="doc-shell">
+    <div class="doc-layout">
+      <aside class="doc-sidebar">
+        <div class="fw-semibold mb-2">Contents</div>
+        <nav class="nav nav-pills flex-column gap-1">
+          <a class="nav-link" href="../groups/overview.html">Overview</a>
+<a class="nav-link" href="../groups/architecture.html">Architecture</a>
+<a class="nav-link" href="../groups/domain.html">Domain Model and Rules</a>
+<a class="nav-link" href="../groups/business-flows.html">Business Flows</a>
+<a class="nav-link" href="../groups/use-cases.html">Use Cases</a>
+<a class="nav-link" href="../groups/interfaces.html">Interfaces</a>
+<a class="nav-link" href="../groups/messaging.html">Messaging and Realtime</a>
+<a class="nav-link" href="../groups/identity.html">Identity and Security</a>
+<a class="nav-link" href="../groups/platform.html">Platform and Operations</a>
+<a class="nav-link" href="../groups/deployment.html">Deployment</a>
+<a class="nav-link" href="../groups/observability.html">Observability</a>
+<a class="nav-link" href="../groups/integrations.html">Integrations</a>
+<a class="nav-link" href="../groups/traceability.html">Traceability</a>
+<a class="nav-link" href="../traceability/matrix.html">Traceability Matrix</a>
+        </nav>
+      </aside>
+
+      <main class="doc-main">
+        <section class="doc-hero doc-section">
+          <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div>
+              <h1 class="h2 mb-1">Cross-Service Flow Diagrams</h1>
+              <div class="doc-meta">DOC-OVERVIEW-FLOWS | 2026-06-09</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2"><span class="badge text-bg-info">architecture</span> <span class="badge text-bg-light">platform</span></div>
+          </div>
+        </section>
+
+        <section class="doc-section"><div class="doc-panel p-3 p-md-4 doc-prose"><h1>Cross-Service Flow Diagrams</h1>
+<blockquote>
+<p>Generated: 2026-05-10
+Source: <code>docs/services/flashsale-service/flashsale_service_flow.md</code>, <code>docs/services/product-service/product_service_flow.md</code>, KAFKA_EVENTS.md files</p>
+</blockquote>
+<hr>
+<h2>1. Flash Sale Lifecycle Flow</h2>
+<h3>1.1 Session Creation (Admin)</h3>
+<pre class="mermaid">sequenceDiagram
+    actor Admin
+    participant FS as Flash Sale Service
+    participant PG as PostgreSQL
+    participant Redis
+
+    Admin-&gt;&gt;FS: POST /flash-sales (name, start_time, end_time, discount)
+    FS-&gt;&gt;FS: Validate end_time &gt; start_time
+    FS-&gt;&gt;FS: Validate 0 &lt; discount &lt;= 100
+    FS-&gt;&gt;FS: Calculate registration_deadline = start_time - 15min
+    FS-&gt;&gt;PG: INSERT fs_sessions (status=UPCOMING)
+    FS-&gt;&gt;Redis: ZADD flash_sale:triggers &lt;start_ms&gt; session_start
+    FS-&gt;&gt;Redis: ZADD flash_sale:triggers &lt;end_ms&gt; session_end
+    FS--&gt;&gt;Admin: 201 Created (session object)</pre>
+<h3>1.2 Seller Product Registration</h3>
+<pre class="mermaid">sequenceDiagram
+    actor Seller
+    participant FS as Flash Sale Service
+    participant PS as Product Service
+    participant PG as PostgreSQL
+
+    Seller-&gt;&gt;FS: POST /flash-sales/{id}/items (product_id)
+    FS-&gt;&gt;FS: Validate session.status = UPCOMING
+    FS-&gt;&gt;FS: Validate NOW() &lt; registration_deadline
+    FS-&gt;&gt;PS: Verify product belongs to seller
+    PS--&gt;&gt;FS: OK (owner confirmed)
+    FS-&gt;&gt;PG: INSERT fs_items (session_id, product_id, discount_applied)
+    FS--&gt;&gt;Seller: 201 Created (auto-approved)</pre>
+<h3>1.3 Session Auto-Transition (Redis ZSET Worker)</h3>
+<pre class="mermaid">sequenceDiagram
+    participant Worker as Redis Worker
+    participant Redis
+    participant FS as Flash Sale Service
+    participant PG as PostgreSQL
+    participant Kafka
+    participant PS as Product Service
+    participant SS as Search Service
+
+    loop Every 100ms
+        Worker-&gt;&gt;Redis: ZRANGEBYSCORE flash_sale:triggers -inf &lt;now&gt; LIMIT 0 10
+        alt Trigger found (session_start)
+            Worker-&gt;&gt;Redis: ZREM flash_sale:triggers &lt;trigger&gt; (atomic)
+            Worker-&gt;&gt;PG: UPDATE fs_sessions SET status=ACTIVE
+            Worker-&gt;&gt;Kafka: flash_sale.session_started
+            Kafka-&gt;&gt;PS: Consume event
+            PS-&gt;&gt;PS: Query fs_items, calculate flash_price per SKU
+            PS-&gt;&gt;Kafka: flash_sale.price_sync (action=activate)
+            Kafka-&gt;&gt;SS: Consume, update ES with flash prices
+        else Trigger found (session_end)
+            Worker-&gt;&gt;Redis: ZREM flash_sale:triggers &lt;trigger&gt; (atomic)
+            Worker-&gt;&gt;PG: UPDATE fs_sessions SET status=ENDED
+            Worker-&gt;&gt;Kafka: flash_sale.session_ended
+            Kafka-&gt;&gt;PS: Consume event, reset prices
+            PS-&gt;&gt;Kafka: flash_sale.price_sync (action=deactivate)
+            Kafka-&gt;&gt;SS: Consume, reset ES prices to original
+        end
+    end</pre>
+<h3>1.4 Redis Trigger Latency Comparison</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Max Latency</th>
+<th>Precision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cron 1 min</td>
+<td>60,000ms</td>
+<td>+/- 30s</td>
+</tr>
+<tr>
+<td>Redis Trigger (sleep 100ms)</td>
+<td>100ms</td>
+<td>+/- 50ms</td>
+</tr>
+<tr>
+<td>Redis Blocking BZPOPMIN</td>
+<td>0ms</td>
+<td>Exact</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>2. Product Checkout Flow</h2>
+<h3>2.1 Browse Catalog</h3>
+<pre class="mermaid">sequenceDiagram
+    actor Customer
+    participant PS as Product Service
+    participant PG as PostgreSQL
+    participant ES as Elasticsearch
+
+    Customer-&gt;&gt;PS: GET /products?category=X&amp;sort=price
+    PS-&gt;&gt;ES: Search query with filters
+    ES--&gt;&gt;PS: Product listing (SKU-first, field-collapsed)
+    PS--&gt;&gt;Customer: Paginated product cards (min price, thumbnail)</pre>
+<h3>2.2 Product Detail with Variant Selection</h3>
+<pre class="mermaid">sequenceDiagram
+    actor Customer
+    participant PS as Product Service
+    participant PG as PostgreSQL
+
+    Customer-&gt;&gt;PS: GET /products/{id}
+    PS-&gt;&gt;PG: SELECT product + variants + images
+    PS--&gt;&gt;Customer: Product detail, variant matrix, gallery
+    Customer-&gt;&gt;Customer: Select color/size combination
+    Note over Customer: Frontend maps variant_attributes to specific variant
+    Customer-&gt;&gt;Customer: Shows variant-specific price, stock, image</pre>
+<h3>2.3 Add to Cart</h3>
+<pre class="mermaid">sequenceDiagram
+    actor Customer
+    participant PS as Product Service
+    participant PG as PostgreSQL
+    participant Kafka
+
+    Customer-&gt;&gt;PS: POST /cart/items (variant_id, quantity)
+    PS-&gt;&gt;PG: Check product_variant.stock_quantity &gt;= quantity
+    alt Stock insufficient
+        PS--&gt;&gt;Customer: 422 Insufficient stock
+    else Stock OK
+        PS-&gt;&gt;PG: UPSERT cart_item (price_snapshot = current price)
+        PS--&gt;&gt;Customer: 200 Cart updated
+    end</pre>
+<h3>2.4 View Cart (Lazy Evaluation)</h3>
+<pre class="mermaid">sequenceDiagram
+    actor Customer
+    participant PS as Product Service
+    participant PG as PostgreSQL
+
+    Customer-&gt;&gt;PS: GET /cart
+    PS-&gt;&gt;PG: SELECT cart_items WHERE cart_id = customer&#x27;s cart
+    PS-&gt;&gt;PG: Batch SELECT product_variants for all cart items
+    loop Each cart item
+        PS-&gt;&gt;PS: Compare price_snapshot vs current price
+        PS-&gt;&gt;PS: Check stock_quantity
+        PS-&gt;&gt;PS: Check variant.status
+    end
+    PS--&gt;&gt;Customer: Cart with flags: price_changed, out_of_stock, unavailable</pre>
+<h3>2.5 Checkout Preview</h3>
+<pre class="mermaid">sequenceDiagram
+    actor Customer
+    participant PS as Product Service
+    participant Redis
+
+    Customer-&gt;&gt;PS: POST /v1/cart/checkout/preview (item_ids[])
+    PS-&gt;&gt;PS: Validate ALL items (price, stock, status)
+    alt Any validation fails
+        PS--&gt;&gt;Customer: 409 Conflict (per-item details)
+    else All valid
+        PS-&gt;&gt;Redis: SET preview_token TTL 10min
+        PS--&gt;&gt;Customer: 200 (preview_token, expires_at, items summary)
+    end</pre>
+<h3>2.6 Place Order (Checkout Submit)</h3>
+<pre class="mermaid">sequenceDiagram
+    actor Customer
+    participant PS as Product Service
+    participant Redis
+    participant OS as Order Service
+    participant PayS as Payment Service
+
+    Note over Customer,PayS: Step 1: Checkout Preview
+    Customer-&gt;&gt;PS: POST /v1/cart/checkout/preview (item_ids[])
+    PS-&gt;&gt;PS: Validate ALL items (price, stock, variant)
+    alt Validation fails
+        PS--&gt;&gt;Customer: 409 Conflict (per-item details)
+    else All valid
+        PS-&gt;&gt;Redis: SET preview_token TTL 10min
+        PS--&gt;&gt;Customer: 200 (preview_token, expires_at)
+    end
+
+    Note over Customer,PayS: Step 2: Checkout Submit
+    Customer-&gt;&gt;PS: POST /v1/cart/checkout/submit (preview_token, address_snapshot)
+    PS-&gt;&gt;PS: Validate preview_token (Redis)
+    PS-&gt;&gt;PS: Re-validate stock for ALL items
+    PS-&gt;&gt;Redis: Reserve stock (DECR + stock_reservation PENDING)
+    PS-&gt;&gt;Redis: SET checkout:session:{sessionId} TTL 15min
+    PS-&gt;&gt;OS: Kafka: order.checkout_submitted (session_id, items, address)
+    PS--&gt;&gt;Customer: 200 (session_id, total)
+
+    Note over Customer,PayS: Step 3: Order Creation + Saga
+    OS-&gt;&gt;OS: Create ParentOrder + N sub-orders
+    OS-&gt;&gt;PayS: Create payment intent
+    PayS--&gt;&gt;OS: Payment intent created
+    OS--&gt;&gt;Customer: Order confirmed (pending payment)
+
+    Note over Customer,PayS: Step 4: Payment Resolution
+    alt Payment success
+        PayS-&gt;&gt;OS: payment.success
+        OS-&gt;&gt;PayS: Kafka: order.paid
+        OS-&gt;&gt;OS: Update order PAID
+        PayS-&gt;&gt;PS: Kafka: order.paid
+        PS-&gt;&gt;PS: confirmReservation() â†’ CONFIRMED
+    else Payment failed
+        PayS-&gt;&gt;OS: payment.failed
+        OS-&gt;&gt;PayS: Kafka: order.payment_failed
+        OS-&gt;&gt;OS: Update order CANCELLED
+        PayS-&gt;&gt;PS: Kafka: order.payment_failed
+        PS-&gt;&gt;PS: releaseReservation() â†’ RELEASED
+    end</pre>
+<h3>2.7 Payment Resolution</h3>
+<pre class="mermaid">sequenceDiagram
+    participant Stripe
+    participant PayS as Payment Service
+    participant Kafka
+    participant OS as Order Service
+    participant PS as Product Service
+
+    Stripe-&gt;&gt;PayS: Webhook payment_intent.succeeded
+    PayS-&gt;&gt;Kafka: payment.success
+    Kafka-&gt;&gt;OS: Consume â†’ update orders PAID
+    Kafka-&gt;&gt;PayS: order.paid
+    PayS-&gt;&gt;PS: Consume â†’ confirmReservation()
+
+    alt Payment fails
+        Stripe-&gt;&gt;PayS: Webhook payment_intent.payment_failed
+        PayS-&gt;&gt;Kafka: payment.failed
+        Kafka-&gt;&gt;OS: Consume â†’ update orders CANCELLED
+        Kafka-&gt;&gt;PayS: order.payment_failed
+        PayS-&gt;&gt;PS: Consume â†’ releaseReservation()
+    end</pre>
+<hr>
+<h2>3. Order Lifecycle Flow</h2>
+<h3>3.1 Full Order States</h3>
+<pre class="mermaid">stateDiagram-v2
+    [*] --&gt; PENDING_PAYMENT: Checkout initiated
+    PENDING_PAYMENT --&gt; PAID: payment.success
+    PENDING_PAYMENT --&gt; CANCELLED: payment.failed / timeout
+    PAID --&gt; SHIPPING: Seller ships
+    SHIPPING --&gt; DELIVERED: Buyer confirms receipt
+    DELIVERED --&gt; RETURNED: RTS flow
+    RETURNED --&gt; REFUNDED: Refund processed</pre>
+<h3>3.2 Return To Sender (RTS) Flow</h3>
+<pre class="mermaid">sequenceDiagram
+    actor Seller
+    participant OS as Order Service
+    participant Kafka
+    participant RefS as Refund Service
+    participant PS as Product Service
+
+    Seller-&gt;&gt;OS: POST /orders/{id}/return-to-sender (tracking, carrier)
+    OS-&gt;&gt;OS: Update order status
+    OS-&gt;&gt;Kafka: order.returned
+    Kafka-&gt;&gt;RefS: Auto-create full refund
+    Kafka-&gt;&gt;PS: Restore stock (INCR Redis, UPDATE DB)
+    Kafka-&gt;&gt;RefS: Process Stripe refund (pre-payout / transfer reversal)</pre>
+<hr>
+<h2>4. Product Lifecycle</h2>
+<pre class="mermaid">stateDiagram-v2
+    [*] --&gt; active: Seller creates product
+    active --&gt; out_of_stock: All variants reach stock=0
+    out_of_stock --&gt; active: Any variant restocked
+    active --&gt; inactive: Seller unpublishes
+    inactive --&gt; active: Seller publishes
+    out_of_stock --&gt; inactive: Seller unpublishes</pre>
+<hr>
+<h2>5. AI Chat Message Flow</h2>
+<pre class="mermaid">sequenceDiagram
+    actor User
+    participant AC as AI Chat Service
+    participant Redis
+    participant LLM
+    participant Tool as Core Services
+
+    User-&gt;&gt;AC: POST /chat (message) via SSE
+    AC-&gt;&gt;Redis: Check rate limit (rate:{userId})
+    AC-&gt;&gt;AC: INSERT chat_messages (role=USER)
+    AC-&gt;&gt;LLM: Send message + context
+    LLM--&gt;&gt;AC: Tool call decision
+    alt No tool needed
+        LLM--&gt;&gt;AC: Stream tokens (delta events)
+    else Tool needed (Muc 1/2)
+        AC-&gt;&gt;Tool: Execute tool (e.g., getOrderDetail)
+        Tool--&gt;&gt;AC: Result
+        AC-&gt;&gt;AC: INSERT (TOOL_CALL, TOOL_RESULT)
+        AC-&gt;&gt;LLM: Send tool result
+        LLM--&gt;&gt;AC: Stream tokens (delta events)
+    else Tool needed (Muc 3)
+        AC-&gt;&gt;AC: INSERT pending_confirmation
+        AC-&gt;&gt;Redis: SET pending:{confirmId} (TTL 5min)
+        AC--&gt;&gt;User: confirmation_required event
+        User-&gt;&gt;AC: POST /confirm (token, action)
+        AC-&gt;&gt;Tool: Execute confirmed action
+        Tool--&gt;&gt;AC: Result
+        AC--&gt;&gt;User: Stream result via SSE
+    end
+    AC--&gt;&gt;User: done event (messageId, tokensUsed)</pre>
+<hr></div></section>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script><script>mermaid.initialize({startOnLoad:true,securityLevel:'strict'});</script>
+  <script>
+    function normalizeDocSearchText(value) {
+      return (value || '').toString().toLowerCase();
+    }
+
+    function escapeDocHtml(value) {
+      return (value || '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderSearchIndexResults(container, items, query) {
+      if (!container) return;
+      var normalized = normalizeDocSearchText(query);
+      if (!normalized) {
+        container.innerHTML = '';
+        container.classList.add('d-none');
+        return;
+      }
+      var matches = items.filter(function(item) {
+        var haystack = [
+          item.id,
+          item.title,
+          item.type,
+          item.group,
+          item.status,
+          item.summary,
+          (item.tags || []).join(' '),
+          (item.related_ids || []).join(' '),
+          item.search_text
+        ].map(normalizeDocSearchText).join(' ');
+        return haystack.indexOf(normalized) !== -1;
+      }).slice(0, 12);
+
+      if (!matches.length) {
+        container.innerHTML = '<div class="text-secondary small">No indexed results found.</div>';
+        container.classList.remove('d-none');
+        return;
+      }
+
+      container.innerHTML = matches.map(function(item) {
+        var title = escapeDocHtml(item.title || item.id || 'Untitled');
+        var path = escapeDocHtml(item.path || '#');
+        var meta = escapeDocHtml([item.type, item.group, item.status].filter(Boolean).join(' | '));
+        return '<a class="d-block border rounded p-2 mb-2 text-decoration-none bg-white" href="' + path + '">' +
+          '<div class="fw-semibold">' + title + '</div>' +
+          '<div class="text-secondary small">' + meta + '</div>' +
+          '</a>';
+      }).join('');
+      container.classList.remove('d-none');
+    }
+
+    var searchIndexPromise = null;
+    function loadDocSearchIndex(path, inlineSelector) {
+      var inlineNode = inlineSelector ? document.querySelector(inlineSelector) : null;
+      if (inlineNode && inlineNode.textContent.trim()) {
+        try {
+          return Promise.resolve(JSON.parse(inlineNode.textContent));
+        } catch (error) {
+          return Promise.resolve(null);
+        }
+      }
+      if (!path) return Promise.resolve(null);
+      if (!searchIndexPromise) {
+        searchIndexPromise = fetch(path).then(function(response) {
+          if (!response.ok) return null;
+          return response.json();
+        }).catch(function() { return null; });
+      }
+      return searchIndexPromise;
+    }
+
+    document.querySelectorAll('[data-doc-filter-target]').forEach(function(input) {
+      var selector = input.getAttribute('data-doc-filter-target');
+      var items = Array.prototype.slice.call(document.querySelectorAll(selector));
+      var indexPath = input.getAttribute('data-doc-search-index');
+      var inlineIndexSelector = input.getAttribute('data-doc-search-inline');
+      var resultSelector = input.getAttribute('data-doc-search-results');
+      var resultContainer = resultSelector ? document.querySelector(resultSelector) : null;
+      input.addEventListener('input', function() {
+        var query = input.value.trim().toLowerCase();
+        items.forEach(function(item) {
+          var haystack = (item.getAttribute('data-doc-filter-text') || item.textContent || '').toLowerCase();
+          item.classList.toggle('d-none', query && haystack.indexOf(query) === -1);
+        });
+        loadDocSearchIndex(indexPath, inlineIndexSelector).then(function(index) {
+          if (index && Array.isArray(index.items)) {
+            renderSearchIndexResults(resultContainer, index.items, query);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

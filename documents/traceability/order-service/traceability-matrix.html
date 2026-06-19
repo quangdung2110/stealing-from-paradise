@@ -1,0 +1,1132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Traceability Matrix â€” Order Service</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --doc-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      --doc-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --doc-bg: #f6f7f9;
+      --doc-panel: #ffffff;
+      --doc-border: #d9dee7;
+      --doc-muted: #5c6675;
+      --doc-text: #162033;
+      --doc-accent: #1d4ed8;
+      --doc-accent-soft: #eff6ff;
+    }
+
+    html { scroll-padding-top: 5rem; }
+    body {
+      background: var(--doc-bg);
+      color: var(--doc-text);
+      font-family: var(--doc-font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      letter-spacing: 0;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      text-rendering: optimizeLegibility;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      line-height: 1.22;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+
+    a { color: var(--doc-accent); }
+    a:hover { color: #123b9c; }
+
+    .doc-topbar {
+      background: rgba(255, 255, 255, .96);
+      border-bottom: 1px solid var(--doc-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .doc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    .doc-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .doc-sidebar {
+      position: sticky;
+      top: 5rem;
+      max-height: calc(100vh - 6rem);
+      overflow: auto;
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+    }
+
+    .doc-main {
+      min-width: 0;
+    }
+
+    .doc-hero,
+    .doc-panel {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+    }
+
+    .doc-hero {
+      padding: 1.25rem;
+    }
+
+    .doc-section {
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-kpi {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+      height: 100%;
+    }
+
+    .doc-card {
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      background: var(--doc-panel);
+      height: 100%;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .doc-card:hover {
+      border-color: #adc6ff;
+      box-shadow: 0 .5rem 1.5rem rgba(22, 32, 51, .08);
+      transform: translateY(-1px);
+    }
+
+    .doc-card:focus-visible,
+    .doc-link-list a:focus-visible,
+    .nav-link:focus-visible,
+    .btn:focus-visible {
+      outline: 3px solid rgba(29, 78, 216, .35);
+      outline-offset: 2px;
+    }
+
+    .doc-card .card-body {
+      padding: 1rem;
+    }
+
+    .doc-link-list {
+      display: grid;
+      gap: .5rem;
+      padding-left: 0;
+      margin-bottom: 0;
+      list-style: none;
+    }
+
+    .doc-link-list a {
+      display: block;
+      padding: .625rem .75rem;
+      border: 1px solid var(--doc-border);
+      border-radius: .5rem;
+      background: #fff;
+      text-decoration: none;
+    }
+
+    .doc-link-list a:hover {
+      background: var(--doc-accent-soft);
+      border-color: #bfdbfe;
+    }
+
+    .doc-table {
+      --bs-table-bg: #fff;
+      border: 1px solid var(--doc-border);
+    }
+
+    .doc-table thead th {
+      background: #eef2f7;
+      color: #283549;
+      white-space: nowrap;
+    }
+
+    pre {
+      background: #101827;
+      color: #f8fafc;
+      font-family: var(--doc-font-mono);
+      font-size: .875rem;
+      line-height: 1.55;
+      padding: 1rem;
+      border-radius: .75rem;
+      overflow: auto;
+    }
+
+    pre.mermaid {
+      background: #ffffff;
+      color: var(--doc-text);
+      border: 1px solid var(--doc-border);
+      min-height: 8rem;
+    }
+
+    code {
+      color: #9a3412;
+      font-family: var(--doc-font-mono);
+      font-size: .9em;
+    }
+
+    .doc-meta {
+      color: var(--doc-muted);
+      font-size: .875rem;
+    }
+
+    .doc-anchor {
+      scroll-margin-top: 5rem;
+    }
+
+    @media (max-width: 991.98px) {
+      .doc-shell { padding: .875rem; }
+      .doc-layout { grid-template-columns: 1fr; }
+      .doc-sidebar {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    @media print {
+      .doc-topbar,
+      .doc-sidebar,
+      .btn,
+      .nav-tabs {
+        display: none !important;
+      }
+      body { background: #fff; }
+      .doc-shell { max-width: none; padding: 0; }
+      .doc-layout { display: block; }
+      .doc-hero,
+      .doc-panel,
+      .doc-card,
+      .doc-kpi {
+        border: 1px solid #bbb;
+        box-shadow: none !important;
+      }
+    }
+      pre code { color: inherit; background: transparent; font-size: inherit; padding: 0; }
+    pre { white-space: pre; }
+  </style>
+</head>
+<body>
+  <header class="doc-topbar sticky-top">
+    <nav class="navbar navbar-expand-lg">
+      <div class="container-fluid px-3">
+        <a class="navbar-brand fw-semibold" href="../../index.html">Stealing-from-Paradise</a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <a class="btn btn-sm btn-outline-secondary" href="../../index.html">Home</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/overview.html">Overview</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/architecture.html">Architecture</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/domain.html">Domain Model and Rules</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/use-cases.html">Use Cases</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/business-flows.html">Business Flows</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/interfaces.html">Interfaces</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/messaging.html">Messaging and Realtime</a>
+<a class="btn btn-sm btn-outline-secondary" href="../../groups/traceability.html">Traceability</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="doc-shell">
+    <div class="doc-layout">
+      <aside class="doc-sidebar">
+        <div class="fw-semibold mb-2">Contents</div>
+        <nav class="nav nav-pills flex-column gap-1">
+          <a class="nav-link" href="../../groups/overview.html">Overview</a>
+<a class="nav-link" href="../../groups/architecture.html">Architecture</a>
+<a class="nav-link" href="../../groups/domain.html">Domain Model and Rules</a>
+<a class="nav-link" href="../../groups/business-flows.html">Business Flows</a>
+<a class="nav-link" href="../../groups/use-cases.html">Use Cases</a>
+<a class="nav-link" href="../../groups/interfaces.html">Interfaces</a>
+<a class="nav-link" href="../../groups/messaging.html">Messaging and Realtime</a>
+<a class="nav-link" href="../../groups/identity.html">Identity and Security</a>
+<a class="nav-link" href="../../groups/platform.html">Platform and Operations</a>
+<a class="nav-link" href="../../groups/deployment.html">Deployment</a>
+<a class="nav-link" href="../../groups/observability.html">Observability</a>
+<a class="nav-link" href="../../groups/integrations.html">Integrations</a>
+<a class="nav-link" href="../../groups/traceability.html">Traceability</a>
+<a class="nav-link" href="../matrix.html">Traceability Matrix</a>
+        </nav>
+      </aside>
+
+      <main class="doc-main">
+        <section class="doc-hero doc-section">
+          <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div>
+              <h1 class="h2 mb-1">Traceability Matrix â€” Order Service</h1>
+              <div class="doc-meta">DOC-TRACEABILITY-ORDER-SERVICE-TRACEABILITY-MATRIX | 2026-06-09</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2"><span class="badge text-bg-info">traceability</span> <span class="badge text-bg-light">order-service</span></div>
+          </div>
+        </section>
+
+        <section class="doc-section"><div class="doc-panel p-3 p-md-4 doc-prose"><h1>Traceability Matrix â€” Order Service</h1>
+<p><strong>Document ID:</strong> TRACE-ORDER-001
+<strong>Service:</strong> order-service (port 8083)
+<strong>Last Updated:</strong> 2026-05-11 (FR-ORDER-019 added; UC-ORDER-008 Seller Cancel re-activated; BR-ORDER-026 + <code>seller.order_cancelled</code> added)</p>
+<hr>
+<h2>Matrix: FR â†’ BR â†’ UC â†’ Entity â†’ API â†’ State</h2>
+<table>
+<thead>
+<tr>
+<th>FR ID</th>
+<th>Description</th>
+<th>BR IDs</th>
+<th>UC IDs</th>
+<th>Entity IDs</th>
+<th>API Contract</th>
+<th>State Transition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-ORDER-001</td>
+<td>Multi-Vendor Checkout</td>
+<td>BR-001..009</td>
+<td>UC-ORDER-001</td>
+<td>ENTITY-001,002,003</td>
+<td>product-service api-post-checkout-submit.yaml</td>
+<td>-&gt; PENDING</td>
+</tr>
+<tr>
+<td>FR-ORDER-002</td>
+<td>Checkout Stock Reservation</td>
+<td>BR-ORDER-002</td>
+<td>UC-ORDER-001</td>
+<td>ENTITY-003</td>
+<td>â€”</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>FR-ORDER-003</td>
+<td>Checkout Address Validation</td>
+<td>BR-ORDER-003</td>
+<td>UC-ORDER-001</td>
+<td>ENTITY-002</td>
+<td>â€”</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>FR-ORDER-004</td>
+<td>Order Code Generation</td>
+<td>BR-ORDER-006</td>
+<td>â€”</td>
+<td>ENTITY-002</td>
+<td>â€”</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>FR-ORDER-005</td>
+<td>Buyer Order Listing</td>
+<td>â€”</td>
+<td>UC-ORDER-002</td>
+<td>ENTITY-002</td>
+<td>api-get-orders.yaml</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>FR-ORDER-006</td>
+<td>Order Detail</td>
+<td>â€”</td>
+<td>UC-ORDER-002</td>
+<td>ENTITY-002,003</td>
+<td>api-get-orders.yaml</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>FR-ORDER-007</td>
+<td>Parent Order Detail</td>
+<td>â€”</td>
+<td>UC-ORDER-002</td>
+<td>ENTITY-001,002</td>
+<td>â€”</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>FR-ORDER-008</td>
+<td>Buyer Cancel Order</td>
+<td>BR-011,021,025</td>
+<td>UC-ORDER-003</td>
+<td>ENTITY-002</td>
+<td>api-post-orders-cancel.yaml</td>
+<td>PENDINGâ†’CANCELLED, PAIDâ†’CANCELLED</td>
+</tr>
+<tr>
+<td>FR-ORDER-019</td>
+<td>Seller Cancel Order (PAID, pre-ship)</td>
+<td>BR-011,021,026</td>
+<td>UC-ORDER-008</td>
+<td>ENTITY-002</td>
+<td>api-post-orders-cancel.yaml</td>
+<td>PAIDâ†’CANCELLED</td>
+</tr>
+<tr>
+<td>FR-ORDER-009</td>
+<td>Seller Update Tracking</td>
+<td>BR-ORDER-013</td>
+<td>UC-ORDER-004</td>
+<td>ENTITY-002</td>
+<td>api-put-orders-ship.yaml</td>
+<td>PAIDâ†’SHIPPING</td>
+</tr>
+<tr>
+<td>FR-ORDER-010</td>
+<td>Buyer Confirm Delivery</td>
+<td>BR-ORDER-014</td>
+<td>UC-ORDER-005</td>
+<td>ENTITY-002</td>
+<td>api-put-orders-ship.yaml</td>
+<td>SHIPPINGâ†’DELIVERED</td>
+</tr>
+<tr>
+<td>FR-ORDER-011</td>
+<td>Auto-Confirm Delivery (JOB-22)</td>
+<td>BR-ORDER-015</td>
+<td>â€”</td>
+<td>ENTITY-002</td>
+<td>â€”</td>
+<td>SHIPPINGâ†’DELIVERED</td>
+</tr>
+<tr>
+<td>FR-ORDER-012</td>
+<td>Seller RTS</td>
+<td>BR-016,022</td>
+<td>UC-ORDER-006</td>
+<td>ENTITY-002</td>
+<td>api-post-orders-return.yaml</td>
+<td>SHIPPINGâ†’RETURNED</td>
+</tr>
+<tr>
+<td>FR-ORDER-013</td>
+<td>Buyer Refund Request</td>
+<td>BR-017,018,019</td>
+<td>UC-ORDER-006</td>
+<td>ENTITY-002</td>
+<td>api-post-orders-return.yaml</td>
+<td>DELIVEREDâ†’REFUNDED/PARTIALLY_REFUNDED</td>
+</tr>
+<tr>
+<td>FR-ORDER-014</td>
+<td>Seller Order Listing</td>
+<td>â€”</td>
+<td>UC-ORDER-007</td>
+<td>ENTITY-002</td>
+<td>api-get-orders.yaml</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>FR-ORDER-015</td>
+<td>Seller Dashboard</td>
+<td>â€”</td>
+<td>â€”</td>
+<td>ENTITY-002</td>
+<td>api-get-orders.yaml</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>FR-ORDER-016</td>
+<td>Kafka Event Production</td>
+<td>BR-009..016</td>
+<td>â€”</td>
+<td>â€”</td>
+<td>â€”</td>
+<td>ALL</td>
+</tr>
+<tr>
+<td>FR-ORDER-017</td>
+<td>Kafka Event Consumption</td>
+<td>â€”</td>
+<td>â€”</td>
+<td>â€”</td>
+<td>â€”</td>
+<td>PENDINGâ†’PAID, etc.</td>
+</tr>
+<tr>
+<td>FR-ORDER-018</td>
+<td>Saga Orchestration (Axon)</td>
+<td>â€”</td>
+<td>UC-ORDER-001</td>
+<td>â€”</td>
+<td>â€”</td>
+<td>Payment lifecycle</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Matrix: Use Case â†’ FR â†’ API â†’ State</h2>
+<table>
+<thead>
+<tr>
+<th>UC ID</th>
+<th>Use Case</th>
+<th>Actor</th>
+<th>FR IDs</th>
+<th>API</th>
+<th>State Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UC-ORDER-001</td>
+<td>Checkout</td>
+<td>BUYER</td>
+<td>FR-001,002,003,004</td>
+<td>POST /v1/cart/checkout/submit</td>
+<td>â†’ PENDING</td>
+</tr>
+<tr>
+<td>UC-ORDER-002</td>
+<td>View Orders</td>
+<td>BUYER</td>
+<td>FR-005,006,007</td>
+<td>GET /orders, /orders/{id}, /orders/parent/{id}</td>
+<td>None (read)</td>
+</tr>
+<tr>
+<td>UC-ORDER-003</td>
+<td>Cancel Order (Buyer)</td>
+<td>BUYER</td>
+<td>FR-ORDER-008</td>
+<td>POST /orders/{id}/cancel</td>
+<td>PENDINGâ†’CANCELLED, PAIDâ†’CANCELLED</td>
+</tr>
+<tr>
+<td>UC-ORDER-008</td>
+<td>Cancel Order (Seller)</td>
+<td>SELLER</td>
+<td>FR-ORDER-008,019</td>
+<td>POST /orders/{id}/cancel</td>
+<td>PAIDâ†’CANCELLED (tracking_number IS NULL)</td>
+</tr>
+<tr>
+<td>UC-ORDER-004</td>
+<td>Ship Order</td>
+<td>SELLER</td>
+<td>FR-ORDER-009</td>
+<td>PUT /orders/{id}/tracking</td>
+<td>PAIDâ†’SHIPPING</td>
+</tr>
+<tr>
+<td>UC-ORDER-005</td>
+<td>Confirm Delivery</td>
+<td>BUYER</td>
+<td>FR-010,011</td>
+<td>POST /orders/{id}/confirm-received</td>
+<td>SHIPPINGâ†’DELIVERED</td>
+</tr>
+<tr>
+<td>UC-ORDER-006</td>
+<td>Request Return</td>
+<td>BUYER/SELLER</td>
+<td>FR-012,013</td>
+<td>POST /orders/{id}/return-to-sender, POST /orders/{id}/refunds</td>
+<td>SHIPPINGâ†’RETURNED, DELIVEREDâ†’REFUNDED</td>
+</tr>
+<tr>
+<td>UC-ORDER-007</td>
+<td>View Seller Orders</td>
+<td>SELLER</td>
+<td>FR-014,015</td>
+<td>GET /sellers/me/orders, GET /sellers/me/dashboard</td>
+<td>None (read)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Matrix: Business Rule â†’ Entity â†’ State</h2>
+<table>
+<thead>
+<tr>
+<th>BR ID</th>
+<th>Rule Summary</th>
+<th>Entity</th>
+<th>State Transition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BR-ORDER-001</td>
+<td>Cart not empty</td>
+<td>ENTITY-003</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>BR-ORDER-002</td>
+<td>Stock availability check</td>
+<td>ENTITY-003</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>BR-ORDER-003</td>
+<td>Address validation</td>
+<td>ENTITY-002</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>BR-ORDER-004</td>
+<td>Multi-vendor split</td>
+<td>ENTITY-001,002</td>
+<td>â†’ PENDING</td>
+</tr>
+<tr>
+<td>BR-ORDER-005</td>
+<td>Parent financial integrity</td>
+<td>ENTITY-001,002</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>BR-ORDER-006</td>
+<td>Order code generation</td>
+<td>ENTITY-002</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>BR-ORDER-007</td>
+<td>Shipping deadline (3 days)</td>
+<td>ENTITY-002</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>BR-ORDER-008</td>
+<td>Checkout idempotency</td>
+<td>ENTITY-001</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>BR-ORDER-009</td>
+<td>Kafka event on checkout</td>
+<td>â€”</td>
+<td>â†’ PENDING</td>
+</tr>
+<tr>
+<td>BR-ORDER-010</td>
+<td>PENDINGâ†’PAID</td>
+<td>ENTITY-002</td>
+<td>PENDINGâ†’PAID</td>
+</tr>
+<tr>
+<td>BR-ORDER-011</td>
+<td>PENDING/PAIDâ†’CANCELLED (buyer or seller per BR-021)</td>
+<td>ENTITY-002</td>
+<td>PENDINGâ†’CANCELLED, PAIDâ†’CANCELLED</td>
+</tr>
+<tr>
+<td>BR-ORDER-012</td>
+<td>Auto-cancel (JOB-13)</td>
+<td>ENTITY-002</td>
+<td>PENDINGâ†’CANCELLED</td>
+</tr>
+<tr>
+<td>BR-ORDER-013</td>
+<td>PAIDâ†’SHIPPING</td>
+<td>ENTITY-002</td>
+<td>PAIDâ†’SHIPPING</td>
+</tr>
+<tr>
+<td>BR-ORDER-014</td>
+<td>SHIPPINGâ†’DELIVERED (buyer)</td>
+<td>ENTITY-002</td>
+<td>SHIPPINGâ†’DELIVERED</td>
+</tr>
+<tr>
+<td>BR-ORDER-015</td>
+<td>SHIPPINGâ†’DELIVERED (auto)</td>
+<td>ENTITY-002</td>
+<td>SHIPPINGâ†’DELIVERED</td>
+</tr>
+<tr>
+<td>BR-ORDER-016</td>
+<td>SHIPPINGâ†’RETURNED (RTS)</td>
+<td>ENTITY-002</td>
+<td>SHIPPINGâ†’RETURNED</td>
+</tr>
+<tr>
+<td>BR-ORDER-017</td>
+<td>Return window (7 days)</td>
+<td>ENTITY-002</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>BR-ORDER-018</td>
+<td>DELIVEREDâ†’REFUNDED</td>
+<td>ENTITY-002</td>
+<td>DELIVEREDâ†’REFUNDED</td>
+</tr>
+<tr>
+<td>BR-ORDER-019</td>
+<td>DELIVEREDâ†’PARTIALLY_REFUNDED</td>
+<td>ENTITY-002</td>
+<td>DELIVEREDâ†’PARTIALLY_REFUNDED</td>
+</tr>
+<tr>
+<td>BR-ORDER-020</td>
+<td>RETURNEDâ†’REFUNDED (auto)</td>
+<td>ENTITY-002</td>
+<td>RETURNEDâ†’REFUNDED</td>
+</tr>
+<tr>
+<td>BR-ORDER-021</td>
+<td>Cancellation actor rules (BUYER: PENDING/PAID; SELLER: PAID + tracking_number IS NULL)</td>
+<td>ENTITY-002</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>BR-ORDER-022</td>
+<td>RTS vs Buyer Refund</td>
+<td>ENTITY-002</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>BR-ORDER-023</td>
+<td>Parent status sync</td>
+<td>ENTITY-001,002</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>BR-ORDER-024</td>
+<td>Immutable shipping snapshot</td>
+<td>ENTITY-002</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>BR-ORDER-025</td>
+<td>Stock reservation release</td>
+<td>ENTITY-003</td>
+<td>â€”</td>
+</tr>
+<tr>
+<td>BR-ORDER-026</td>
+<td>Seller cancel â€” full refund + reason â‰¥10 chars + emit <code>seller.order_cancelled</code></td>
+<td>ENTITY-002</td>
+<td>PAIDâ†’CANCELLED</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Matrix: API Contract â†’ Operations</h2>
+<table>
+<thead>
+<tr>
+<th>API Contract File</th>
+<th>Method</th>
+<th>Path</th>
+<th>Auth</th>
+<th>UC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>api-post-orders-checkout.yaml</td>
+<td>POST</td>
+<td>/orders/checkout</td>
+<td>BUYER</td>
+<td>UC-ORDER-001</td>
+</tr>
+<tr>
+<td>api-get-orders.yaml</td>
+<td>GET</td>
+<td>/orders</td>
+<td>BUYER</td>
+<td>UC-ORDER-002</td>
+</tr>
+<tr>
+<td>api-get-orders.yaml</td>
+<td>GET</td>
+<td>/orders/{id}</td>
+<td>BUYER|SELLER</td>
+<td>UC-ORDER-002</td>
+</tr>
+<tr>
+<td>api-get-orders.yaml</td>
+<td>GET</td>
+<td>/orders/parent/{id}</td>
+<td>BUYER</td>
+<td>UC-ORDER-002</td>
+</tr>
+<tr>
+<td>api-get-orders.yaml</td>
+<td>GET</td>
+<td>/sellers/me/orders</td>
+<td>SELLER</td>
+<td>UC-ORDER-007</td>
+</tr>
+<tr>
+<td>api-get-orders.yaml</td>
+<td>GET</td>
+<td>/sellers/me/dashboard</td>
+<td>SELLER</td>
+<td>UC-ORDER-007</td>
+</tr>
+<tr>
+<td>api-put-orders-ship.yaml</td>
+<td>PUT</td>
+<td>/orders/{id}/tracking</td>
+<td>SELLER</td>
+<td>UC-ORDER-004</td>
+</tr>
+<tr>
+<td>api-put-orders-ship.yaml</td>
+<td>POST</td>
+<td>/orders/{id}/confirm-received</td>
+<td>BUYER</td>
+<td>UC-ORDER-005</td>
+</tr>
+<tr>
+<td>api-post-orders-cancel.yaml</td>
+<td>POST</td>
+<td>/orders/{id}/cancel</td>
+<td>BUYER</td>
+<td>UC-ORDER-003</td>
+</tr>
+<tr>
+<td>api-post-orders-cancel.yaml</td>
+<td>POST</td>
+<td>/orders/{id}/cancel</td>
+<td>SELLER</td>
+<td>UC-ORDER-008</td>
+</tr>
+<tr>
+<td>api-post-orders-return.yaml</td>
+<td>POST</td>
+<td>/orders/{id}/return-to-sender</td>
+<td>SELLER</td>
+<td>UC-ORDER-006</td>
+</tr>
+<tr>
+<td>api-post-orders-return.yaml</td>
+<td>POST</td>
+<td>/orders/{id}/refunds</td>
+<td>BUYER</td>
+<td>UC-ORDER-006</td>
+</tr>
+<tr>
+<td>api-post-orders-return.yaml</td>
+<td>POST</td>
+<td>/orders/parent/{id}/refund</td>
+<td>BUYER</td>
+<td>UC-ORDER-006</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Matrix: Kafka Events â†’ Producers / Consumers</h2>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Producer</th>
+<th>Consumers</th>
+<th>Related State</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>order.created</code></td>
+<td>order-service</td>
+<td>product-service, search-service</td>
+<td>â†’ PENDING</td>
+</tr>
+<tr>
+<td><code>order.paid</code></td>
+<td>order-service</td>
+<td>â€”</td>
+<td>PENDINGâ†’PAID</td>
+</tr>
+<tr>
+<td><code>order.shipped</code></td>
+<td>order-service</td>
+<td>notification-service</td>
+<td>PAIDâ†’SHIPPING</td>
+</tr>
+<tr>
+<td><code>order.delivered</code></td>
+<td>order-service</td>
+<td>payment-service, notification-service</td>
+<td>SHIPPINGâ†’DELIVERED</td>
+</tr>
+<tr>
+<td><code>order.cancelled</code></td>
+<td>order-service</td>
+<td>product-service (release stock), identity-service (audit), notification-service</td>
+<td>PENDINGâ†’CANCELLED, PAIDâ†’CANCELLED</td>
+</tr>
+<tr>
+<td><code>seller.order_cancelled</code></td>
+<td>order-service (only when cancelled_by=SELLER)</td>
+<td>payment-service (auto-refund), notification-service (buyer apology), product-service (idempotent stock release)</td>
+<td>PAIDâ†’CANCELLED</td>
+</tr>
+<tr>
+<td><code>order.returned</code></td>
+<td>order-service</td>
+<td>payment-service, product-service, notification-service</td>
+<td>SHIPPINGâ†’RETURNED</td>
+</tr>
+<tr>
+<td><code>order.auto_cancelled</code></td>
+<td>order-service (JOB-13/Axon deadline)</td>
+<td>product-service, payment-service, notification-service</td>
+<td>PENDINGâ†’CANCELLED</td>
+</tr>
+<tr>
+<td><code>payment.requested</code></td>
+<td>order-service</td>
+<td>payment-service</td>
+<td>payment orchestration</td>
+</tr>
+<tr>
+<td><code>payment.success</code></td>
+<td>payment-service</td>
+<td>order-service</td>
+<td>â†’ PAID</td>
+</tr>
+<tr>
+<td><code>payment.failed</code></td>
+<td>payment-service</td>
+<td>order-service</td>
+<td>(retry/stay PENDING)</td>
+</tr>
+<tr>
+<td><code>refund.rts_completed</code></td>
+<td>refund-service</td>
+<td>order-service</td>
+<td>RETURNEDâ†’REFUNDED</td>
+</tr>
+<tr>
+<td><code>refund.admin_approved</code></td>
+<td>refund-service</td>
+<td>order-service</td>
+<td>â†’ REFUNDED/PARTIALLY_REFUNDED</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Use Cases &amp; Events to Business Flows</h2>
+<table>
+<thead>
+<tr>
+<th>Use Case / Event</th>
+<th>Business Flow</th>
+<th>Integration Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../../use-cases/order-service/uc-003-cancel-order.html">UC-ORDER-003</a></td>
+<td><a href="../../flows/cross-service/flow-order-cancellation.html">flow-order-cancellation</a></td>
+<td>Initiates manual order cancellation</td>
+</tr>
+<tr>
+<td><a href="../../use-cases/order-service/uc-006-request-return.html">UC-ORDER-006</a></td>
+<td><a href="../../flows/cross-service/flow-refund-processing.html">flow-refund-processing</a></td>
+<td>Initiates buyer partial/full refund request</td>
+</tr>
+<tr>
+<td><code>order.cancelled</code></td>
+<td><a href="../../flows/cross-service/flow-order-cancellation.html">flow-order-cancellation</a></td>
+<td>Published to trigger downstream stock/payment releases</td>
+</tr>
+<tr>
+<td><code>order.returned</code></td>
+<td><a href="../../flows/cross-service/flow-refund-processing.html">flow-refund-processing</a> (RTS)</td>
+<td>Published to trigger auto-refund creation</td>
+</tr>
+<tr>
+<td><code>refund.rts_completed</code> (consumed)</td>
+<td><a href="../../flows/cross-service/flow-refund-processing.html">flow-refund-processing</a> (RTS)</td>
+<td>Consumed to update order status to REFUNDED</td>
+</tr>
+<tr>
+<td><code>refund.admin_approved</code> (consumed)</td>
+<td><a href="../../flows/cross-service/flow-refund-processing.html">flow-refund-processing</a></td>
+<td>Consumed to mark order items as REFUNDED</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Document Inventory</h2>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Files</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Entity</td>
+<td>entity-parent-order.md, entity-order.md, entity-order-item.md</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Business Rules</td>
+<td>br-checkout.md, br-order-lifecycle.md</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Functional Requirements</td>
+<td>fr-order.md</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Use Cases</td>
+<td>uc-001..008</td>
+<td>8</td>
+</tr>
+<tr>
+<td>API Contracts</td>
+<td>api-post-orders-checkout.yaml, api-get-orders.yaml, api-get-orders-detail.yaml, api-get-orders-parent.yaml, api-get-orders-parent-refund-status.yaml, api-get-orders-refunds.yaml, api-get-orders-refunds-detail.yaml, api-get-orders-refunds-list.yaml, api-get-orders-refunds-presigned-url.yaml, api-get-seller-order-detail.yaml, api-get-sellers-dashboard.yaml, api-get-sellers-orders.yaml, api-post-orders-cancel.yaml, api-post-orders-confirm-received.yaml, api-post-orders-parent-refund.yaml, api-post-orders-parent-refunds-partial.yaml, api-post-orders-refund.yaml, api-post-orders-return.yaml, api-put-orders-ship.yaml</td>
+<td>19</td>
+</tr>
+<tr>
+<td>State Diagrams</td>
+<td>state-order.md</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Traceability</td>
+<td>traceability-matrix.md</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td></td>
+<td><strong>35</strong></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Cross-References</h2>
+<ul>
+<li><strong>Entities:</strong> <a href="#">data-models/order-service/</a></li>
+<li><strong>Business Rules:</strong> <a href="#">business-rules/order-service/</a></li>
+<li><strong>Functional Requirements:</strong> <a href="#">srs/fr/order-service/</a></li>
+<li><strong>Use Cases:</strong> <a href="#">use-cases/order-service/</a></li>
+<li><strong>API Contracts:</strong> <a href="#">api-contracts/order-service/</a></li>
+<li><strong>State Diagrams:</strong> <a href="#">state-diagrams/order-service/</a></li>
+</ul></div></section>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    function normalizeDocSearchText(value) {
+      return (value || '').toString().toLowerCase();
+    }
+
+    function escapeDocHtml(value) {
+      return (value || '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderSearchIndexResults(container, items, query) {
+      if (!container) return;
+      var normalized = normalizeDocSearchText(query);
+      if (!normalized) {
+        container.innerHTML = '';
+        container.classList.add('d-none');
+        return;
+      }
+      var matches = items.filter(function(item) {
+        var haystack = [
+          item.id,
+          item.title,
+          item.type,
+          item.group,
+          item.status,
+          item.summary,
+          (item.tags || []).join(' '),
+          (item.related_ids || []).join(' '),
+          item.search_text
+        ].map(normalizeDocSearchText).join(' ');
+        return haystack.indexOf(normalized) !== -1;
+      }).slice(0, 12);
+
+      if (!matches.length) {
+        container.innerHTML = '<div class="text-secondary small">No indexed results found.</div>';
+        container.classList.remove('d-none');
+        return;
+      }
+
+      container.innerHTML = matches.map(function(item) {
+        var title = escapeDocHtml(item.title || item.id || 'Untitled');
+        var path = escapeDocHtml(item.path || '#');
+        var meta = escapeDocHtml([item.type, item.group, item.status].filter(Boolean).join(' | '));
+        return '<a class="d-block border rounded p-2 mb-2 text-decoration-none bg-white" href="' + path + '">' +
+          '<div class="fw-semibold">' + title + '</div>' +
+          '<div class="text-secondary small">' + meta + '</div>' +
+          '</a>';
+      }).join('');
+      container.classList.remove('d-none');
+    }
+
+    var searchIndexPromise = null;
+    function loadDocSearchIndex(path, inlineSelector) {
+      var inlineNode = inlineSelector ? document.querySelector(inlineSelector) : null;
+      if (inlineNode && inlineNode.textContent.trim()) {
+        try {
+          return Promise.resolve(JSON.parse(inlineNode.textContent));
+        } catch (error) {
+          return Promise.resolve(null);
+        }
+      }
+      if (!path) return Promise.resolve(null);
+      if (!searchIndexPromise) {
+        searchIndexPromise = fetch(path).then(function(response) {
+          if (!response.ok) return null;
+          return response.json();
+        }).catch(function() { return null; });
+      }
+      return searchIndexPromise;
+    }
+
+    document.querySelectorAll('[data-doc-filter-target]').forEach(function(input) {
+      var selector = input.getAttribute('data-doc-filter-target');
+      var items = Array.prototype.slice.call(document.querySelectorAll(selector));
+      var indexPath = input.getAttribute('data-doc-search-index');
+      var inlineIndexSelector = input.getAttribute('data-doc-search-inline');
+      var resultSelector = input.getAttribute('data-doc-search-results');
+      var resultContainer = resultSelector ? document.querySelector(resultSelector) : null;
+      input.addEventListener('input', function() {
+        var query = input.value.trim().toLowerCase();
+        items.forEach(function(item) {
+          var haystack = (item.getAttribute('data-doc-filter-text') || item.textContent || '').toLowerCase();
+          item.classList.toggle('d-none', query && haystack.indexOf(query) === -1);
+        });
+        loadDocSearchIndex(indexPath, inlineIndexSelector).then(function(index) {
+          if (index && Array.isArray(index.items)) {
+            renderSearchIndexResults(resultContainer, index.items, query);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

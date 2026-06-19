@@ -1,0 +1,412 @@
+﻿openapi: "3.0.3"
+info:
+  title: Product Service - Variant Management API
+  description: |
+    Variant CRUD and inventory management endpoints.
+    All endpoints require SELLER JWT and product ownership.
+    Base URL: `/api/v1`
+    Service: product-service (Port 8084)
+  version: "5.4.0"
+
+servers:
+  - url: https://api.marketplace.vn/api/v1
+    description: Production
+  - url: http://localhost:8084/api/v1
+    description: Local development
+
+paths:
+  /seller/products/{productId}/variants:
+    get:
+      operationId: listVariants
+      summary: List variants of a product
+      description: Returns all variants of the product (seller view -- includes inactive).
+      tags: [Variants]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Variant list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product_id:
+                    type: string
+                    format: uuid
+                  variants:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/VariantDetail"
+        "401":
+          description: Missing or invalid JWT
+        "403":
+          description: Not the product owner
+        "404":
+          description: Product not found
+
+    post:
+      operationId: createVariant
+      summary: Create a new variant (SKU)
+      description: |
+        Add a variant to the product. variant_code must be unique across the system.
+        Triggers product status recomputation.
+      tags: [Variants]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVariantRequest"
+      responses:
+        "201":
+          description: Variant created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateVariantResponse"
+        "401":
+          description: Missing or invalid JWT
+        "403":
+          description: Not the product owner
+        "404":
+          description: Product not found
+        "409":
+          description: variant_code already exists
+        "422":
+          description: Validation error
+
+  /seller/variants/{variantId}:
+    put:
+      operationId: updateVariant
+      summary: Update variant
+      description: |
+        Update variant fields. Emits `variant.price_updated` or
+        `variant.stock_updated` Kafka events. Triggers product status recomputation.
+      tags: [Variants]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: variantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVariantRequest"
+      responses:
+        "200":
+          description: Variant updated
+        "401":
+          description: Missing or invalid JWT
+        "403":
+          description: Not the product owner
+        "404":
+          description: Variant not found
+        "422":
+          description: Validation error
+
+    delete:
+      operationId: deleteVariant
+      summary: Delete variant
+      description: |
+        Delete variant. Returns 409 if variant is referenced by active orders/inventory.
+        Triggers product status recomputation.
+      tags: [Variants]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: variantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Variant deleted
+        "401":
+          description: Missing or invalid JWT
+        "403":
+          description: Not the product owner
+        "404":
+          description: Variant not found
+        "409":
+          description: Variant referenced by active orders
+
+  /inventory/{skuCode}:
+    get:
+      operationId: getStock
+      summary: Check stock by SKU
+      tags: [Inventory]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: skuCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Stock information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockResponse"
+        "404":
+          description: SKU not found
+
+  /inventory/{skuCode}/restock:
+    put:
+      operationId: restock
+      summary: Add stock (seller)
+      description: |
+        Add quantity to variant stock. Emits `variant.stock_updated` Kafka event.
+        Re-activates variant if it was out_of_stock.
+      tags: [Inventory]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: skuCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestockRequest"
+      responses:
+        "200":
+          description: Stock added
+        "401":
+          description: Missing or invalid JWT
+        "403":
+          description: Not the product owner
+        "404":
+          description: SKU not found
+        "422":
+          description: Invalid quantity
+
+  /seller/inventory/adjust:
+    post:
+      operationId: adjustStock
+      summary: Adjust stock (delta)
+      description: |
+        Adjust stock by a delta value (positive or negative).
+        Uses optimistic locking (version column).
+        Emits `variant.stock_updated` Kafka event.
+      tags: [Inventory]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjustStockRequest"
+      responses:
+        "200":
+          description: Stock adjusted
+        "401":
+          description: Missing or invalid JWT
+        "403":
+          description: Not the product owner
+        "404":
+          description: SKU not found
+        "409":
+          description: Concurrent modification (optimistic lock)
+        "422":
+          description: Stock would go negative or invalid SKU
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateVariantRequest:
+      type: object
+      required: [variant_code, variant_name, price]
+      properties:
+        variant_code:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: "^[A-Za-z0-9-]+$"
+          example: "NK-AIR-RED-XL"
+        variant_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Do / XL"
+        price:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 9999999999
+          example: 350000
+        original_price:
+          type: number
+          exclusiveMinimum: 0
+          nullable: true
+          example: 400000
+
+    CreateVariantResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        variant_code:
+          type: string
+        variant_name:
+          type: string
+        price:
+          type: number
+        product_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+
+    UpdateVariantRequest:
+      type: object
+      properties:
+        variant_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        price:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 9999999999
+        original_price:
+          type: number
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive]
+        image_url:
+          type: string
+          format: uri
+
+    VariantDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        variant_code:
+          type: string
+        variant_name:
+          type: string
+        variant_attributes:
+          type: object
+          additionalProperties: true
+        price:
+          type: number
+        original_price:
+          type: number
+          nullable: true
+        stock_quantity:
+          type: integer
+        status:
+          type: string
+          enum: [active, out_of_stock, inactive]
+        version:
+          type: integer
+        image_url:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RestockRequest:
+      type: object
+      required: [quantity, reason]
+      properties:
+        quantity:
+          type: integer
+          exclusiveMinimum: 0
+          example: 50
+        reason:
+          type: string
+          example: "Nhap hang tu nha cung cap"
+        note:
+          type: string
+
+    AdjustStockRequest:
+      type: object
+      required: [sku_code, delta, reason]
+      properties:
+        sku_code:
+          type: string
+          example: "NK-AIR-RED-XL"
+        delta:
+          type: integer
+          description: Positive = add, negative = deduct
+          example: -5
+        reason:
+          type: string
+          example: "Hang bi hong trong kho"
+        version:
+          type: integer
+          nullable: true
+          description: Optional. Current variant version for optimistic locking. If provided and mismatched, returns 409 CONFLICT.
+
+    StockResponse:
+      type: object
+      properties:
+        sku_code:
+          type: string
+        stock_total:
+          type: integer
+        stock_locked:
+          type: integer
+          description: Sum of pending reservations
+        stock_available:
+          type: integer
+          description: stock_total - stock_locked
+        stock_flash_reserved:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

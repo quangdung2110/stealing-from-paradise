@@ -1,0 +1,16 @@
+package com.flashsale.searchservice.dto.event;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProductDeactivatedPayload {
+    private String productId;
+    private Long sellerId;
+    private String status;
+}

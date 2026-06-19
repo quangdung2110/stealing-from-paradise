@@ -1,0 +1,151 @@
+openapi: "3.0.3"
+info:
+  title: Payment Service - Stripe Webhook
+  description: |
+    Stripe webhook receiver endpoint. Processes payment intent results, refunds,
+    account updates, transfers, and dispute events from Stripe.
+    Authenticated via Stripe-Signature header verification.
+  version: "1.0.0"
+  contact:
+    name: Payment Service Team
+
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local development server
+  - url: https://api.example.com/api/v1
+    description: Production server (must be accessible from Stripe IPs)
+
+paths:
+  /stripe/webhook:
+    post:
+      tags:
+        - Stripe Webhooks
+      summary: Receive Stripe webhook events
+      description: |
+        Endpoint for Stripe to deliver webhook events. Verifies the Stripe-Signature header
+        cryptographically before processing. Handles payment intent results, charge refunds,
+        account updates, transfer events, and dispute lifecycle events.
+
+        **Idempotency**: Duplicate events (same event.id) are detected and silently acknowledged.
+        Already-processed state transitions are skipped.
+
+        **Webhook Secret**: Configured via STRIPE_WEBHOOK_SECRET environment variable.
+      operationId: handleStripeWebhook
+      parameters:
+        - name: Stripe-Signature
+          in: header
+          required: true
+          schema:
+            type: string
+          description: |
+            Stripe webhook signature header.
+            Format: `t=<timestamp>,v1=<signature>[,v1=<signature2>]`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+              description: Raw Stripe event JSON payload
+            example: |
+              {
+                "id": "evt_1OxABC123456789",
+                "object": "event",
+                "type": "payment_intent.succeeded",
+                "data": {
+                  "object": {
+                    "id": "pi_3PxABC2K1234567",
+                    "amount": 1200000,
+                    "currency": "vnd",
+                    "metadata": {
+                      "parent_order_id": "55"
+                    }
+                  }
+                }
+              }
+      responses:
+        "200":
+          description: Webhook processed successfully (or acknowledged idempotently)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookResponse"
+        "400":
+          description: Invalid signature or malformed payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "INVALID_SIGNATURE"
+                message: "Webhook signature verification failed"
+
+components:
+  schemas:
+    WebhookResponse:
+      type: object
+      properties:
+        received:
+          type: boolean
+          description: Always true when signature is valid
+          example: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Error description
+
+x-webhook-events:
+  payment_intent.succeeded:
+    description: Payment completed successfully
+    local_action: "TRANSACTIONS.status = SUCCESS, SELLER_TRANSFERS -> AWAITING_DELIVERY"
+    kafka_event: "payment.success"
+    idempotency: "Skip if TRANSACTIONS.status already SUCCESS"
+  payment_intent.payment_failed:
+    description: Payment failed
+    local_action: "TRANSACTIONS.status = FAILED"
+    kafka_event: "payment.failed"
+    idempotency: "Skip if TRANSACTIONS.status already FAILED"
+  payment_intent.canceled:
+    description: Payment intent cancelled
+    local_action: "TRANSACTIONS.status = CANCELLED"
+    kafka_event: "payment.failed"
+  charge.refunded:
+    description: Charge refunded (including chargebacks)
+    local_action: "REFUNDS.status = SUCCESS"
+    kafka_event: "refund.stripe_auto"
+  charge.dispute.created:
+    description: Buyer opened a dispute
+    local_action: "Create dispute record"
+    kafka_event: "stripe.dispute.created"
+  charge.dispute.closed:
+    description: Dispute resolved
+    local_action: "Update dispute status"
+    kafka_event: "stripe.dispute.closed"
+  transfer.created:
+    description: Stripe Transfer to seller created
+    local_action: "SELLER_TRANSFERS.status = PAID_OUT, set stripe_transfer_id"
+  transfer.reversed:
+    description: Stripe Transfer reversed
+    local_action: "SELLER_TRANSFERS.status = REVERSED"
+    kafka_event: "stripe.transfer.reversed"
+  payout.failed:
+    description: Seller payout failed
+    local_action: "Log warning"
+    kafka_event: "stripe.payout.failed"
+  account.updated:
+    description: Stripe connected account status changed
+    local_action: "Sync SELLER_STRIPE_ACCOUNTS.charges_enabled, payouts_enabled, details_submitted"
+    conditional_kafka: "stripe.account_suspended (if suspended), seller.stripe_requirement (if KYC needed)"
+
+tags:
+  - name: Stripe Webhooks
+    description: Stripe webhook event processing

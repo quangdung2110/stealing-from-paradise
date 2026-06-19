@@ -1,0 +1,361 @@
+openapi: "3.0.3"
+info:
+  title: Payment Service - Admin Refunds
+  description: >
+    Admin refund listing and detail endpoints.
+    Full view of all refunds across all buyers and sellers
+    with advanced filtering and detailed item-level inspection.
+    Payment Service (Port 8082).
+  version: "5.4"
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local development
+tags:
+  - name: Admin Refunds
+    description: Admin-level refund management and inspection
+paths:
+  /admin/refunds:
+    get:
+      tags:
+        - Admin Refunds
+      summary: List all refunds (Admin)
+      description: >
+        Returns paginated list of all refunds across all buyers and sellers.
+        Supports filtering by status, refund type, seller, and date range.
+        Referenced by FR-PAYMENT-008.
+      operationId: listAdminRefunds
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [PENDING, SUCCESS, FAILED, REJECTED]
+          description: Filter by refund status
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [FULL, PARTIAL]
+          description: Filter by refund type
+        - name: seller_id
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Filter by seller
+        - name: from_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Filter by creation date (ISO 8601)
+        - name: to_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Filter by creation date (ISO 8601)
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Page number (zero-indexed)
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Page size
+      responses:
+        "200":
+          description: Paginated list of all refunds
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminRefundSummary"
+                  totalPages:
+                    type: integer
+                  totalElements:
+                    type: integer
+                  pageNumber:
+                    type: integer
+                  pageSize:
+                    type: integer
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not an ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/refunds/{refundId}:
+    get:
+      tags:
+        - Admin Refunds
+      summary: Get refund detail (Admin)
+      description: >
+        Returns full detail of a single refund including all items,
+        evidence images, review history, and Stripe refund reference.
+        Referenced by FR-PAYMENT-008.
+      operationId: getAdminRefundDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: refundId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: REFUNDS.id
+      responses:
+        "200":
+          description: Full refund detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRefundDetail"
+              example:
+                refund_id: 401
+                transaction_id: 301
+                order_id: 100
+                order_code: "OR-20251001-100"
+                buyer_id: 42
+                seller_id: 5
+                type: "PARTIAL"
+                amount: 350000
+                status: "PENDING"
+                reason: "Item arrived damaged"
+                evidence_images:
+                  - "https://minio.example.com/products-media/evidence/img001.jpg"
+                items:
+                  - item_id: 501
+                    refund_amount: 350000
+                    reason: "Scratched screen"
+                    status: "PENDING"
+                    return_tracking_number: null
+                    carrier: null
+                admin_note: null
+                reviewed_by: null
+                reviewed_at: null
+                refund_ref: null
+                created_at: "2026-04-15T10:00:00Z"
+                updated_at: "2026-04-15T10:00:00Z"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not an ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Refund not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token with ADMIN role
+
+  schemas:
+    AdminRefundSummary:
+      type: object
+      properties:
+        refund_id:
+          type: integer
+          format: int64
+        transaction_id:
+          type: integer
+          format: int64
+        order_id:
+          type: integer
+          format: int64
+        order_code:
+          type: string
+          description: Display order code
+        buyer_id:
+          type: integer
+          format: int64
+          description: Customer who requested refund
+        seller_id:
+          type: integer
+          format: int64
+          description: Seller whose order is being refunded
+        type:
+          type: string
+          enum: [FULL, PARTIAL]
+        amount:
+          type: number
+          format: double
+        status:
+          type: string
+          enum: [PENDING, SUCCESS, FAILED, REJECTED]
+        reason:
+          type: string
+        refund_reason_type:
+          type: string
+          enum: [BUYER_REQUEST, RETURN_TO_SENDER, ADMIN_MANUAL]
+          description: Source trigger of the refund
+        reviewed_by:
+          type: integer
+          format: int64
+          nullable: true
+          description: Admin who reviewed (null if pending)
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    AdminRefundDetail:
+      type: object
+      properties:
+        refund_id:
+          type: integer
+          format: int64
+        transaction_id:
+          type: integer
+          format: int64
+        order_id:
+          type: integer
+          format: int64
+        order_code:
+          type: string
+        buyer_id:
+          type: integer
+          format: int64
+        seller_id:
+          type: integer
+          format: int64
+        type:
+          type: string
+          enum: [FULL, PARTIAL]
+        amount:
+          type: number
+          format: double
+        status:
+          type: string
+          enum: [PENDING, SUCCESS, FAILED, REJECTED]
+        reason:
+          type: string
+        refund_reason_type:
+          type: string
+          enum: [BUYER_REQUEST, RETURN_TO_SENDER, ADMIN_MANUAL]
+        evidence_images:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Uploaded evidence image URLs
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RefundItemAdmin"
+        admin_note:
+          type: string
+          nullable: true
+          description: Internal admin note
+        reviewed_by:
+          type: integer
+          format: int64
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        refund_ref:
+          type: string
+          nullable: true
+          description: Stripe refund ID (re_xxx)
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RefundItemAdmin:
+      type: object
+      properties:
+        item_id:
+          type: integer
+          format: int64
+          description: ORDER_ITEMS.id being refunded
+        refund_amount:
+          type: number
+          format: double
+        reason:
+          type: string
+          description: Item-specific refund reason
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+        evidence_images:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Item-level evidence images
+        reject_reason:
+          type: string
+          nullable: true
+        return_tracking_number:
+          type: string
+          nullable: true
+          description: Carrier tracking for return shipment
+        carrier:
+          type: string
+          nullable: true
+          description: Shipping carrier for return
+        returned_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string

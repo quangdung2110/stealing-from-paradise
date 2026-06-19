@@ -1,0 +1,88 @@
+[
+  {
+    "sessionId": 1,
+    "name": "Flash Sale Đầu Tuần — Kết Thúc",
+    "status": "ENDED",
+    "timeline": "Yesterday (Ended)",
+    "items": [
+      {
+        "skuCode": "SKU-IPHONE-BLK-128",
+        "flashPrice": 20990000.00,
+        "flashStock": 5,
+        "soldQty": 3,
+        "limitPerUser": 2,
+        "status": "SOLD_OUT"
+      },
+      {
+        "skuCode": "SKU-AIRPOD-PRO2",
+        "flashPrice": 4990000.00,
+        "flashStock": 20,
+        "soldQty": 12,
+        "limitPerUser": 2,
+        "status": "ENDED"
+      }
+    ]
+  },
+  {
+    "sessionId": 2,
+    "name": "Flash Sale Trưa Vàng — Đang Diễn Ra",
+    "status": "LIVE",
+    "timeline": "Active now (ends in 2h)",
+    "items": [
+      {
+        "skuCode": "SKU-MACBOOK-AIR-M3",
+        "flashPrice": 25990000.00,
+        "flashStock": 10,
+        "soldQty": 2,
+        "limitPerUser": 2,
+        "status": "LIVE"
+      },
+      {
+        "skuCode": "SKU-JBL-FLIP6-BLK",
+        "flashPrice": 2290000.00,
+        "flashStock": 30,
+        "soldQty": 8,
+        "limitPerUser": 2,
+        "status": "LIVE"
+      },
+      {
+        "skuCode": "SKU-AIRFRY-55",
+        "flashPrice": 1690000.00,
+        "flashStock": 25,
+        "soldQty": 5,
+        "limitPerUser": 2,
+        "status": "LIVE"
+      }
+    ]
+  },
+  {
+    "sessionId": 3,
+    "name": "Flash Sale Cuối Tuần — Sắp Diễn Ra",
+    "status": "UPCOMING",
+    "timeline": "Starts tomorrow",
+    "items": [
+      {
+        "skuCode": "SKU-NIKE-PEG40-42",
+        "flashPrice": 2790000.00,
+        "flashStock": 15,
+        "soldQty": 0,
+        "limitPerUser": 2,
+        "status": "APPROVED"
+      },
+      {
+        "skuCode": "SKU-ANKER-20000",
+        "flashPrice": 690000.00,
+        "flashStock": 50,
+        "soldQty": 0,
+        "limitPerUser": 2,
+        "status": "APPROVED"
+      }
+    ],
+    "subscribedReminders": [
+      { "customerId": 6, "username": "minhhoa" },
+      { "customerId": 7, "username": "phuongthao" },
+      { "customerId": 8, "username": "ductran" },
+      { "customerId": 9, "username": "linhnguyen" }
+    ]
+  }
+]

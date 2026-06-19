@@ -1,0 +1,219 @@
+openapi: "3.0.3"
+info:
+  title: Payment Service - Stripe Onboarding
+  description: |
+    Stripe Connect Express onboarding for sellers.
+    Generates a time-limited Account Link URL for the seller to complete KYC verification.
+  version: "1.0.0"
+  contact:
+    name: Payment Service Team
+
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local development server
+
+paths:
+  /stripe/onboarding/start:
+    post:
+      tags:
+        - Stripe Connect
+      summary: Start Stripe KYC onboarding
+      description: |
+        Creates (or retrieves) a Stripe Express connected account for the authenticated seller,
+        then generates an Account Link onboarding URL valid for 24 hours.
+        If the seller has already completed KYC (`details_submitted = true`), returns 409 Conflict.
+      operationId: startStripeOnboarding
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Onboarding URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStartResponse"
+              example:
+                onboarding_url: "https://connect.stripe.com/setup/e/acct_1OxABC123456789/abc123"
+                expires_at: "2026-05-10T10:00:00Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Seller already has a verified Stripe account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "CONFLICT"
+                message: "Stripe account already verified"
+
+  /stripe/onboarding/status:
+    get:
+      tags:
+        - Stripe Connect
+      summary: Check Stripe account status
+      description: |
+        Returns the current Stripe Connect account status for the authenticated seller.
+        Includes KYC completion state and enabled capabilities.
+      operationId: getStripeOnboardingStatus
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Account status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStatusResponse"
+              example:
+                stripe_account_id: "acct_1OxABC123456789"
+                account_status: "ACTIVE"
+                details_submitted: true
+                charges_enabled: true
+                payouts_enabled: true
+                onboarding_status: "COMPLETE"
+                onboarding_url: null
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /stripe/onboarding/refresh-link:
+    post:
+      tags:
+        - Stripe Connect
+      summary: Refresh expired onboarding link
+      description: |
+        Generates a new onboarding URL when the current one has expired.
+        Only allowed if KYC is not yet complete (`details_submitted = false`).
+      operationId: refreshOnboardingLink
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: New onboarding URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStartResponse"
+              example:
+                onboarding_url: "https://connect.stripe.com/setup/e/acct_1OxABC123456789/new-link"
+                expires_at: "2026-05-11T10:00:00Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: KYC already completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "CONFLICT"
+                message: "KYC already completed"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from Identity Service
+
+  schemas:
+    OnboardingStartResponse:
+      type: object
+      required:
+        - onboarding_url
+        - expires_at
+      properties:
+        onboarding_url:
+          type: string
+          format: uri
+          description: Stripe Account Link URL for KYC completion
+          example: "https://connect.stripe.com/setup/e/acct_1OxABC123456789/abc123"
+        expires_at:
+          type: string
+          format: date-time
+          description: UTC timestamp when the URL becomes invalid (24h from creation)
+          example: "2026-05-10T10:00:00Z"
+
+    OnboardingStatusResponse:
+      type: object
+      properties:
+        stripe_account_id:
+          type: string
+          description: Stripe Express account ID
+          example: "acct_1OxABC123456789"
+        account_status:
+          type: string
+          enum:
+            - PENDING
+            - ACTIVE
+            - RESTRICTED
+            - SUSPENDED
+          description: Current Stripe account status
+        details_submitted:
+          type: boolean
+          description: Whether KYC has been completed
+        charges_enabled:
+          type: boolean
+          description: Whether the account can accept destination charges
+        payouts_enabled:
+          type: boolean
+          description: Whether the account can receive payouts
+        onboarding_status:
+          type: string
+          enum:
+            - PENDING
+            - IN_PROGRESS
+            - COMPLETE
+            - SUSPENDED
+          description: High-level onboarding state
+        onboarding_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Current onboarding URL (null if completed or expired)
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "CONFLICT"
+        message:
+          type: string
+          description: Human-readable error description
+          example: "Stripe account already verified"
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "UNAUTHORIZED"
+            message: "Authentication required"
+    Forbidden:
+      description: Authenticated but missing required role (SELLER)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "FORBIDDEN"
+            message: "SELLER role required"
+
+tags:
+  - name: Stripe Connect
+    description: Stripe Connect Express onboarding operations

@@ -1,0 +1,19 @@
+-- ============================================================================
+-- FRONTEND FULL-FLOW SEED DATASET (DEPRECATED)
+-- ============================================================================
+-- Data seeding migrated to per-service Java DevDataLoaders (profile=dev).
+-- All data revolves around 3 accounts:
+--   fe_buyer  (900001) — customer who places orders
+--   fe_seller (900002) — seller who fulfills orders
+--   fe_admin  (900003) — admin who reviews products/refunds
+--
+-- See individual *DevDataLoader.java in each backend service:
+--   identity-service/.../IdentityDevDataLoader.java
+--   product-service/.../ProductDevDataLoader.java
+--   order-service/.../OrderDevDataLoader.java
+--   payment-service/.../PaymentDevDataLoader.java
+--   refund-service/.../RefundDevDataLoader.java
+--   flashsale-service/.../FlashSaleDevDataLoader.java
+--   notification-service/.../NotificationDevDataLoader.java
+--   chat-service/.../ChatDevDataLoader.java
+-- ============================================================================

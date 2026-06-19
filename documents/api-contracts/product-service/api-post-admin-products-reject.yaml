@@ -1,0 +1,233 @@
+﻿# ============================================================
+# RE-ACTIVATED 2026-05-10 v3 â€” back in MVP scope.
+# P3-11 APPROVED 2026-05-10 â€” reject_reason / reviewed_at / reviewed_by / reject_count
+# applied to products table per database-entities.md Â§3 + DB_SCHEMA_CHANGE_PROPOSAL.md Â§P3-11.
+# Xem MVP_ANALYSIS.md Â§2.3 (Ä‘Ã­nh chÃ­nh v3) vÃ  BR-PRODUCT-009.
+# ============================================================
+openapi: "3.0.3"
+info:
+  title: Product Service - Admin Reject Product
+  description: |
+    Admin tu choi san pham (`pending` -> `rejected`) voi ly do bat buoc >=10 chars.
+    Seller co the chinh sua va resubmit (`rejected` -> `draft` -> `pending`).
+
+    Side effects:
+    - Update products: status='rejected', reject_reason=..., reviewed_at=NOW(), reviewed_by=admin_user_id
+    - Emit Kafka event `product.rejected`
+    - Notification gui cho seller: NOTIF-PRODUCT-REJECTED (kem reason)
+
+    Base URL: `/api/v1`
+    Service: product-service (Port 8084)
+  version: "5.5.0"
+
+servers:
+  - url: https://api.marketplace.vn/api/v1
+    description: Production
+  - url: http://localhost:8084/api/v1
+    description: Local development
+
+paths:
+  /admin/products/{productId}/reject:
+    post:
+      operationId: rejectProduct
+      summary: Tu choi san pham
+      description: |
+        Admin tu choi san pham tu trang thai PENDING sang REJECTED.
+        Bat buoc phai cung cap ly do tu choi.
+        Seller co the chinh sua va gui lai sau khi bi tu choi.
+      tags: [Admin Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID san pham bi tu choi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminRejectRequest"
+      responses:
+        "200":
+          description: Tu choi san pham thanh cong
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RejectProductResponse"
+        "401":
+          description: Thieu JWT hoac JWT khong hop le
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Khong co quyen ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Khong tim thay san pham
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: San pham khong o trang thai PENDING
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Thieu ly do tu choi (reason bat buoc)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT tu Identity Service voi quyen ADMIN
+
+  schemas:
+    AdminRejectRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 2000
+          description: Ly do tu choi â€” bat buoc, toi thieu 10 ky tu (BR-PRODUCT-009)
+          example: "Hinh anh khong ro rang, vui long chup lai"
+        note:
+          type: string
+          maxLength: 1000
+          description: Ghi chu bo sung (tuy chon)
+          example: "Can bo sung them anh chi tiet"
+
+    RejectProductResponse:
+      type: object
+      required: [product_id, seller_id, name, status, reject_reason, reviewed_at, reviewed_by, reject_count]
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          example: "507f1f77bcf86cd799439012"
+        seller_id:
+          type: integer
+          format: int64
+          example: 42
+        name:
+          type: string
+          example: "Ao Thun Nike Air Nam"
+        description:
+          type: string
+          example: "<p>Mo ta san pham...</p>"
+        category_id:
+          type: string
+          format: uuid
+        category_name:
+          type: string
+          example: "Ao Thun Nam"
+        category_slug:
+          type: string
+          example: "ao-thun-nam"
+        attributes:
+          type: object
+          additionalProperties: true
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+        is_flash:
+          type: boolean
+          example: false
+        status:
+          type: string
+          enum: [rejected]
+          example: "rejected"
+        reject_reason:
+          type: string
+          description: Ly do tu choi (>=10 chars, persisted vao products.reject_reason)
+          example: "Hinh anh khong ro rang, vui long chup lai"
+        reviewed_at:
+          type: string
+          format: date-time
+          description: Thoi diem admin tu choi
+          example: "2026-05-10T10:15:00Z"
+        reviewed_by:
+          type: integer
+          format: int64
+          description: user_id cua admin da tu choi
+          example: 1
+        reject_count:
+          type: integer
+          description: So lan da bi tu choi tinh ca lan nay
+          minimum: 1
+          maximum: 3
+          example: 1
+        stock_available:
+          type: integer
+          example: 95
+        price:
+          type: integer
+          example: 150000
+        original_price:
+          type: integer
+          nullable: true
+          example: 200000
+        rating:
+          type: number
+          format: double
+          nullable: true
+        reviews_count:
+          type: integer
+          example: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+          description: Ma loi machine-readable
+        message:
+          type: string
+          description: Thong bao loi tieng Viet
+
+    ValidationError:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_FAILED"
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string

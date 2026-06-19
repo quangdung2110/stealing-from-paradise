@@ -1,0 +1,204 @@
+# ============================================================
+# FLASH SALE BACKEND — INFRASTRUCTURE ONLY
+# ============================================================
+# Starts only the data infrastructure services.
+# Use this when running backend services locally (outside Docker)
+# but needing databases and message queues in Docker.
+#
+# USAGE:
+#   cd backend
+#   docker-compose -f docker-compose.yml -f docker-compose.infra-only.yml up --build -d
+#   docker-compose -f docker-compose.yml -f docker-compose.infra-only.yml down -v
+#
+# NOTE: Depends on ../.env (root .env).
+# ============================================================
+
+x-network: &network flashsale-net
+
+services:
+
+  postgres:
+    image: postgres:${POSTGRES_VER:-15.4-alpine}
+    container_name: fs-postgres
+    restart: unless-stopped
+    ports: ["${PORT_POSTGRES:-5432}:5432"]
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    networks: [*network]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:${MONGO_VER:-6.0.8}
+    container_name: fs-mongo
+    restart: unless-stopped
+    ports: ["${PORT_MONGO:-27017}:27017"]
+    env_file: .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+      - ./docker/mongo/init:/docker-entrypoint-initdb.d:ro
+    networks: [*network]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:${REDIS_VER:-7.2.1-alpine}
+    container_name: fs-redis
+    restart: unless-stopped
+    ports: ["${PORT_REDIS:-6379}:6379"]
+    env_file: .env
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks: [*network]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+  elasticsearch:
+    build:
+      context: ./docker/elasticsearch
+      args:
+        ES_VERSION: ${ELASTIC_VER:-8.10.2}
+    image: flashsale-elasticsearch:${ELASTIC_VER:-8.10.2}
+    container_name: fs-elasticsearch
+    restart: unless-stopped
+    ports: ["${PORT_ELASTIC:-9200}:9200"]
+    env_file: .env
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=${ES_JAVA_OPTS:--Xms512m -Xmx512m}
+    volumes:
+      - elastic_data:/usr/share/elasticsearch/data
+    networks: [*network]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | grep -qv '\"status\":\"red\"'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: fs-minio
+    restart: unless-stopped
+    ports:
+      - "${PORT_MINIO:-9000}:9000"
+      - "${PORT_MINIO_CONSOLE:-9001}:9001"
+    env_file: .env
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks: [*network]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:${KAFKA_VER:-7.4.0}
+    container_name: fs-zookeeper
+    restart: unless-stopped
+    ports: ["${PORT_ZOOKEEPER:-2181}:2181"]
+    env_file: .env
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+    networks: [*network]
+
+  kafka:
+    image: confluentinc/cp-kafka:${KAFKA_VER:-7.4.0}
+    container_name: fs-kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper: { condition: service_started }
+    ports: ["${PORT_KAFKA:-9092}:9092"]
+    env_file: .env
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks: [*network]
+    command: >
+      bash -c "sleep 10 &&
+               rm -f /var/lib/kafka/data/meta.properties &&
+               /etc/confluent/docker/run"
+
+  kafka-init:
+    image: confluentinc/cp-kafka:${KAFKA_VER:-7.4.0}
+    container_name: fs-kafka-init
+    depends_on:
+      kafka: { condition: service_started }
+    networks: [*network]
+    volumes:
+      - ./docker/kafka/create-topics.sh:/create-topics.sh
+    command: bash /create-topics.sh
+    restart: on-failure
+    env_file: .env
+
+  axonserver:
+    image: axoniq/axonserver:${AXON_VER:-latest}
+    container_name: fs-axonserver
+    restart: unless-stopped
+    ports:
+      - "${PORT_AXON_GUI:-8024}:8024"
+      - "${PORT_AXON_GRPC:-8124}:8124"
+    env_file: .env
+    environment:
+      - AXONIQ_AXONSERVER_CONTEXTS=default
+      - AXONIQ_AXONSERVER_STANDALONE=true
+      - AXONIQ_AXONSERVER_DEVMODE_ENABLED=true
+      - AXONIQ_AXONSERVER_HOSTNAME=axonserver
+      - server.servlet.context-path=/
+    volumes:
+      - ./docker/axon-init:/docker-entrypoint-initdb.d
+      - axon_data:/axonserver/data
+    networks: [*network]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f -s http://localhost:8024/actuator/health > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:
+  elastic_data:
+  minio_data:
+  kafka_data:
+  zookeeper_data:
+  axon_data:
+
+networks:
+  flashsale-net:
+    name: flashsale-net
+    driver: bridge

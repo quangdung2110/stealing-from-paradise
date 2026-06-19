@@ -1,0 +1,293 @@
+﻿openapi: "3.0.3"
+info:
+  title: Flash Sale Session Listing API
+  description: |
+    Public and admin session listing endpoints.
+    Service: flashsale-service (port :8086)
+    Base URL: /api/v1
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8086/api/v1
+    description: Local development
+
+paths:
+  /flash-sales:
+    get:
+      summary: List Flash Sale Sessions (Public)
+      description: |
+        Returns UPCOMING and ACTIVE sessions. ENDED sessions are excluded.
+        Response includes `server_time` for client-side countdown calculation.
+        Client MUST use `server_time`, not local clock.
+      operationId: listFlashSaleSessions
+      tags:
+        - Public
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [UPCOMING, ACTIVE]
+          description: Filter by session status
+      responses:
+        '200':
+          description: Session list with server time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListResponse'
+              example:
+                server_time: "2026-04-15T19:58:00Z"
+                sessions:
+                  - session_id: 3
+                    name: "Flash Sale 20h Thu 6"
+                    status: "ACTIVE"
+                    start_time: "2026-04-15T20:00:00Z"
+                    end_time: "2026-04-15T22:00:00Z"
+                    seconds_remaining: 120
+                    is_ended: false
+                  - session_id: 4
+                    name: "Flash Sale 8h Sang Mai"
+                    status: "UPCOMING"
+                    start_time: "2026-04-16T08:00:00Z"
+                    end_time: "2026-04-16T10:00:00Z"
+                    seconds_remaining: 43320
+                    is_ended: false
+
+  /flash-sales/{sessionId}:
+    get:
+      summary: Get Session Detail with Items
+      description: |
+        Returns full session details plus all registered FS_ITEMS.
+        Includes `server_time` for countdown calculation.
+      operationId: getFlashSaleSessionDetail
+      tags:
+        - Public
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Session ID
+      responses:
+        '200':
+          description: Session detail with items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetailResponse'
+              example:
+                id: 3
+                name: "Flash Sale 20h Thu 6"
+                start_time: "2026-04-15T20:00:00Z"
+                end_time: "2026-04-15T22:00:00Z"
+                registration_deadline: "2026-04-15T19:45:00Z"
+                discount_percentage: 20.00
+                status: "ACTIVE"
+                deleted_at: null
+                created_at: "2026-04-15T10:00:00Z"
+                updated_at: "2026-04-15T10:00:00Z"
+                server_time: "2026-04-15T19:58:00Z"
+                items:
+                  - id: 1001
+                    session_id: 3
+                    product_id: "550e8400-e29b-41d4-a716-446655440000"
+                    discount_applied: 20.00
+                    seller_id: "660e8400-e29b-41d4-a716-446655440001"
+                    registered_at: "2026-04-15T10:00:00Z"
+                    created_at: "2026-04-15T10:00:00Z"
+                    updated_at: "2026-04-15T10:00:00Z"
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "SESSION_NOT_FOUND"
+                message: "Session does not exist"
+
+  /flash-sales/{sessionId}/items:
+    get:
+      summary: List Items in Session
+      description: Returns all registered FS_ITEMS for a specific session.
+      operationId: listFlashSaleItems
+      tags:
+        - Public
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: List of flash sale items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ItemResponse'
+              example:
+                - id: 1001
+                  session_id: 3
+                  product_id: "550e8400-e29b-41d4-a716-446655440000"
+                  discount_applied: 20.00
+                  seller_id: "660e8400-e29b-41d4-a716-446655440001"
+                  registered_at: "2026-04-15T10:00:00Z"
+                  created_at: "2026-04-15T10:00:00Z"
+                  updated_at: "2026-04-15T10:00:00Z"
+
+  /flash-sales/active:
+    get:
+      summary: Get Active Sessions from Redis Cache
+      description: |
+        Returns ACTIVE sessions.
+        Optimized for high-concurrency reads.
+        Lower latency than PostgreSQL query.
+      operationId: getActiveFlashSales
+      tags:
+        - Public
+      responses:
+        '200':
+          description: Active sessions from Redis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListResponse'
+
+components:
+  schemas:
+    SessionListResponse:
+      type: object
+      required:
+        - server_time
+        - sessions
+      properties:
+        server_time:
+          type: string
+          format: date-time
+          description: |
+            Server's current time. Client MUST use this for countdown,
+            NOT the client's local clock.
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionSummary'
+
+    SessionSummary:
+      type: object
+      properties:
+        session_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        status:
+          type: string
+          enum: [UPCOMING, ACTIVE]
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        seconds_remaining:
+          type: integer
+          description: Seconds until session starts (UPCOMING) or ends (ACTIVE)
+        is_ended:
+          type: boolean
+          description: True if session has ended
+
+    SessionDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        registration_deadline:
+          type: string
+          format: date-time
+          description: Auto-calculated = start_time - 15 min (BR-FLASHSALE-002)
+        discount_percentage:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum: [UPCOMING, ACTIVE, ENDED]
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        server_time:
+          type: string
+          format: date-time
+          description: Server time for client countdown
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemResponse'
+
+    ItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        session_id:
+          type: integer
+          format: int64
+        product_id:
+          type: string
+          format: uuid
+        discount_applied:
+          type: number
+          format: decimal
+          description: |
+            Discount %. Flash price calculated dynamically:
+            flash_price = sku.price * (1 - discount_applied / 100)
+        seller_id:
+          type: string
+          format: uuid
+        registered_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error description
+
+tags:
+  - name: Public
+    description: Publicly accessible endpoints â€” no auth required

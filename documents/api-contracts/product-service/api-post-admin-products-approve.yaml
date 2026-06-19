@@ -1,0 +1,202 @@
+﻿# ============================================================
+# RE-ACTIVATED 2026-05-10 v3 â€” back in MVP scope.
+# P3-11 APPROVED 2026-05-10 â€” reject_reason / reviewed_at / reviewed_by / reject_count
+# applied to products table per database-entities.md Â§3 + DB_SCHEMA_CHANGE_PROPOSAL.md Â§P3-11.
+# Xem MVP_ANALYSIS.md Â§2.3 (Ä‘Ã­nh chÃ­nh v3) vÃ  BR-PRODUCT-009.
+# ============================================================
+openapi: "3.0.3"
+info:
+  title: Product Service - Admin Approve Product
+  description: |
+    Admin duyet san pham tu `pending` -> `approved`.
+    Sau khi duyet, seller co the publish (`approved` -> `active`).
+
+    Side effects:
+    - Update products: status='approved', reviewed_at=NOW(), reviewed_by=admin_user_id, reject_reason=NULL
+    - Emit Kafka event `product.approved`
+    - Notification gui cho seller: NOTIF-PRODUCT-APPROVED
+
+    Base URL: `/api/v1`
+    Service: product-service (Port 8084)
+  version: "5.5.0"
+
+servers:
+  - url: https://api.marketplace.vn/api/v1
+    description: Production
+  - url: http://localhost:8084/api/v1
+    description: Local development
+
+paths:
+  /admin/products/{productId}/approve:
+    post:
+      operationId: approveProduct
+      summary: Duyet san pham
+      description: |
+        Admin duyet san pham tu trang thai PENDING sang APPROVED.
+        Sau khi duyet, seller co the publish san pham de mo ban.
+      tags: [Admin Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID san pham can duyet
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminApproveRequest"
+      responses:
+        "200":
+          description: Duyet san pham thanh cong
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApproveProductResponse"
+        "401":
+          description: Thieu JWT hoac JWT khong hop le
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Khong co quyen ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Khong tim thay san pham
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: San pham khong o trang thai PENDING
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT tu Identity Service voi quyen ADMIN
+
+  schemas:
+    AdminApproveRequest:
+      type: object
+      properties:
+        note:
+          type: string
+          maxLength: 1000
+          description: Ghi chu cua admin khi duyet (tuá»³ chon)
+          example: "San pham dat yeu cau, duyet"
+
+    ApproveProductResponse:
+      type: object
+      required: [product_id, seller_id, name, status, reviewed_at, reviewed_by, reject_count]
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          example: "507f1f77bcf86cd799439012"
+        seller_id:
+          type: integer
+          format: int64
+          example: 42
+        name:
+          type: string
+          example: "Ao Thun Nike Air Nam"
+        description:
+          type: string
+          example: "<p>Mo ta san pham...</p>"
+        category_id:
+          type: string
+          format: uuid
+        category_name:
+          type: string
+          example: "Ao Thun Nam"
+        category_slug:
+          type: string
+          example: "ao-thun-nam"
+        attributes:
+          type: object
+          additionalProperties: true
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+        is_flash:
+          type: boolean
+          example: false
+        status:
+          type: string
+          enum: [approved]
+          example: "approved"
+        stock_available:
+          type: integer
+          example: 95
+        price:
+          type: integer
+          example: 150000
+        original_price:
+          type: integer
+          nullable: true
+          example: 200000
+        rating:
+          type: number
+          format: double
+          nullable: true
+        reviews_count:
+          type: integer
+          example: 0
+        reviewed_at:
+          type: string
+          format: date-time
+          description: Thoi diem admin duyet (BR-PRODUCT-009.5)
+          example: "2026-05-10T10:15:00Z"
+        reviewed_by:
+          type: integer
+          format: int64
+          description: user_id cua admin da duyet (BR-PRODUCT-009.5)
+          example: 1
+        reject_reason:
+          type: string
+          nullable: true
+          description: Luon NULL sau approve (BR-PRODUCT-009.5 â€” reject_reason=NULL khi approve thanh cong; persisted vao products.reject_reason)
+          example: null
+        reject_count:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: So lan bi tu choi truoc do (reset ve 0 sau khi approve thanh cong â€” BR-PRODUCT-009.8)
+          example: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+          description: Ma loi machine-readable
+        message:
+          type: string
+          description: Thong bao loi tieng Viet

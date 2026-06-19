@@ -1,0 +1,167 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Seller Orders API
+  description: |
+    Danh sach don hang cua seller co phan trang.
+    Ho tro loc theo trang thai va khoang thoi gian.
+  version: "5.4"
+  contact:
+    name: Order Service Team
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: order-service
+    description: Seller order listing endpoints
+paths:
+  /sellers/me/orders:
+    get:
+      tags:
+        - order-service
+      summary: Danh sach don hang cua seller
+      description: |
+        Tra ve danh sach don hang (sub-orders) cua seller da xac thuc.
+        Ho tro loc theo trang thai, ngay tao, va phan trang.
+      operationId: listSellerOrders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Loc theo trang thai don hang
+          required: false
+          schema:
+            type: string
+            enum: [PENDING, PAID, SHIPPING, DELIVERED, RETURNED, CANCELLED, PARTIALLY_REFUNDED, REFUNDED]
+        - name: fromDate
+          in: query
+          description: Loc don hang tu ngay (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          description: Loc don hang den ngay (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          description: So trang (bat dau tu 0)
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          description: Kich thuoc trang (toi da 100)
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: Danh sach don hang co phan trang
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponseOrderSummary"
+        "401":
+          description: Chua xac thuc hoac khong phai SELLER
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PageResponseOrderSummary:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderSummaryResponse"
+        total_elements:
+          type: integer
+          description: Tong so phan tu
+          example: 45
+        total_pages:
+          type: integer
+          description: Tong so trang
+          example: 3
+        page_number:
+          type: integer
+          description: Trang hien tai
+          example: 0
+        page_size:
+          type: integer
+          description: Kich thuoc trang
+          example: 20
+
+    OrderSummaryResponse:
+      type: object
+      properties:
+        order_id:
+          type: integer
+          format: int64
+          example: 100
+        parent_order_id:
+          type: integer
+          format: int64
+          example: 55
+        order_code:
+          type: string
+          example: "OR-20251001-100"
+        customer_id:
+          type: integer
+          format: int64
+          example: 42
+        status:
+          type: string
+          enum: [PENDING, PAID, SHIPPING, DELIVERED, RETURNED, CANCELLED, PARTIALLY_REFUNDED, REFUNDED]
+          example: "PAID"
+        total_amt:
+          type: number
+          format: double
+          example: 700000
+        final_amt:
+          type: number
+          format: double
+          example: 700000
+        is_flash_sale:
+          type: boolean
+          example: false
+        tracking_number:
+          type: string
+          nullable: true
+          example: "GHN123456789"
+        item_count:
+          type: integer
+          description: Tong so luong san pham
+          example: 3
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-01T10:00:00Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Ma loi
+        message:
+          type: string
+          description: Mo ta loi

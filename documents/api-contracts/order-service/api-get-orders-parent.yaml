@@ -1,0 +1,149 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Parent Order Detail API
+  description: |
+    Tra ve chi tiet parent order kem theo danh sach tat ca sub-orders.
+    Chi buyer cua parent order moi co quyen truy cap.
+  version: "5.4"
+  contact:
+    name: Order Service Team
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: order-service
+    description: Parent order detail endpoints
+paths:
+  /orders/parent/{parentOrderId}:
+    get:
+      tags:
+        - order-service
+      summary: Xem chi tiet parent order
+      description: |
+        Tra ve parent order voi day du cac sub-orders, tong tien,
+        va thong tin thanh toan. Chi buyer so huu parent order moi duoc phep.
+      operationId: getParentOrderDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: parentOrderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Parent order ID
+      responses:
+        "200":
+          description: Chi tiet parent order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParentOrderDetailResponse"
+        "403":
+          description: Khong phai buyer cua parent order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForbiddenError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ParentOrderDetailResponse:
+      type: object
+      properties:
+        parent_order_id:
+          type: integer
+          format: int64
+          example: 55
+        customer_id:
+          type: integer
+          format: int64
+          example: 42
+        total_amt:
+          type: number
+          format: double
+          description: Tong tien goc tat ca sub-orders
+          example: 1200000
+        final_amt:
+          type: number
+          format: double
+          description: Tong tien cuoi cung sau giam gia
+          example: 1150000
+        orders:
+          type: array
+          description: Danh sach sub-orders
+          items:
+            $ref: "#/components/schemas/ParentSubOrderEntry"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-01T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-10-01T10:30:00Z"
+
+    ParentSubOrderEntry:
+      type: object
+      properties:
+        order_id:
+          type: integer
+          format: int64
+          example: 100
+        order_code:
+          type: string
+          example: "OR-20251001-100"
+        seller_id:
+          type: integer
+          format: int64
+          example: 5
+        status:
+          type: string
+          enum: [PENDING, PAID, SHIPPING, DELIVERED, RETURNED, CANCELLED, PARTIALLY_REFUNDED, REFUNDED]
+          example: "PAID"
+        final_amt:
+          type: number
+          format: double
+          example: 700000
+        tracking_number:
+          type: string
+          nullable: true
+          example: "GHN123456789"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParentSubOrderItem"
+
+    ParentSubOrderItem:
+      type: object
+      properties:
+        order_item_id:
+          type: integer
+          format: int64
+          example: 501
+        sku_code:
+          type: string
+          example: "NK-AIR-RED-XL"
+        name_snapshot:
+          type: string
+          example: "Ao Thun Nike Air"
+        quantity:
+          type: integer
+          example: 2
+
+    ForbiddenError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "FORBIDDEN"
+        message:
+          type: string
+          example: "Ban khong co quyen truy cap tai nguyen nay"

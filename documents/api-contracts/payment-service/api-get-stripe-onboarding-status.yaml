@@ -1,0 +1,154 @@
+openapi: "3.0.3"
+info:
+  title: Payment Service - Stripe Onboarding Status
+  description: |
+    Kiểm tra trạng thái tài khoản Stripe Connect của người bán.
+    Trả về thông tin hoàn tất KYC, trạng thái charges/payouts, và trạng thái onboarding tổng quan.
+  version: "1.0.0"
+  contact:
+    name: Payment Service Team
+
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local development server
+
+paths:
+  /stripe/onboarding/status:
+    get:
+      tags:
+        - payment-service
+      summary: Kiểm tra trạng thái onboarding Stripe
+      description: |
+        Trả về trạng thái hiện tại của tài khoản Stripe Connect cho người bán đã xác thực.
+        Bao gồm trạng thái hoàn tất KYC và các capability đã được kích hoạt.
+      operationId: getStripeOnboardingStatus
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Trạng thái tài khoản đã được truy xuất
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StripeOnboardingStatusResponse"
+              example:
+                stripeAccountId: "acct_1OxABC123456789"
+                accountStatus: "ACTIVE"
+                detailsSubmitted: true
+                chargesEnabled: true
+                payoutsEnabled: true
+                onboardingStatus: "COMPLETE"
+                onboardingUrl: null
+                expressDashboardUrl: "https://dashboard.stripe.com/express/acct_1OxABC123456789"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from Identity Service (yêu cầu role SELLER)
+
+  schemas:
+    StripeOnboardingStatusResponse:
+      type: object
+      properties:
+        stripeAccountId:
+          type: string
+          description: Stripe Express account ID
+          example: "acct_1OxABC123456789"
+        accountStatus:
+          type: string
+          description: Trạng thái hiện tại của tài khoản Stripe
+          example: "ACTIVE"
+        detailsSubmitted:
+          type: boolean
+          description: Đã hoàn tất KYC hay chưa
+        chargesEnabled:
+          type: boolean
+          description: Tài khoản có thể nhận destination charges hay không
+        payoutsEnabled:
+          type: boolean
+          description: Tài khoản có thể nhận payouts hay không
+        onboardingStatus:
+          type: string
+          enum:
+            - PENDING
+            - IN_PROGRESS
+            - COMPLETE
+            - SUSPENDED
+          description: Trạng thái onboarding tổng quan
+        onboardingUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: URL onboarding hiện tại (null nếu đã hoàn tất hoặc hết hạn)
+        expressDashboardUrl:
+          type: string
+          format: uri
+          description: URL đến Stripe Express Dashboard của người bán
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Mã lỗi
+          example: "UNAUTHORIZED"
+        message:
+          type: string
+          description: Mô tả lỗi dành cho con người
+          example: "Authentication required"
+
+  responses:
+    ValidationError:
+      description: Yêu cầu không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "VALIDATION_ERROR"
+            message: "Invalid request parameters"
+    Unauthorized:
+      description: Thiếu hoặc token JWT không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "UNAUTHORIZED"
+            message: "Authentication required"
+    Forbidden:
+      description: Đã xác thực nhưng thiếu role SELLER
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "FORBIDDEN"
+            message: "SELLER role required"
+    InternalError:
+      description: Lỗi máy chủ nội bộ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "INTERNAL_ERROR"
+            message: "An unexpected error occurred"
+
+tags:
+  - name: payment-service
+    description: Payment service operations

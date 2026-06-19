@@ -1,0 +1,132 @@
+﻿openapi: "3.0.3"
+info:
+  title: Product Service - Category Detail API
+  description: |
+    Láº¥y chi tiáº¿t má»™t danh má»¥c bao gá»“m danh má»¥c con (cÃ¢y phÃ¢n cáº¥p tá»± tham chiáº¿u)
+    vÃ  breadcrumb dáº«n vá» root.
+    Base URL: `/api/v1`
+    Service: product-service (Port 8084)
+  version: "5.4.0"
+
+servers:
+  - url: https://api.marketplace.vn/api/v1
+    description: Production
+  - url: http://localhost:8084/api/v1
+    description: Local development
+
+paths:
+  /categories/{categoryId}:
+    get:
+      operationId: getCategoryDetail
+      summary: Láº¥y chi tiáº¿t má»™t danh má»¥c
+      description: |
+        Tráº£ vá» thÃ´ng tin má»™t danh má»¥c, danh sÃ¡ch danh má»¥c con trá»±c tiáº¿p,
+        vÃ  breadcrumb path tá»« root Ä‘áº¿n danh má»¥c hiá»‡n táº¡i.
+        Endpoint cÃ´ng khai, khÃ´ng yÃªu cáº§u xÃ¡c thá»±c.
+        LiÃªn quan: UC-PRODUCT-002, FR-PRODUCT-002.
+      tags: [Categories]
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID danh má»¥c
+      responses:
+        "200":
+          description: Chi tiáº¿t danh má»¥c
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryDetailResponse"
+        "404":
+          description: KhÃ´ng tÃ¬m tháº¥y danh má»¥c
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    CategoryDetailResponse:
+      type: object
+      required: [id, name, slug, is_active, children, breadcrumb]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "8f1a2b3c-4d5e-6f70-8901-234567890abc"
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: NULL náº¿u lÃ  root
+          example: null
+        name:
+          type: string
+          maxLength: 255
+          example: "Ão Thun Nam"
+        slug:
+          type: string
+          maxLength: 255
+          example: "ao-thun-nam"
+        description:
+          type: string
+          nullable: true
+          example: "Táº¥t cáº£ Ã¡o thun dÃ nh cho nam giá»›i"
+        image_url:
+          type: string
+          nullable: true
+          format: uri
+        sort_order:
+          type: integer
+          example: 0
+        is_active:
+          type: boolean
+          example: true
+        product_count:
+          type: integer
+          description: Sá»‘ sáº£n pháº©m `active` thuá»™c danh má»¥c nÃ y (cache 5 phÃºt)
+          example: 142
+        children:
+          type: array
+          description: Danh má»¥c con trá»±c tiáº¿p (1 level)
+          items:
+            $ref: "#/components/schemas/CategoryNode"
+        breadcrumb:
+          type: array
+          description: ÄÆ°á»ng dáº«n tá»« root â†’ danh má»¥c hiá»‡n táº¡i
+          items:
+            $ref: "#/components/schemas/CategoryNode"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CategoryNode:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        sort_order:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string

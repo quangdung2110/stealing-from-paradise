@@ -1,0 +1,8 @@
+# Dev image — expects JAR pre-built on the host (mvn package)
+# Build on host first: cd backend && mvn package -DskipTests
+# Context: ./backend/identity-service
+FROM eclipse-temurin:25-jre-alpine
+WORKDIR /app
+COPY target/identity-service-*.jar app.jar
+EXPOSE 8081
+ENTRYPOINT ["java", "-jar", "app.jar"]

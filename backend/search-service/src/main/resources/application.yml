@@ -1,0 +1,74 @@
+server:
+  port: 8087
+spring:
+  application:
+    name: search-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  threads:
+    virtual:
+      enabled: true
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+  elasticsearch:
+    uris: ${ELASTIC_URI:http://localhost:9200}
+    socket-keep-alive: true
+    socket-timeout: 60000
+    repository:
+      type: none
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVER:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: ${spring.application.name}-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        spring.json.trusted.packages: com.flashsale.*
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+      timeout: 2000ms
+search:
+  elasticsearch:
+    index-name: skus
+    index-alias: skus
+    max-result-window: 10000
+  # Category slug prefixes whose products are hidden from public search results
+  # (E2E/frontend fixtures seeded under fe-*/e2e-* categories). The fixtures stay
+  # in the index so tests can still target them; set this empty to disable hiding.
+  hidden-category-prefixes: ${SEARCH_HIDDEN_CATEGORY_PREFIXES:e2e-}
+  kafka:
+    product-group: search-service-product-group
+    flashsale-group: search-service-flashsale-group
+    index-data-timeout-seconds: 30
+    index-data-reply-group-prefix: search-service-index-data-replies
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+    registry-fetch-interval-seconds: 30
+    initial-instance-info-replication-interval-seconds: 40
+    should-enforce-registration-at-init: false
+    fetch-registry: true
+    register-with-eureka: true
+    enabled: true
+
+flashsale:
+  infra:
+    dlq:
+      enabled: true   # Kafka consumer DLQ -> <topic>.DLT

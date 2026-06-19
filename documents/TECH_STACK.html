@@ -1,0 +1,1128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TECH STACK &amp; FRAMEWORKS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --doc-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      --doc-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --doc-bg: #f6f7f9;
+      --doc-panel: #ffffff;
+      --doc-border: #d9dee7;
+      --doc-muted: #5c6675;
+      --doc-text: #162033;
+      --doc-accent: #1d4ed8;
+      --doc-accent-soft: #eff6ff;
+    }
+
+    html { scroll-padding-top: 5rem; }
+    body {
+      background: var(--doc-bg);
+      color: var(--doc-text);
+      font-family: var(--doc-font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      letter-spacing: 0;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      text-rendering: optimizeLegibility;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      line-height: 1.22;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+
+    a { color: var(--doc-accent); }
+    a:hover { color: #123b9c; }
+
+    .doc-topbar {
+      background: rgba(255, 255, 255, .96);
+      border-bottom: 1px solid var(--doc-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .doc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    .doc-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .doc-sidebar {
+      position: sticky;
+      top: 5rem;
+      max-height: calc(100vh - 6rem);
+      overflow: auto;
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+    }
+
+    .doc-main {
+      min-width: 0;
+    }
+
+    .doc-hero,
+    .doc-panel {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+    }
+
+    .doc-hero {
+      padding: 1.25rem;
+    }
+
+    .doc-section {
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-kpi {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+      height: 100%;
+    }
+
+    .doc-card {
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      background: var(--doc-panel);
+      height: 100%;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .doc-card:hover {
+      border-color: #adc6ff;
+      box-shadow: 0 .5rem 1.5rem rgba(22, 32, 51, .08);
+      transform: translateY(-1px);
+    }
+
+    .doc-card:focus-visible,
+    .doc-link-list a:focus-visible,
+    .nav-link:focus-visible,
+    .btn:focus-visible {
+      outline: 3px solid rgba(29, 78, 216, .35);
+      outline-offset: 2px;
+    }
+
+    .doc-card .card-body {
+      padding: 1rem;
+    }
+
+    .doc-link-list {
+      display: grid;
+      gap: .5rem;
+      padding-left: 0;
+      margin-bottom: 0;
+      list-style: none;
+    }
+
+    .doc-link-list a {
+      display: block;
+      padding: .625rem .75rem;
+      border: 1px solid var(--doc-border);
+      border-radius: .5rem;
+      background: #fff;
+      text-decoration: none;
+    }
+
+    .doc-link-list a:hover {
+      background: var(--doc-accent-soft);
+      border-color: #bfdbfe;
+    }
+
+    .doc-table {
+      --bs-table-bg: #fff;
+      border: 1px solid var(--doc-border);
+    }
+
+    .doc-table thead th {
+      background: #eef2f7;
+      color: #283549;
+      white-space: nowrap;
+    }
+
+    pre {
+      background: #101827;
+      color: #f8fafc;
+      font-family: var(--doc-font-mono);
+      font-size: .875rem;
+      line-height: 1.55;
+      padding: 1rem;
+      border-radius: .75rem;
+      overflow: auto;
+    }
+
+    pre.mermaid {
+      background: #ffffff;
+      color: var(--doc-text);
+      border: 1px solid var(--doc-border);
+      min-height: 8rem;
+    }
+
+    code {
+      color: #9a3412;
+      font-family: var(--doc-font-mono);
+      font-size: .9em;
+    }
+
+    .doc-meta {
+      color: var(--doc-muted);
+      font-size: .875rem;
+    }
+
+    .doc-anchor {
+      scroll-margin-top: 5rem;
+    }
+
+    @media (max-width: 991.98px) {
+      .doc-shell { padding: .875rem; }
+      .doc-layout { grid-template-columns: 1fr; }
+      .doc-sidebar {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    @media print {
+      .doc-topbar,
+      .doc-sidebar,
+      .btn,
+      .nav-tabs {
+        display: none !important;
+      }
+      body { background: #fff; }
+      .doc-shell { max-width: none; padding: 0; }
+      .doc-layout { display: block; }
+      .doc-hero,
+      .doc-panel,
+      .doc-card,
+      .doc-kpi {
+        border: 1px solid #bbb;
+        box-shadow: none !important;
+      }
+    }
+      pre code { color: inherit; background: transparent; font-size: inherit; padding: 0; }
+    pre { white-space: pre; }
+  </style>
+</head>
+<body>
+  <header class="doc-topbar sticky-top">
+    <nav class="navbar navbar-expand-lg">
+      <div class="container-fluid px-3">
+        <a class="navbar-brand fw-semibold" href="index.html">Stealing-from-Paradise</a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <a class="btn btn-sm btn-outline-secondary" href="index.html">Home</a>
+<a class="btn btn-sm btn-outline-secondary" href="groups/overview.html">Overview</a>
+<a class="btn btn-sm btn-outline-secondary" href="groups/architecture.html">Architecture</a>
+<a class="btn btn-sm btn-outline-secondary" href="groups/domain.html">Domain Model and Rules</a>
+<a class="btn btn-sm btn-outline-secondary" href="groups/use-cases.html">Use Cases</a>
+<a class="btn btn-sm btn-outline-secondary" href="groups/business-flows.html">Business Flows</a>
+<a class="btn btn-sm btn-outline-secondary" href="groups/interfaces.html">Interfaces</a>
+<a class="btn btn-sm btn-outline-secondary" href="groups/messaging.html">Messaging and Realtime</a>
+<a class="btn btn-sm btn-outline-secondary" href="groups/traceability.html">Traceability</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="doc-shell">
+    <div class="doc-layout">
+      <aside class="doc-sidebar">
+        <div class="fw-semibold mb-2">Contents</div>
+        <nav class="nav nav-pills flex-column gap-1">
+          <a class="nav-link" href="groups/overview.html">Overview</a>
+<a class="nav-link" href="groups/architecture.html">Architecture</a>
+<a class="nav-link" href="groups/domain.html">Domain Model and Rules</a>
+<a class="nav-link" href="groups/business-flows.html">Business Flows</a>
+<a class="nav-link" href="groups/use-cases.html">Use Cases</a>
+<a class="nav-link" href="groups/interfaces.html">Interfaces</a>
+<a class="nav-link" href="groups/messaging.html">Messaging and Realtime</a>
+<a class="nav-link" href="groups/identity.html">Identity and Security</a>
+<a class="nav-link" href="groups/platform.html">Platform and Operations</a>
+<a class="nav-link" href="groups/deployment.html">Deployment</a>
+<a class="nav-link" href="groups/observability.html">Observability</a>
+<a class="nav-link" href="groups/integrations.html">Integrations</a>
+<a class="nav-link" href="groups/traceability.html">Traceability</a>
+<a class="nav-link" href="traceability/matrix.html">Traceability Matrix</a>
+        </nav>
+      </aside>
+
+      <main class="doc-main">
+        <section class="doc-hero doc-section">
+          <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div>
+              <h1 class="h2 mb-1">TECH STACK &amp; FRAMEWORKS</h1>
+              <div class="doc-meta">DOC-TECH-STACK | 2026-06-09</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2"><span class="badge text-bg-info">doc</span> <span class="badge text-bg-light">platform</span></div>
+          </div>
+        </section>
+
+        <section class="doc-section"><div class="doc-panel p-3 p-md-4 doc-prose"><h1>TECH STACK &amp; FRAMEWORKS</h1>
+<blockquote>
+<p>TÃ i liá»‡u liá»‡t kÃª Ä‘áº§y Ä‘á»§ cÃ¡c cÃ´ng nghá»‡, framework, thÆ° viá»‡n vÃ  háº¡ táº§ng Ä‘Æ°á»£c sá»­ dá»¥ng trong dá»± Ã¡n <strong>Flash Sale E-Commerce Platform</strong> (<code>stealing-from-paradise</code>).</p>
+<p><strong>Kiáº¿n trÃºc tá»•ng quan:</strong> Microservices + Event-Driven (CQRS/Event Sourcing) + Reactive</p>
+<p>Cáº­p nháº­t: 2026-05-21</p>
+</blockquote>
+<hr>
+<h2>Má»¥c lá»¥c</h2>
+<ol>
+<li><a href="#">TÃ³m táº¯t nhanh</a></li>
+<li><a href="#">Backend â€” NgÃ´n ngá»¯ &amp; Runtime</a></li>
+<li><a href="#">Backend â€” Framework chÃ­nh</a></li>
+<li><a href="#">Backend â€” Theo tá»«ng service</a></li>
+<li><a href="#">Frontend</a></li>
+<li><a href="#">CÆ¡ sá»Ÿ dá»¯ liá»‡u &amp; LÆ°u trá»¯</a></li>
+<li><a href="#">Messaging &amp; Event Backbone</a></li>
+<li><a href="#">Service Discovery, Gateway &amp; Cáº¥u hÃ¬nh</a></li>
+<li><a href="#">Báº£o máº­t &amp; Identity</a></li>
+<li><a href="#">AI / LLM</a></li>
+<li><a href="#">Thanh toÃ¡n &amp; TÃ­ch há»£p bÃªn thá»© ba</a></li>
+<li><a href="#">DevOps / Háº¡ táº§ng váº­n hÃ nh</a></li>
+<li><a href="#">Quan sÃ¡t &amp; GiÃ¡m sÃ¡t</a></li>
+<li><a href="#">Phá»¥ lá»¥c: PhiÃªn báº£n chá»‘t</a></li>
+</ol>
+<hr>
+<h2>1. TÃ³m táº¯t nhanh</h2>
+<table>
+<thead>
+<tr>
+<th>Lá»›p</th>
+<th>CÃ´ng nghá»‡ chÃ­nh</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NgÃ´n ngá»¯ backend</td>
+<td><strong>Java 25</strong></td>
+</tr>
+<tr>
+<td>Framework backend</td>
+<td><strong>Spring Boot 4.0.4</strong>, <strong>Spring Cloud 2025.1.1</strong>, <strong>Axon Framework 4.13.0</strong></td>
+</tr>
+<tr>
+<td>Reactive stack</td>
+<td><strong>Spring WebFlux</strong>, <strong>R2DBC</strong>, <strong>Project Reactor</strong>, <strong>Virtual Threads (Loom)</strong></td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td><strong>React 19</strong>, <strong>Vite 6</strong>, <strong>TypeScript 5.6</strong>, <strong>TanStack Query v5</strong>, <strong>Zustand 5</strong>, <strong>Tailwind 3.4</strong></td>
+</tr>
+<tr>
+<td>Database</td>
+<td><strong>PostgreSQL 15</strong>, <strong>MongoDB 6</strong>, <strong>Redis 7</strong>, <strong>Elasticsearch 8</strong></td>
+</tr>
+<tr>
+<td>Messaging</td>
+<td><strong>Apache Kafka (Confluent 7.4)</strong>, <strong>Axon Server</strong> (event store + command/query bus)</td>
+</tr>
+<tr>
+<td>AI</td>
+<td><strong>Spring AI 2.0.0-M6</strong> (OpenAI / DeepSeek compatible)</td>
+</tr>
+<tr>
+<td>Thanh toÃ¡n</td>
+<td><strong>Stripe</strong></td>
+</tr>
+<tr>
+<td>Storage</td>
+<td><strong>MinIO</strong> (S3 compatible)</td>
+</tr>
+<tr>
+<td>Gateway / Discovery</td>
+<td><strong>Spring Cloud Gateway (WebFlux)</strong>, <strong>Netflix Eureka</strong></td>
+</tr>
+<tr>
+<td>Container</td>
+<td><strong>Docker Compose</strong> (multi-stack: infrastructure / backend / frontend)</td>
+</tr>
+<tr>
+<td>Quan sÃ¡t</td>
+<td><strong>Spring Actuator</strong>, <strong>Micrometer + Prometheus</strong></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>2. Backend â€” NgÃ´n ngá»¯ &amp; Runtime</h2>
+<table>
+<thead>
+<tr>
+<th>Háº¡ng má»¥c</th>
+<th>Chi tiáº¿t</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NgÃ´n ngá»¯</td>
+<td><strong>Java 25</strong> (LTS, dÃ¹ng tÃ­nh nÄƒng records, sealed types, pattern matching)</td>
+</tr>
+<tr>
+<td>Build tool</td>
+<td><strong>Maven</strong> (multi-module, parent <code>flashsale-parent</code> quáº£n lÃ½ toÃ n bá»™ version)</td>
+</tr>
+<tr>
+<td>Virtual Threads</td>
+<td>Báº­t <code>spring.threads.virtual.enabled=true</code> á»Ÿ cÃ¡c service blocking (Project Loom) Ä‘á»ƒ xá»­ lÃ½ nhiá»u request Ä‘á»“ng thá»i mÃ  khÃ´ng cáº§n thread pool lá»›n</td>
+</tr>
+<tr>
+<td>Code generation</td>
+<td><strong>Lombok 1.18.40</strong> (giáº£m boilerplate getter/setter/builder)</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td><strong>Jakarta Validation API + Hibernate Validator</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>VÃ¬ sao chá»n Java 25 + Spring Boot 4:</strong>
+- Java 25 = LTS gáº§n nháº¥t, cÃ³ virtual threads á»•n Ä‘á»‹nh â†’ phÃ¹ há»£p vá»›i traffic cao kiá»ƒu flash-sale (hÃ ng nghÃ¬n request Ä‘á»“ng thá»i).
+- Spring Boot 4 = sinh thÃ¡i lá»›n, auto-config nhanh, tÆ°Æ¡ng thÃ­ch Spring Cloud 2025.1.</p>
+<hr>
+<h2>3. Backend â€” Framework chÃ­nh</h2>
+<h3>3.1 Spring Boot 4.0.4</h3>
+<p>Ná»n táº£ng autoconfigure cho má»i service. Starters chÃ­nh Ä‘Æ°á»£c dÃ¹ng:</p>
+<table>
+<thead>
+<tr>
+<th>Starter</th>
+<th>Má»¥c Ä‘Ã­ch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>spring-boot-starter-web</code></td>
+<td>REST API blocking (Tomcat servlet)</td>
+</tr>
+<tr>
+<td><code>spring-boot-starter-webflux</code></td>
+<td>REST API reactive / SSE (Netty)</td>
+</tr>
+<tr>
+<td><code>spring-boot-starter-data-jpa</code></td>
+<td>ORM cho PostgreSQL</td>
+</tr>
+<tr>
+<td><code>spring-boot-starter-data-r2dbc</code></td>
+<td>Reactive driver cho PostgreSQL</td>
+</tr>
+<tr>
+<td><code>spring-boot-starter-data-mongodb</code> / <code>-reactive</code></td>
+<td>Document store</td>
+</tr>
+<tr>
+<td><code>spring-boot-starter-data-redis</code> / <code>-reactive</code></td>
+<td>Cache, rate limiter, distributed lock</td>
+</tr>
+<tr>
+<td><code>spring-boot-starter-data-elasticsearch</code></td>
+<td>Full-text search</td>
+</tr>
+<tr>
+<td><code>spring-boot-starter-security</code></td>
+<td>Auth (JWT)</td>
+</tr>
+<tr>
+<td><code>spring-boot-starter-validation</code></td>
+<td>Bean validation</td>
+</tr>
+<tr>
+<td><code>spring-boot-starter-actuator</code></td>
+<td>Health, metrics, info endpoints</td>
+</tr>
+</tbody>
+</table>
+<h3>3.2 Spring Cloud 2025.1.1</h3>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Má»¥c Ä‘Ã­ch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>spring-cloud-starter-netflix-eureka-server</code></td>
+<td>Discovery server (port 8761)</td>
+</tr>
+<tr>
+<td><code>spring-cloud-starter-netflix-eureka-client</code></td>
+<td>Client tá»± Ä‘Äƒng kÃ½ vá»›i Eureka</td>
+</tr>
+<tr>
+<td><code>spring-cloud-starter-gateway-server-webflux</code></td>
+<td>API Gateway reactive (port 8080), routing + filter</td>
+</tr>
+</tbody>
+</table>
+<h3>3.3 Axon Framework 4.13.0 â€” CQRS / Event Sourcing</h3>
+<p>DÃ¹ng cho cÃ¡c domain <strong>tráº¡ng thÃ¡i nghiá»‡p vá»¥ phá»©c táº¡p</strong> (order, payment, refund, flashsale).</p>
+<ul>
+<li><strong>Command side</strong> (<code>@CommandHandler</code>): nháº­n lá»‡nh, validate invariant trong aggregate root.</li>
+<li><strong>Event side</strong> (<code>@EventSourcingHandler</code>): tÃ¡i dá»±ng aggregate tá»« event store.</li>
+<li><strong>Saga</strong> (<code>@Saga</code>): Ä‘iá»u phá»‘i flow Ä‘a service (vÃ­ dá»¥: Order â†’ Payment â†’ Inventory deduction â†’ Notification).</li>
+<li><strong>Axon Server</strong>: event store + command/query bus (cháº¡y nhÆ° container riÃªng, port 8024 UI, 8124 gRPC).</li>
+</ul>
+<h3>3.4 Spring WebFlux + Project Reactor</h3>
+<p>DÃ¹ng á»Ÿ <strong>api-gateway</strong>, <strong>flashsale-service</strong>, <strong>chat-service</strong>, <strong>notification-service</strong> â€” nÆ¡i cáº§n xá»­ lÃ½ nhiá»u káº¿t ná»‘i Ä‘á»“ng thá»i (SSE, long-polling, downstream call chain).</p>
+<ul>
+<li>Non-blocking I/O trÃªn Netty</li>
+<li><code>Mono&lt;T&gt;</code> / <code>Flux&lt;T&gt;</code> cho stream/single async</li>
+<li>TÃ­ch há»£p tá»‘t vá»›i R2DBC (PostgreSQL reactive) vÃ  Mongo reactive driver</li>
+</ul>
+<h3>3.5 Spring Data</h3>
+<ul>
+<li><strong>JPA + Hibernate</strong>: blocking PostgreSQL (identity, order, payment, refund)</li>
+<li><strong>R2DBC</strong>: reactive PostgreSQL (flashsale â€” yÃªu cáº§u throughput cá»±c cao)</li>
+<li><strong>Mongo (blocking &amp; reactive)</strong>: product, notification, chat</li>
+<li><strong>Redis (blocking &amp; reactive)</strong>: cache, rate-limiter, Redis stream</li>
+</ul>
+<h3>3.6 Flyway</h3>
+<p>Database migration cho má»i service dÃ¹ng PostgreSQL (<code>identity</code>, <code>order</code>, <code>payment</code>, <code>refund</code>, <code>flashsale</code>). File SQL náº±m trong <code>src/main/resources/db/migration</code>.</p>
+<hr>
+<h2>4. Backend â€” Theo tá»«ng service</h2>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Port</th>
+<th>DB</th>
+<th>Pattern</th>
+<th>Äáº·c thÃ¹ cÃ´ng nghá»‡</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>discovery-service</strong></td>
+<td>8761</td>
+<td>â€”</td>
+<td>Eureka Server</td>
+<td>Spring Cloud Netflix</td>
+</tr>
+<tr>
+<td><strong>api-gateway</strong></td>
+<td>8080</td>
+<td>Redis (rate-limit)</td>
+<td>WebFlux Gateway</td>
+<td>Reactive, JWT validate, route theo Eureka</td>
+</tr>
+<tr>
+<td><strong>identity-service</strong></td>
+<td>8081</td>
+<td>PostgreSQL + Redis</td>
+<td>Layered (CRUD)</td>
+<td>Spring Security, JWT issuance, Flyway</td>
+</tr>
+<tr>
+<td><strong>product-service</strong></td>
+<td>8084</td>
+<td>PostgreSQL + Redis + MinIO</td>
+<td>Layered</td>
+<td>Catalog, cart, inventory reservation, product images</td>
+</tr>
+<tr>
+<td><strong>order-service</strong></td>
+<td>8083</td>
+<td>PostgreSQL (JPA) + Kafka</td>
+<td><strong>Axon CQRS</strong></td>
+<td>Aggregate, Saga Ä‘iá»u phá»‘i Payment</td>
+</tr>
+<tr>
+<td><strong>payment-service</strong></td>
+<td>8082</td>
+<td>PostgreSQL (JPA) + Kafka</td>
+<td>JPA + Kafka</td>
+<td>Stripe SDK, webhook handler, seller transfers</td>
+</tr>
+<tr>
+<td><strong>refund-service</strong></td>
+<td>8094</td>
+<td>PostgreSQL (JPA) + Kafka</td>
+<td>JPA + Kafka</td>
+<td>Admin refund approval, Stripe refund/reversal</td>
+</tr>
+<tr>
+<td><strong>flashsale-service</strong></td>
+<td>8086</td>
+<td>PostgreSQL (R2DBC) + Redis (reactive)</td>
+<td>WebFlux + Kafka</td>
+<td>High-throughput reactive, atomic decrement Redis</td>
+</tr>
+<tr>
+<td><strong>search-service</strong></td>
+<td>8087</td>
+<td>Elasticsearch</td>
+<td>CQRS read-side</td>
+<td>Consume Kafka event Ä‘á»ƒ index sáº£n pháº©m</td>
+</tr>
+<tr>
+<td><strong>notification-service</strong></td>
+<td>8092</td>
+<td>MongoDB (reactive) + Redis</td>
+<td>WebFlux</td>
+<td>SSE push, consume sá»± kiá»‡n Ä‘Æ¡n hÃ ng</td>
+</tr>
+<tr>
+<td><strong>chat-service</strong></td>
+<td>8093</td>
+<td>MongoDB (reactive) + Redis</td>
+<td>WebFlux + <strong>Spring AI</strong></td>
+<td>LLM tool calling, Redis rate limit, SSE streaming chat</td>
+</tr>
+<tr>
+<td><strong>common-lib</strong></td>
+<td>â€”</td>
+<td>â€”</td>
+<td>Shared library</td>
+<td>DTOs, exceptions, JWT util, Kafka topic constants</td>
+</tr>
+<tr>
+<td><strong>dev-data-runner</strong></td>
+<td>â€”</td>
+<td>â€”</td>
+<td>Helper</td>
+<td>Seed dá»¯ liá»‡u dev</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>5. Frontend</h2>
+<p>3 á»©ng dá»¥ng riÃªng biá»‡t trong <code>frontend/apps/</code>: <strong>customer</strong>, <strong>seller</strong>, <strong>admin</strong>.</p>
+<h3>5.1 Stack chung</h3>
+<table>
+<thead>
+<tr>
+<th>CÃ´ng nghá»‡</th>
+<th>Version</th>
+<th>Má»¥c Ä‘Ã­ch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>React</strong></td>
+<td>19.0</td>
+<td>UI library</td>
+</tr>
+<tr>
+<td><strong>TypeScript</strong></td>
+<td>5.6</td>
+<td>Type safety</td>
+</tr>
+<tr>
+<td><strong>Vite</strong></td>
+<td>6.0</td>
+<td>Dev server + bundler (HMR cá»±c nhanh, ESM native)</td>
+</tr>
+<tr>
+<td><strong>React Router</strong></td>
+<td>6.26</td>
+<td>Client-side routing</td>
+</tr>
+<tr>
+<td><strong>TanStack Query (React Query)</strong></td>
+<td>5.62</td>
+<td>Server state, cache, retry, optimistic update</td>
+</tr>
+<tr>
+<td><strong>Zustand</strong></td>
+<td>5.0</td>
+<td>Client state (auth, cart) â€” siÃªu nháº¹ thay Redux</td>
+</tr>
+<tr>
+<td><strong>Axios</strong></td>
+<td>1.7</td>
+<td>HTTP client vá»›i interceptor</td>
+</tr>
+<tr>
+<td><strong>Tailwind CSS</strong></td>
+<td>3.4</td>
+<td>Utility-first styling</td>
+</tr>
+<tr>
+<td><strong>js-cookie</strong></td>
+<td>3.0</td>
+<td>LÆ°u access/refresh token</td>
+</tr>
+</tbody>
+</table>
+<h3>5.2 RiÃªng customer + seller</h3>
+<ul>
+<li><strong><code>@stripe/stripe-js</code> 5.5</strong> + <strong><code>@stripe/react-stripe-js</code> 3.2</strong> â€” Stripe Elements Ä‘á»ƒ nháº­p tháº».</li>
+</ul>
+<h3>5.3 VÃ¬ sao khÃ´ng Next.js?</h3>
+<p>Dá»± Ã¡n lÃ  3 SPA Ä‘á»™c láº­p (B2C / B2B / Admin). KhÃ´ng cáº§n SSR/SEO sÃ¢u â†’ Vite + React SPA nháº¹ vÃ  build nhanh hÆ¡n Next.js.</p>
+<hr>
+<h2>6. CÆ¡ sá»Ÿ dá»¯ liá»‡u &amp; LÆ°u trá»¯</h2>
+<table>
+<thead>
+<tr>
+<th>DB</th>
+<th>Version</th>
+<th>Service sá»­ dá»¥ng</th>
+<th>LÃ½ do chá»n</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>PostgreSQL</strong></td>
+<td>15.4-alpine</td>
+<td>identity, order, payment, refund, flashsale</td>
+<td>OLTP ACID, transactional, JPA/R2DBC á»•n Ä‘á»‹nh</td>
+</tr>
+<tr>
+<td><strong>MongoDB</strong></td>
+<td>6.0.8</td>
+<td>notification, chat</td>
+<td>Document model for notification/chat history</td>
+</tr>
+<tr>
+<td><strong>Redis</strong></td>
+<td>7.2.1-alpine</td>
+<td>gateway, identity, product, flashsale, search, notification, chat</td>
+<td>Cache, rate-limit, reservation/session state, atomic counter, pub/sub</td>
+</tr>
+<tr>
+<td><strong>Elasticsearch</strong></td>
+<td>8.10.2</td>
+<td>search</td>
+<td>Full-text search, fuzzy, aggregation</td>
+</tr>
+<tr>
+<td><strong>MinIO</strong></td>
+<td>latest</td>
+<td>product</td>
+<td>S3-compatible object storage cho áº£nh sáº£n pháº©m</td>
+</tr>
+<tr>
+<td><strong>Axon Server</strong></td>
+<td>latest</td>
+<td>order</td>
+<td>Event store + order saga/event handling</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>7. Messaging &amp; Event Backbone</h2>
+<h3>7.1 Apache Kafka (Confluent 7.4.0)</h3>
+<ul>
+<li>Broker port <code>9092</code> (internal), <code>9094</code> (external)</li>
+<li>Zookeeper port <code>2181</code> (legacy mode)</li>
+<li>Má»i service Ä‘á»u cÃ³ <code>spring-kafka</code> dependency</li>
+<li>Pattern dÃ¹ng: <strong>Event Notification</strong> + <strong>Event-Carried State Transfer</strong> (search-service index tá»« event)</li>
+<li>Topic management: container <code>kafka-init</code> cháº¡y script táº¡o topic khi compose up</li>
+<li>Catalog topic: xem <code>documents/messaging/KAFKA_CATALOG.md</code></li>
+</ul>
+<h3>7.2 Axon Server</h3>
+<ul>
+<li>Event store cho cÃ¡c CQRS aggregate</li>
+<li>Command/Query bus (gRPC)</li>
+<li>CÃ³ UI quáº£n trá»‹ á»Ÿ port <code>8024</code></li>
+</ul>
+<h3>7.3 Khi nÃ o dÃ¹ng Kafka vs Axon?</h3>
+<table>
+<thead>
+<tr>
+<th>Use case</th>
+<th>Bus dÃ¹ng</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Domain event ná»™i bá»™ aggregate, replay event</td>
+<td><strong>Axon</strong></td>
+</tr>
+<tr>
+<td>Cross-service integration event (Order created â†’ Search index, â†’ Notification)</td>
+<td><strong>Kafka</strong></td>
+</tr>
+<tr>
+<td>Saga Ä‘iá»u phá»‘i nhiá»u service</td>
+<td><strong>Axon Saga</strong> publish event ra Kafka cho service ngoÃ i</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>8. Service Discovery, Gateway &amp; Cáº¥u hÃ¬nh</h2>
+<ul>
+<li><strong>Discovery</strong>: <code>discovery-service</code> (Eureka, port 8761) â€” má»i microservice tá»± Ä‘Äƒng kÃ½.</li>
+<li><strong>API Gateway</strong>: <code>api-gateway</code> (Spring Cloud Gateway WebFlux, port 8080) â€” route theo <code>serviceId</code> (Eureka), filter JWT, rate-limit qua Redis.</li>
+<li><strong>Cáº¥u hÃ¬nh</strong>: file <code>application.yaml</code> má»—i service + biáº¿n mÃ´i trÆ°á»ng (qua <code>.env</code> vÃ  docker-compose).</li>
+</ul>
+<hr>
+<h2>9. Báº£o máº­t &amp; Identity</h2>
+<table>
+<thead>
+<tr>
+<th>Háº¡ng má»¥c</th>
+<th>CÃ´ng nghá»‡</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Auth framework</td>
+<td><strong>Spring Security 6</strong></td>
+</tr>
+<tr>
+<td>Token</td>
+<td><strong>JWT</strong> (HS256), issue bá»Ÿi <code>identity-service</code>, validate á»Ÿ gateway</td>
+</tr>
+<tr>
+<td>Password</td>
+<td>BCrypt (Spring Security)</td>
+</tr>
+<tr>
+<td>Refresh token</td>
+<td>LÆ°u Redis vá»›i TTL</td>
+</tr>
+<tr>
+<td>CORS</td>
+<td>Cáº¥u hÃ¬nh á»Ÿ API Gateway</td>
+</tr>
+<tr>
+<td>Role</td>
+<td>USER / SELLER / ADMIN</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>10. AI / LLM</h2>
+<h3>10.1 Spring AI 2.0.0-M6 (chat-service)</h3>
+<ul>
+<li>Starter: <code>spring-ai-starter-model-openai</code> â€” chuáº©n OpenAI-compatible nÃªn cÃ³ thá»ƒ swap sang <strong>DeepSeek</strong>, <strong>Groq</strong>, <strong>Together AI</strong>, etc. báº±ng cÃ¡ch override <code>SPRING_AI_OPENAI_BASE_URL</code>.</li>
+<li>TÃ­nh nÄƒng dÃ¹ng trong <code>ChatService</code>:</li>
+<li><strong>Tool calling</strong> (<code>@Tool</code>): <code>OrderQueryTool</code>, <code>ProductSearchTool</code>, <code>SystemActionTool</code> â€” LLM tá»± quyáº¿t Ä‘á»‹nh gá»i tool nÃ o.</li>
+<li><strong>Human-in-the-loop confirmation</strong>: lÆ°u <code>PendingConfirmation</code> trÆ°á»›c khi thá»±c thi action cÃ³ áº£nh hÆ°á»Ÿng (há»§y Ä‘Æ¡n, refund).</li>
+<li><strong>Streaming SSE</strong>: tráº£ lá»i tá»«ng token qua <code>Flux&lt;ServerSentEvent&lt;String&gt;&gt;</code>.</li>
+<li>LÆ°u trá»¯ session/message: MongoDB reactive.</li>
+</ul>
+<h3>10.2 Cáº¥u hÃ¬nh env (xem <code>.env</code>)</h3>
+<pre><code>SPRING_AI_OPENAI_API_KEY=&lt;key&gt;
+SPRING_AI_OPENAI_BASE_URL=https://api.deepseek.com   # hoáº·c https://api.openai.com
+SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL=deepseek-chat    # hoáº·c gpt-4o-mini
+</code></pre>
+<hr>
+<h2>11. Thanh toÃ¡n &amp; TÃ­ch há»£p bÃªn thá»© ba</h2>
+<table>
+<thead>
+<tr>
+<th>TÃ­ch há»£p</th>
+<th>ThÆ° viá»‡n</th>
+<th>Service</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Stripe</strong></td>
+<td><code>stripe-java</code> (SDK chÃ­nh thá»©c) + Stripe Elements (frontend)</td>
+<td>payment-service, refund-service</td>
+</tr>
+<tr>
+<td><strong>Webhook</strong></td>
+<td>Stripe webhook â†’ payment-service xá»­ lÃ½ sá»± kiá»‡n <code>payment_intent.succeeded</code>, <code>charge.refunded</code>, etc.</td>
+<td>payment-service</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>12. DevOps / Háº¡ táº§ng váº­n hÃ nh</h2>
+<h3>12.1 Docker Compose stacks</h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Má»¥c Ä‘Ã­ch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docker-compose-infrastructure.yml</code></td>
+<td>Postgres, Mongo, Redis, Elasticsearch, Kafka, Zookeeper, MinIO, Axon Server</td>
+</tr>
+<tr>
+<td><code>docker-compose-backend.yml</code></td>
+<td>12 microservices Java</td>
+</tr>
+<tr>
+<td><code>docker-compose.yml</code></td>
+<td>All-in-one (infra + backend)</td>
+</tr>
+<tr>
+<td><code>docker-compose.dev.yml</code></td>
+<td>Overlay dev</td>
+</tr>
+<tr>
+<td><code>docker-compose.prod-pulled.yml</code></td>
+<td>Production (image tá»« registry)</td>
+</tr>
+<tr>
+<td><code>frontend/docker compose.yml</code></td>
+<td>3 frontend apps</td>
+</tr>
+</tbody>
+</table>
+<h3>12.2 Build &amp; deploy</h3>
+<ul>
+<li><strong>Dockerfile.dev</strong> má»—i service (multi-stage build vá»›i Maven + JRE)</li>
+<li><strong>PowerShell script</strong> <code>flashsale-build.ps1</code> Ä‘á»ƒ build hÃ ng loáº¡t</li>
+<li><strong>Nginx</strong> reverse proxy cho frontend (folder <code>nginx/</code>)</li>
+</ul>
+<h3>12.3 GitHub Actions</h3>
+<p>CÃ³ workflow <code>.github/workflows/copilot-setup-steps.yml</code> Ä‘á»ƒ setup mÃ´i trÆ°á»ng cho Copilot/CI.</p>
+<hr>
+<h2>13. Quan sÃ¡t &amp; GiÃ¡m sÃ¡t</h2>
+<table>
+<thead>
+<tr>
+<th>Háº¡ng má»¥c</th>
+<th>CÃ´ng cá»¥</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Health check</td>
+<td><code>spring-boot-starter-actuator</code> â†’ <code>/actuator/health</code></td>
+</tr>
+<tr>
+<td>Metrics</td>
+<td><strong>Micrometer</strong> + <code>micrometer-registry-prometheus</code> (product-service Ä‘Ã£ cÃ³, má»Ÿ rá»™ng cho service khÃ¡c)</td>
+</tr>
+<tr>
+<td>Logging</td>
+<td>Slf4j + Logback (máº·c Ä‘á»‹nh Spring Boot)</td>
+</tr>
+<tr>
+<td>Tracing</td>
+<td><em>ChÆ°a cáº¥u hÃ¬nh (gá»£i Ã½ thÃªm OpenTelemetry / Zipkin trong tÆ°Æ¡ng lai)</em></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>14. Phá»¥ lá»¥c: PhiÃªn báº£n chá»‘t</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Java</td>
+<td>25</td>
+</tr>
+<tr>
+<td>Spring Boot</td>
+<td>4.0.4</td>
+</tr>
+<tr>
+<td>Spring Cloud</td>
+<td>2025.1.1</td>
+</tr>
+<tr>
+<td>Axon Framework</td>
+<td>4.13.0</td>
+</tr>
+<tr>
+<td>Spring AI</td>
+<td>2.0.0-M6</td>
+</tr>
+<tr>
+<td>Lombok</td>
+<td>1.18.40</td>
+</tr>
+<tr>
+<td>PostgreSQL</td>
+<td>15.4-alpine</td>
+</tr>
+<tr>
+<td>MongoDB</td>
+<td>6.0.8</td>
+</tr>
+<tr>
+<td>Redis</td>
+<td>7.2.1-alpine</td>
+</tr>
+<tr>
+<td>Elasticsearch</td>
+<td>8.10.2</td>
+</tr>
+<tr>
+<td>Kafka (Confluent)</td>
+<td>7.4.0</td>
+</tr>
+<tr>
+<td>Node (frontend)</td>
+<td>22 (types)</td>
+</tr>
+<tr>
+<td>React</td>
+<td>19.0.0</td>
+</tr>
+<tr>
+<td>TypeScript</td>
+<td>5.6.2</td>
+</tr>
+<tr>
+<td>Vite</td>
+<td>6.0.0</td>
+</tr>
+<tr>
+<td>Tailwind CSS</td>
+<td>3.4.1</td>
+</tr>
+<tr>
+<td>TanStack Query</td>
+<td>5.62</td>
+</tr>
+<tr>
+<td>Zustand</td>
+<td>5.0.2</td>
+</tr>
+<tr>
+<td>Axios</td>
+<td>1.7.9</td>
+</tr>
+<tr>
+<td>Stripe Java SDK</td>
+<td>má»›i nháº¥t (managed by Spring Boot BOM)</td>
+</tr>
+<tr>
+<td>Stripe JS</td>
+<td>5.5.0</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>TÃ i liá»‡u liÃªn quan</h2>
+<ul>
+<li><code>README.md</code> â€” quick start</li>
+<li><code>documents/PROJECT_OVERVIEW.md</code> â€” kiáº¿n trÃºc tá»•ng quan</li>
+<li><code>documents/ERD_DIAGRAMS.md</code> â€” sÆ¡ Ä‘á»“ ERD</li>
+<li><code>documents/messaging/KAFKA_CATALOG.md</code> â€” danh má»¥c Kafka topic</li>
+<li><code>documents/UC_FULL_SYSTEM.md</code> â€” use case toÃ n há»‡ thá»‘ng</li>
+</ul></div></section>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    function normalizeDocSearchText(value) {
+      return (value || '').toString().toLowerCase();
+    }
+
+    function escapeDocHtml(value) {
+      return (value || '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderSearchIndexResults(container, items, query) {
+      if (!container) return;
+      var normalized = normalizeDocSearchText(query);
+      if (!normalized) {
+        container.innerHTML = '';
+        container.classList.add('d-none');
+        return;
+      }
+      var matches = items.filter(function(item) {
+        var haystack = [
+          item.id,
+          item.title,
+          item.type,
+          item.group,
+          item.status,
+          item.summary,
+          (item.tags || []).join(' '),
+          (item.related_ids || []).join(' '),
+          item.search_text
+        ].map(normalizeDocSearchText).join(' ');
+        return haystack.indexOf(normalized) !== -1;
+      }).slice(0, 12);
+
+      if (!matches.length) {
+        container.innerHTML = '<div class="text-secondary small">No indexed results found.</div>';
+        container.classList.remove('d-none');
+        return;
+      }
+
+      container.innerHTML = matches.map(function(item) {
+        var title = escapeDocHtml(item.title || item.id || 'Untitled');
+        var path = escapeDocHtml(item.path || '#');
+        var meta = escapeDocHtml([item.type, item.group, item.status].filter(Boolean).join(' | '));
+        return '<a class="d-block border rounded p-2 mb-2 text-decoration-none bg-white" href="' + path + '">' +
+          '<div class="fw-semibold">' + title + '</div>' +
+          '<div class="text-secondary small">' + meta + '</div>' +
+          '</a>';
+      }).join('');
+      container.classList.remove('d-none');
+    }
+
+    var searchIndexPromise = null;
+    function loadDocSearchIndex(path, inlineSelector) {
+      var inlineNode = inlineSelector ? document.querySelector(inlineSelector) : null;
+      if (inlineNode && inlineNode.textContent.trim()) {
+        try {
+          return Promise.resolve(JSON.parse(inlineNode.textContent));
+        } catch (error) {
+          return Promise.resolve(null);
+        }
+      }
+      if (!path) return Promise.resolve(null);
+      if (!searchIndexPromise) {
+        searchIndexPromise = fetch(path).then(function(response) {
+          if (!response.ok) return null;
+          return response.json();
+        }).catch(function() { return null; });
+      }
+      return searchIndexPromise;
+    }
+
+    document.querySelectorAll('[data-doc-filter-target]').forEach(function(input) {
+      var selector = input.getAttribute('data-doc-filter-target');
+      var items = Array.prototype.slice.call(document.querySelectorAll(selector));
+      var indexPath = input.getAttribute('data-doc-search-index');
+      var inlineIndexSelector = input.getAttribute('data-doc-search-inline');
+      var resultSelector = input.getAttribute('data-doc-search-results');
+      var resultContainer = resultSelector ? document.querySelector(resultSelector) : null;
+      input.addEventListener('input', function() {
+        var query = input.value.trim().toLowerCase();
+        items.forEach(function(item) {
+          var haystack = (item.getAttribute('data-doc-filter-text') || item.textContent || '').toLowerCase();
+          item.classList.toggle('d-none', query && haystack.indexOf(query) === -1);
+        });
+        loadDocSearchIndex(indexPath, inlineIndexSelector).then(function(index) {
+          if (index && Array.isArray(index.items)) {
+            renderSearchIndexResults(resultContainer, index.items, query);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

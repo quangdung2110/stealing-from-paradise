@@ -1,0 +1,294 @@
+﻿openapi: "3.0.3"
+info:
+  title: Search Service API
+  description: |
+    Elasticsearch-backed full-text product search with Vietnamese text analysis.
+    SKU-first architecture with field collapsing by product_id.
+    Search service (Port 8087). Public endpoints for search, admin for reindex.
+  version: "5.6"
+  contact:
+    name: Search Service Team
+
+servers:
+  - url: http://localhost:8087/api/v1
+    description: Local development
+
+paths:
+  /search/products:
+    get:
+      operationId: searchProducts
+      summary: Full-text search products
+      description: |
+        Search products by keywords with Vietnamese text analysis.
+        Results are collapsed by product_id (SKU-first architecture).
+        Supports filtering and sorting with fixed filter parameters.
+      tags:
+        - Search
+      security: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Search keywords (full-text). Empty = browse all.
+        - name: category_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by category UUID or slug path token (for example `electronics`; includes subcategories)
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Alias for `category_id`; accepts category UUID or slug path token
+        - name: price_min
+          in: query
+          required: false
+          schema:
+            type: number
+            format: double
+          description: Minimum price filter
+        - name: price_max
+          in: query
+          required: false
+          schema:
+            type: number
+            format: double
+          description: Maximum price filter
+        - name: in_stock
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: true
+          description: Only show in-stock products
+        - name: is_flash
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Only show flash sale products
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - relevance
+              - price_asc
+              - price_desc
+            default: relevance
+          description: Sort order
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Page index (0-based)
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Page size
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+        "503":
+          description: Elasticsearch unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /search/products/suggest:
+    get:
+      operationId: suggestProducts
+      summary: Autocomplete search suggestions
+      description: |
+        Returns search term suggestions as the user types.
+        Minimum 2 characters required.
+      tags:
+        - Search
+      security: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Partial search string
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 5
+            minimum: 1
+            maximum: 10
+          description: Number of suggestions
+      responses:
+        "200":
+          description: Search suggestions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestResponse"
+
+  /search/reindex:
+    post:
+      operationId: triggerReindex
+      summary: Trigger full reindex
+      description: |
+        Admin-only. Rebuilds the Elasticsearch index from Product Service data.
+        Zero-downtime via alias swap. Rejects concurrent reindex requests.
+      tags:
+        - Search Admin
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Reindex completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReindexResponse"
+        "401":
+          description: JWT invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Reindex already in progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ProductCard:
+      type: object
+      properties:
+        product_id:
+          type: string
+          example: "507f1f77bcf86cd799439012"
+        name:
+          type: string
+          example: "Ao Thun Nike Air Nam"
+        seller_id:
+          type: integer
+          format: int64
+          example: 5
+        seller_name:
+          type: string
+          example: "Shop Nike VN"
+        category_id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        category_name:
+          type: string
+          example: "Ao Thun Nam"
+        price_min:
+          type: number
+          format: double
+          description: Cheapest in-stock SKU price
+          example: 250000
+        price_max:
+          type: number
+          format: double
+          description: Highest SKU price
+          example: 450000
+        images:
+          type: array
+          items:
+            type: string
+          example:
+            - "https://cdn.marketplace.vn/products-media/products/5/101/uuid-front.jpg"
+        stock_available:
+          type: integer
+          example: 95
+        is_flash:
+          type: boolean
+          example: true
+
+    SearchResponse:
+      type: object
+      properties:
+        total_results:
+          type: integer
+          example: 156
+        page:
+          type: integer
+          example: 0
+        size:
+          type: integer
+          example: 20
+        total_pages:
+          type: integer
+          example: 8
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductCard"
+
+    SuggestResponse:
+      type: object
+      properties:
+        suggestions:
+          type: array
+          items:
+            type: string
+          example:
+            - "ao thun nam"
+            - "ao thun nu cotton"
+            - "ao thun oversize"
+
+    ReindexResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - COMPLETED
+            - FAILED
+        document_count:
+          type: integer
+          example: 15234
+        duration_ms:
+          type: integer
+          example: 45231
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

@@ -1,0 +1,28 @@
+{
+  "generated_at": "2026-06-09",
+  "active_extensions": [
+    "rest-openapi-writer",
+    "kafka-event-contract-writer",
+    "realtime-websocket-writer",
+    "oauth-oidc-sso-writer",
+    "payment-gateway-writer",
+    "db-migration-writer",
+    "ci-cd-pipeline-writer",
+    "observability-writer",
+    "deployment-env-safety"
+  ],
+  "evidence": {
+    "rest-openapi-writer": "documents/api-contracts/**/*.yaml (OpenAPI 3 per-endpoint specs)",
+    "kafka-event-contract-writer": "documents/messaging/**/KAFKA_EVENTS.md, KAFKA_CATALOG.md",
+    "realtime-websocket-writer": "notification-service SSE streaming",
+    "oauth-oidc-sso-writer": "identity-service JWT auth (RS256 access/refresh tokens)",
+    "payment-gateway-writer": "payment-service Stripe Connect onboarding/webhooks/transfers",
+    "db-migration-writer": "backend Flyway migrations (V*.sql)",
+    "ci-cd-pipeline-writer": ".github/workflows/*",
+    "observability-writer": "operations/*/OPERATIONS.md, CRONJOBS.md",
+    "deployment-env-safety": ".env files / operations/ENVIRONMENT_VARIABLES.md"
+  },
+  "detected_not_activated": {
+    "mobile-api-writer": "Filename heuristic only; no documented mobile surface."
+  }
+}

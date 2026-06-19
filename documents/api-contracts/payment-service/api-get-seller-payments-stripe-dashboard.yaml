@@ -1,0 +1,130 @@
+openapi: "3.0.3"
+info:
+  title: Payment Service - Seller Stripe Dashboard
+  description: |
+    Lấy URL đăng nhập một lần (single-use) đến Stripe Express Dashboard cho người bán.
+    Cho phép người bán truy cập trực tiếp vào bảng điều khiển Stripe để xem
+    số dư, lịch sử giao dịch, và thông tin tài khoản.
+  version: "1.0.0"
+  contact:
+    name: Payment Service Team
+
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local development server
+
+paths:
+  /seller/payments/stripe-dashboard:
+    get:
+      tags:
+        - payment-service
+      summary: Lấy URL Stripe Express Dashboard cho người bán
+      description: |
+        Tạo một liên kết đăng nhập một lần (single-use login link) đến
+        Stripe Express Dashboard cho người bán đã xác thực.
+        Cho phép người bán xem số dư, lịch sử giao dịch, và quản lý tài khoản Stripe.
+      operationId: getSellerStripeDashboard
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: URL dashboard đã được tạo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerStripeDashboardResponse"
+              example:
+                dashboardUrl: "https://connect.stripe.com/express_login/acct_1OxABC123456789/abc123def456"
+                stripeAccountId: "acct_1OxABC123456789"
+                accountStatus: "ACTIVE"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from Identity Service (yêu cầu role SELLER)
+
+  schemas:
+    SellerStripeDashboardResponse:
+      type: object
+      properties:
+        dashboardUrl:
+          type: string
+          format: uri
+          description: Liên kết đăng nhập một lần đến Stripe Express Dashboard
+          example: "https://connect.stripe.com/express_login/acct_1OxABC123456789/abc123def456"
+        stripeAccountId:
+          type: string
+          description: Stripe Express account ID của người bán
+          example: "acct_1OxABC123456789"
+        accountStatus:
+          type: string
+          description: Trạng thái hiện tại của tài khoản Stripe
+          example: "ACTIVE"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Mã lỗi
+          example: "UNAUTHORIZED"
+        message:
+          type: string
+          description: Mô tả lỗi dành cho con người
+          example: "Authentication required"
+
+  responses:
+    ValidationError:
+      description: Yêu cầu không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "VALIDATION_ERROR"
+            message: "Invalid request parameters"
+    Unauthorized:
+      description: Thiếu hoặc token JWT không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "UNAUTHORIZED"
+            message: "Authentication required"
+    Forbidden:
+      description: Đã xác thực nhưng thiếu role SELLER
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "FORBIDDEN"
+            message: "SELLER role required"
+    InternalError:
+      description: Lỗi máy chủ nội bộ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "INTERNAL_ERROR"
+            message: "An unexpected error occurred"
+
+tags:
+  - name: payment-service
+    description: Payment service operations

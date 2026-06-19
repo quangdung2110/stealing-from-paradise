@@ -1,0 +1,53 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "max_result_window": 10000,
+    "analysis": {
+      "analyzer": {
+        "vietnamese_analyzer": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "asciifolding"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "skuId": { "type": "keyword" },
+      "productId": { "type": "keyword" },
+      "sellerId": { "type": "long" },
+      "productName": {
+        "type": "text",
+        "analyzer": "vietnamese_analyzer",
+        "fields": { "keyword": { "type": "keyword" } }
+      },
+      "productSlug": { "type": "keyword" },
+      "productDescription": { "type": "text", "analyzer": "vietnamese_analyzer" },
+      "productAttributes": { "type": "object", "enabled": true },
+      "categoryId": { "type": "keyword" },
+      "categoryPath": { "type": "keyword" },
+      "categoryName": { "type": "keyword" },
+      "categorySlug": { "type": "keyword" },
+      "categorySlugPath": { "type": "keyword" },
+      "variantAttributes": { "type": "object", "enabled": true },
+      "skuCode": { "type": "keyword" },
+      "price": { "type": "double" },
+      "originalPrice": { "type": "double" },
+      "hasDiscount": { "type": "boolean" },
+      "flashSessionId": { "type": "keyword" },
+      "stockStatus": { "type": "keyword" },
+      "productStatus": { "type": "keyword" },
+      "skuStatus": { "type": "keyword" },
+      "isActive": { "type": "boolean" },
+      "thumbnailUrl": { "type": "keyword", "index": false },
+      "skuImageUrl": { "type": "keyword", "index": false },
+      "sellerName": {
+        "type": "text",
+        "fields": { "keyword": { "type": "keyword" } }
+      },
+      "sortId": { "type": "integer" }
+    }
+  }
+}

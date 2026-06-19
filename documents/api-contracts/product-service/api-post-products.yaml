@@ -1,0 +1,343 @@
+﻿openapi: "3.0.3"
+info:
+  title: Product Service - Create Product
+  description: |
+    Seller product creation and image upload endpoints.
+    Base URL: `/api/v1`
+    Service: product-service (Port 8084)
+  version: "5.4.0"
+
+servers:
+  - url: https://api.marketplace.vn/api/v1
+    description: Production
+  - url: http://localhost:8084/api/v1
+    description: Local development
+
+paths:
+  /products:
+    post:
+      operationId: createProduct
+      summary: Create a new product
+      description: |
+        Seller creates a product. Category must be a leaf node.
+        Product starts in `draft` status. No Kafka event emitted at creation.
+        Indexing is deferred until `product.activated` (after admin approval + seller publish).
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductRequest"
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateProductResponse"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not a SELLER role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /products/{productId}:
+    put:
+      operationId: updateProduct
+      summary: Update product
+      description: |
+        Seller updates product fields. Emits `product.updated` Kafka event.
+        Only the owning seller can update.
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductRequest"
+      responses:
+        "200":
+          description: Product updated
+        "401":
+          description: Missing or invalid JWT
+        "403":
+          description: Not the product owner
+        "404":
+          description: Product not found
+        "422":
+          description: Validation error
+
+  /products/{productId}/presigned-url:
+    get:
+      operationId: getPresignedUploadUrl
+      summary: Get MinIO presigned upload URL
+      description: |
+        Returns a presigned PUT URL for direct upload to MinIO.
+        Bucket: products-media. TTL: 15 minutes.
+      tags: [Images]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: file_name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Original filename (e.g., "product-front.jpg")
+        - name: content_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [image/jpeg, image/png, image/webp]
+      responses:
+        "200":
+          description: Presigned URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PresignedUrlResponse"
+        "401":
+          description: Missing or invalid JWT
+        "403":
+          description: Not the product owner
+        "404":
+          description: Product not found
+        "422":
+          description: Invalid content_type
+
+  /products/{productId}/images:
+    post:
+      operationId: registerProductImage
+      summary: Register uploaded image in database
+      description: |
+        After uploading to MinIO via presigned URL, register the image URL.
+        Max 10 images per product.
+      tags: [Images]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterImageRequest"
+      responses:
+        "201":
+          description: Image registered
+        "401":
+          description: Missing or invalid JWT
+        "403":
+          description: Not the product owner
+        "404":
+          description: Product not found
+        "422":
+          description: Validation error (e.g., max 10 images exceeded)
+
+  /images/{imageId}:
+    delete:
+      operationId: deleteProductImage
+      summary: Delete product image
+      description: Removes image record from database. MinIO object cleanup is deferred.
+      tags: [Images]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: imageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Image deleted
+        "401":
+          description: Missing or invalid JWT
+        "403":
+          description: Not the product owner
+        "404":
+          description: Image not found
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT from Identity Service
+
+  schemas:
+    CreateProductRequest:
+      type: object
+      required: [name, description, category_id, images]
+      properties:
+        name:
+          type: string
+          minLength: 5
+          maxLength: 200
+          example: "Ao Thun Nike Air Nam"
+        description:
+          type: string
+          maxLength: 10000
+          description: Rich text/HTML allowed
+          example: "<p>Mo ta san pham...</p>"
+        category_id:
+          type: string
+          format: uuid
+          description: Must be a leaf category (no children)
+        attributes:
+          type: object
+          additionalProperties: true
+          description: Structured key-value attributes
+          example:
+            brand: "Nike"
+            material: "100% Cotton"
+        images:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            type: string
+            format: uri
+          description: JPEG/PNG/WebP image URLs
+
+    UpdateProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 5
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 10000
+        category_id:
+          type: string
+          format: uuid
+        attributes:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+          enum: [active, inactive]
+          description: Only seller can set to active/inactive; out_of_stock is system-set
+
+    CreateProductResponse:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          example: "507f1f77bcf86cd799439012"
+        seller_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        category_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active]
+          example: "active"
+        created_at:
+          type: string
+          format: date-time
+
+    PresignedUrlResponse:
+      type: object
+      properties:
+        presigned_url:
+          type: string
+          format: uri
+          description: PUT URL for MinIO direct upload
+        object_url:
+          type: string
+          format: uri
+          description: Public CDN URL after upload
+        expires_in:
+          type: integer
+          description: TTL in seconds
+          example: 900
+
+    RegisterImageRequest:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: MinIO object URL from presigned upload
+        variant_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: NULL = common product image; set for variant-specific image
+        sort_order:
+          type: integer
+          default: 0
+          description: Display order (0 = primary)
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    ValidationError:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            code:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string

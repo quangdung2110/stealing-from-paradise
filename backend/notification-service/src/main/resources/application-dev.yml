@@ -1,0 +1,13 @@
+# ============================================================
+# DEV Profile — notification-service
+# Active when SPRING_PROFILES_ACTIVE=dev
+# ============================================================
+logging:
+  level:
+    com.flashsale: DEBUG
+    org.springframework.data.mongodb: INFO
+
+dev-data:
+  enabled: true
+  # reset=true wipes the mg_notifications collection before reseeding.
+  reset: ${DEV_DATA_RESET:false}

@@ -1,0 +1,58 @@
+Báo Cáo Tổng Hợp Event — Product Service
+
+PHẦN I — EVENT NHẬN VÀO (Consumers)
+Product Service có 2 consumer class với tổng cộng 6 topics.
+
+Consumer 1: OrderEventConsumer
+
+Topic 1: order.created
+Luồng xử lý:
++ Parse sessionId từ JSON payload.
++ Query tất cả StockReservation có status = PENDING và sessionId tương ứng.
++ Gọi inventoryService.confirmReservation(reservationId) cho từng reservation để xác nhận giữ hàng.
++ Acknowledge message.
+
+Topic 2: order.cancelled
+Luồng xử lý:
++ Parse sessionId từ payload.
++ Tìm tất cả reservation PENDING theo sessionId.
++ Gọi inventoryService.releaseReservation(reservationId) để giải phóng hàng và restore stock.
++ Acknowledge message.
+
+Topic 3: order.returned
+Luồng xử lý:
++ Duyệt qua từng item trong mảng items.
++ Gọi inventoryService.restoreStockOnReturn(variantId, quantity) để hoàn trả hàng vào kho.
++ Acknowledge message.
+
+
+
+Consumer 2: FlashSaleEventConsumer
+
+Topic 1: flash_sale.session_started
+Luồng xử lý:
++ Duyệt qua từng entry trong flashPriceMap (variantId → flashPrice).
++ Với mỗi variant: lưu originalPrice (nếu chưa có), ghi đè price bằng flashPrice, save xuống DB.
++ Emit flash_sale.price_sync với active: true
++ Emit variant.stock_updated.
+Acknowledge message.
+
+Topic 2: flash_sale.session_ended
+Luồng xử lý:
++ Tìm tất cả variant có originalPrice != null.
++ Restore giá về originalPrice, xóa originalPrice.
++ Emit flash_sale.price_sync với active: false.
++ Acknowledge message
+
+
+PHẦN II — EVENT GỬI ĐI (Producers)
+ product.updated           → Search, Notification
+  product.deleted           → Search
+  product.pending_review    → Notification
+  product.approved          → Notification
+  product.rejected          → Notification
+  product.auto_hidden       → Search, Notification
+  variant.price_updated     → Search
+  variant.stock_updated     → Search (InventoryService + VariantService + FlashSaleEventConsumer)
+  flash_sale.price_sync     → Search
+  category.updated          → Search

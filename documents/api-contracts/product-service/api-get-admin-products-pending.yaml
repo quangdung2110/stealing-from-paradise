@@ -1,0 +1,227 @@
+﻿# ============================================================
+# RE-ACTIVATED 2026-05-10 v3 â€” back in MVP scope.
+# P3-11 APPROVED 2026-05-10 â€” schema applied. Sorted FIFO by submitted_at via
+# partial index idx_products_status_pending(status, created_at) WHERE status='pending'.
+# Xem MVP_ANALYSIS.md Â§2.3 (Ä‘Ã­nh chÃ­nh v3) vÃ  BR-PRODUCT-009.
+# ============================================================
+openapi: "3.0.3"
+info:
+  title: Product Service - Admin Pending Products
+  description: |
+    Admin xem danh sach san pham dang cho duyet (status=pending).
+    Base URL: `/api/v1`
+    Service: product-service (Port 8084)
+  version: "5.5.0"
+
+servers:
+  - url: https://api.marketplace.vn/api/v1
+    description: Production
+  - url: http://localhost:8084/api/v1
+    description: Local development
+
+paths:
+  /admin/products/pending:
+    get:
+      operationId: getPendingProducts
+      summary: Lay danh sach san pham cho duyet
+      description: |
+        Admin xem danh sach san pham dang o trang thai PENDING.
+        Ho tro loc theo danh muc va seller.
+      tags: [Admin Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: categoryId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Loc theo danh muc
+        - name: sellerId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Loc theo seller
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: So trang (bat dau tu 0)
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: So luong san pham moi trang
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [submitted_at_asc, submitted_at_desc, reject_count_desc]
+            default: submitted_at_asc
+          description: |
+            Thu tu sap xep:
+            - `submitted_at_asc` (default, FIFO theo BR-PRODUCT-009.11) â€” admin xu ly cu nhat truoc
+            - `submitted_at_desc` â€” moi nhat truoc
+            - `reject_count_desc` â€” uu tien resubmit-cao (admin can review ky)
+      responses:
+        "200":
+          description: Danh sach san pham cho duyet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PendingProductListResponse"
+        "401":
+          description: Thieu JWT hoac JWT khong hop le
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Khong co quyen ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT tu Identity Service voi quyen ADMIN
+
+  schemas:
+    PendingProductCard:
+      type: object
+      required: [product_id, seller_id, name, status, created_at]
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          example: "507f1f77bcf86cd799439012"
+        seller_id:
+          type: integer
+          format: int64
+          example: 42
+        seller_name:
+          type: string
+          description: Hien thi ten seller cho admin queue (tra qua identity-service hoac join)
+          example: "Shop Thoi Trang ABC"
+        reject_count:
+          type: integer
+          description: So lan da bi tu choi truoc do (>=1 = resubmit; admin nen review ky hon)
+          minimum: 0
+          maximum: 3
+          example: 0
+        name:
+          type: string
+          maxLength: 200
+          example: "Ao Thun Nike Air Nam"
+        description:
+          type: string
+          maxLength: 10000
+          description: Rich text/HTML mo ta san pham
+        category_id:
+          type: string
+          format: uuid
+        category_name:
+          type: string
+          example: "Ao Thun Nam"
+        category_slug:
+          type: string
+          example: "ao-thun-nam"
+        attributes:
+          type: object
+          additionalProperties: true
+          description: Thuoc tinh dang key-value
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Danh sach URL hinh anh
+        is_flash:
+          type: boolean
+          example: false
+        status:
+          type: string
+          enum: [pending]
+          example: "pending"
+        stock_available:
+          type: integer
+          description: Tong ton kho kha dung
+          example: 95
+        price:
+          type: integer
+          description: Gia thap nhat cac variant (VND)
+          example: 150000
+        original_price:
+          type: integer
+          nullable: true
+          example: 200000
+        submitted_at:
+          type: string
+          format: date-time
+          description: Thoi diem seller submit (BR-PRODUCT-009.11 â€” phuc vu SLA 24h cua admin queue)
+          example: "2026-05-10T09:00:00Z"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-04-14T09:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-04-15T10:00:00Z"
+
+    PendingProductListResponse:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingProductCard"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    Pagination:
+      type: object
+      required: [page, limit, total, total_pages]
+      properties:
+        page:
+          type: integer
+          example: 0
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 12
+        total_pages:
+          type: integer
+          example: 1
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+          description: Ma loi machine-readable
+        message:
+          type: string
+          description: Thong bao loi tieng Viet

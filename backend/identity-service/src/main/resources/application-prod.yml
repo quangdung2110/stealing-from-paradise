@@ -1,0 +1,22 @@
+# ============================================================
+# PROD Profile — identity-service
+# Active when SPRING_PROFILES_ACTIVE=prod
+# ============================================================
+spring:
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
+
+logging:
+  level:
+    root: INFO
+    com.flashsale: INFO
+    org.flywaydb: WARN
+    org.hibernate.engine.transaction.internal.TransactionImpl: WARN
+    org.hibernate.SQL: WARN
+
+dev-data:
+  enabled: false

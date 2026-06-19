@@ -1,0 +1,180 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Refund Detail API
+  description: |
+    Tra ve chi tiet mot yeu cau hoan tien cu the.
+    Buyer hoac admin moi co quyen truy cap.
+  version: "5.4"
+  contact:
+    name: Order Service Team
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: order-service
+    description: Refund detail endpoints
+paths:
+  /orders/{orderId}/refunds/{refundId}:
+    get:
+      tags:
+        - order-service
+      summary: Xem chi tiet hoan tien
+      description: |
+        Tra ve day du thong tin cua mot yeu cau hoan tien,
+        bao gom items, anh bang chung, va ghi chu admin.
+        Chi buyer cua don hang hoac admin moi truy cap duoc.
+      operationId: getRefundDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Sub-order ID
+        - name: refundId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Refund ID
+      responses:
+        "200":
+          description: Chi tiet hoan tien
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderRefundInfo"
+        "401":
+          description: Chua xac thuc
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Khong phai buyer hoac admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForbiddenError"
+        "404":
+          description: Khong tim thay yeu cau hoan tien
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    OrderRefundInfo:
+      type: object
+      properties:
+        refund_id:
+          type: integer
+          format: int64
+          example: 88
+        refund_code:
+          type: string
+          description: Ma hoan tien (RF-YYYYMMDD-{id})
+          example: "RF-20251006-88"
+        order_id:
+          type: integer
+          format: int64
+          example: 100
+        group_ref:
+          type: string
+          format: uuid
+          nullable: true
+          description: UUID nhom hoan tien (neu hoan tien toan bo parent)
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        type:
+          type: string
+          enum: [FULL, PARTIAL]
+          example: "PARTIAL"
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, COMPLETED, REJECTED]
+          example: "PENDING"
+        amount:
+          type: number
+          format: double
+          description: So tien hoan yeu cau
+          example: 250000
+        adjust_amount:
+          type: number
+          format: double
+          nullable: true
+          description: So tien dieu chinh (sau khi admin xem xet)
+          example: null
+        reason:
+          type: string
+          description: Ly do hoan tien
+          example: "San pham bi loi"
+        evidence_images:
+          type: array
+          description: Danh sach URL anh bang chung
+          items:
+            type: string
+            format: uri
+          example:
+            - "https://cdn.marketplace.vn/refund-evidence/orders/100/img1.jpg"
+        tracking_number:
+          type: string
+          nullable: true
+          description: Ma theo doi hoan tien (neu co)
+          example: null
+        reviewed_by:
+          type: integer
+          format: int64
+          nullable: true
+          description: ID admin da xem xet
+          example: null
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Thoi diem admin xem xet
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-06T09:00:00Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Ma loi
+        message:
+          type: string
+          description: Mo ta loi
+
+    ForbiddenError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "FORBIDDEN"
+        message:
+          type: string
+          example: "Ban khong co quyen truy cap tai nguyen nay"
+
+    NotFoundError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "Khong tim thay yeu cau hoan tien"

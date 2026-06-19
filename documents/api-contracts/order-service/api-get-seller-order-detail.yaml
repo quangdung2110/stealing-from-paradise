@@ -1,0 +1,220 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Seller Order Detail API
+  description: |
+    Endpoint cho seller xem chi tiết một sub-order thuộc shop của mình.
+    RBAC khác với `GET /orders/{id}` (dành cho buyer):
+    - Seller chỉ thấy đơn của shop mình.
+    - Có thêm thông tin `net_payout_amount`, `platform_commission`,
+      `payout_eligible_at` để tracking doanh thu.
+  version: "5.4.0"
+  contact:
+    name: Order Service Team
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: order-service
+    description: Seller order detail endpoint
+
+paths:
+  /sellers/me/orders/{orderId}:
+    get:
+      tags: [order-service]
+      operationId: getSellerOrderDetail
+      summary: Seller xem chi tiết đơn hàng
+      description: |
+        Trả về chi tiết một sub-order của seller đang đăng nhập.
+        403 nếu order không thuộc seller hiện tại.
+        Liên quan: UC-ORDER-007, FR-ORDER-008.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Sub-order ID
+      responses:
+        "200":
+          description: Chi tiết đơn hàng (góc nhìn seller)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerOrderDetailResponse"
+        "401":
+          description: Chưa xác thực hoặc không phải SELLER
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Order không thuộc seller hiện tại
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Không tìm thấy đơn hàng
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SellerOrderDetailResponse:
+      type: object
+      required:
+        - order_id
+        - parent_order_id
+        - order_code
+        - seller_id
+        - status
+        - items
+      properties:
+        order_id:
+          type: integer
+          format: int64
+          example: 100
+        parent_order_id:
+          type: integer
+          format: int64
+          example: 55
+        order_code:
+          type: string
+          example: "OR-20260510-100"
+        seller_id:
+          type: integer
+          format: int64
+        customer_id:
+          type: integer
+          format: int64
+          description: ID buyer (chỉ ID, không lộ thông tin cá nhân)
+        status:
+          type: string
+          enum: [PENDING, PAID, SHIPPING, DELIVERED, RETURNED, CANCELLED, PARTIALLY_REFUNDED, REFUNDED]
+        total_amt:
+          type: number
+          format: double
+          example: 700000
+        final_amt:
+          type: number
+          format: double
+          example: 700000
+        net_payout_amount:
+          type: number
+          format: double
+          description: Số tiền seller được nhận sau khi trừ commission/refund
+          example: 651000
+        platform_commission_amount:
+          type: number
+          format: double
+          description: Phí platform (snapshot tại thời điểm tính)
+          example: 49000
+        payout_eligible_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Thời điểm đủ điều kiện payout (sau 30 ngày return window)
+          example: "2026-06-10T00:00:00Z"
+        payout_status:
+          type: string
+          enum: [NOT_ELIGIBLE, ELIGIBLE, IN_TRANSIT, PAID, FAILED]
+          example: "NOT_ELIGIBLE"
+        is_flash_sale:
+          type: boolean
+          example: false
+        cancelled_by:
+          type: string
+          nullable: true
+          enum: [BUYER, SYSTEM, ADMIN, null]
+          description: SELLER không thể cancel trong MVP
+        cancel_reason:
+          type: string
+          nullable: true
+        shipping_address:
+          $ref: "#/components/schemas/ShippingAddress"
+        tracking_number:
+          type: string
+          nullable: true
+        carrier:
+          type: string
+          nullable: true
+        shipping_deadline:
+          type: string
+          format: date-time
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemSellerView"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ShippingAddress:
+      type: object
+      properties:
+        full_address:
+          type: string
+        province_id:
+          type: integer
+        district_id:
+          type: integer
+        recipient_name:
+          type: string
+        recipient_phone:
+          type: string
+
+    OrderItemSellerView:
+      type: object
+      properties:
+        order_item_id:
+          type: integer
+          format: int64
+        sku_code:
+          type: string
+        variant_id:
+          type: string
+          maxLength: 100
+        name_snapshot:
+          type: string
+        image_snapshot:
+          type: string
+          format: uri
+        price_snapshot:
+          type: number
+          format: double
+        quantity:
+          type: integer
+        refunded_quantity:
+          type: integer
+          example: 0
+        fs_item_id:
+          type: integer
+          format: int64
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: "FORBIDDEN"
+        message:
+          type: string
+        code:
+          type: string

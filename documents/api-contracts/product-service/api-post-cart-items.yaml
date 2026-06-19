@@ -1,0 +1,235 @@
+﻿openapi: "3.0.3"
+info:
+  title: Product Service - Cart Items API
+  description: |
+    Cart item operations: add, update quantity, remove.
+    Base URL: `/api/v1`
+    Service: product-service (Port 8084)
+  version: "5.4.0"
+
+servers:
+  - url: https://api.marketplace.vn/api/v1
+    description: Production
+  - url: http://localhost:8084/api/v1
+    description: Local development
+
+paths:
+  /cart/items:
+    post:
+      operationId: addCartItem
+      summary: Add item to cart
+      description: |
+        Add a variant (SKU) to the cart. If the variant is already in the cart,
+        the quantity is incremented (UPSERT behavior).
+        Price, variant name, and image are snapshotted at add time.
+      tags: [Cart]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddCartItemRequest"
+      responses:
+        "200":
+          description: Item added (or quantity incremented)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddCartItemResponse"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Flash sale per-user limit exceeded (removed in MVP)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: |
+            Validation error:
+            - SKU not found or inactive
+            - Insufficient stock
+            - quantity > 1000 or <= 0
+            - fs_item_id invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cart/items/{itemId}:
+    put:
+      operationId: updateCartItem
+      summary: Update cart item quantity
+      description: |
+        Update the quantity of an existing cart item.
+        Validates against current stock_available.
+        Setting quantity to 0 is invalid; use DELETE to remove.
+      tags: [Cart]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCartItemRequest"
+      responses:
+        "200":
+          description: Quantity updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateCartItemResponse"
+        "401":
+          description: Missing or invalid JWT
+        "404":
+          description: Cart item not found or belongs to different user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: |
+            Validation error:
+            - quantity > stock_available
+            - quantity = 0 (use DELETE)
+            - Variant inactive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      operationId: removeCartItem
+      summary: Remove item from cart
+      description: Delete a single item from the cart.
+      tags: [Cart]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Item removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Item removed from cart"
+        "401":
+          description: Missing or invalid JWT
+        "404":
+          description: Cart item not found or belongs to different user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AddCartItemRequest:
+      type: object
+      required: [sku_code, quantity]
+      properties:
+        sku_code:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: "^[A-Za-z0-9-]+$"
+          description: Variant SKU code
+          example: "NK-AIR-RED-XL"
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          example: 2
+        fs_item_id:
+          type: integer
+          nullable: true
+          description: Flash sale item ID (optional)
+
+    AddCartItemResponse:
+      type: object
+      properties:
+        cart_item_id:
+          type: integer
+          example: 201
+        sku_code:
+          type: string
+          example: "NK-AIR-RED-XL"
+        product_name:
+          type: string
+          example: "Ao Thun Nike Air"
+        quantity:
+          type: integer
+          example: 2
+        unit_price:
+          type: number
+          example: 350000
+        subtotal:
+          type: number
+          example: 700000
+        message:
+          type: string
+          example: "Them vao gio hang thanh cong"
+
+    UpdateCartItemRequest:
+      type: object
+      required: [quantity]
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          example: 3
+
+    UpdateCartItemResponse:
+      type: object
+      properties:
+        cart_item_id:
+          type: integer
+        quantity:
+          type: integer
+        unit_price:
+          type: number
+        subtotal:
+          type: number
+        message:
+          type: string
+          example: "Cap nhat so luong thanh cong"
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        code:
+          type: string

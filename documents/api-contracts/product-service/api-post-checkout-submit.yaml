@@ -1,0 +1,168 @@
+﻿openapi: "3.0.3"
+info:
+  title: Product Service - Checkout Submit API
+  description: |
+    Submits a validated checkout session: re-validates stock, reserves inventory,
+    stores checkout session in Redis, and emits `order.checkout_submitted` event
+    to trigger order creation in Order Service.
+
+    Two-step flow:
+    1. POST /v1/cart/checkout/preview â†’ get preview_token (TTL 10 min)
+    2. POST /v1/cart/checkout/submit â†’ reserve stock, trigger order creation
+  version: "1.0"
+  contact:
+    name: Product Service Team
+servers:
+  - url: http://localhost:8084/api/v1
+    description: Local development
+tags:
+  - name: Checkout
+    description: Checkout submit operations
+paths:
+  /checkout/submit:
+    post:
+      tags:
+        - Checkout
+      summary: Submit checkout â€” reserve stock and trigger order creation
+      description: |
+        Receives a valid `preview_token` and address. Re-validates all items one final time.
+        On success: reserves stock (PENDING), stores checkout session in Redis (TTL 15 min),
+        emits `order.checkout_submitted` Kafka event to Order Service, invalidates `preview_token`.
+        On failure: returns 409 Conflict with details.
+      operationId: submitCheckout
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutSubmitRequest"
+            example:
+              previewToken: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+              addressId: 7
+              provinceId: 79
+              districtId: 760
+              fullAddress: "123 Nguyen Trai, Phuong 2, Q.3, TP.HCM"
+      responses:
+        "200":
+          description: Checkout submitted â€” order creation triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSubmitResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: preview_token invalid/expired or stock/price changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSubmitErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CheckoutSubmitRequest:
+      type: object
+      required:
+        - previewToken
+        - addressId
+      properties:
+        previewToken:
+          type: string
+          description: Token from POST /v1/cart/checkout/preview
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        addressId:
+          type: integer
+          format: int64
+          description: ID of the shipping address
+          example: 7
+        provinceId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Province ID for address snapshot
+          example: 79
+        districtId:
+          type: integer
+          format: int64
+          nullable: true
+          description: District ID for address snapshot
+          example: 760
+        fullAddress:
+          type: string
+          nullable: true
+          description: Full address string for address snapshot
+          example: "123 Nguyen Trai, Phuong 2, Q.3, TP.HCM"
+
+    CheckoutSubmitResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          description: Checkout session ID (stored in Redis, used for payment resolution)
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        parentOrderId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Parent order ID (populated after Order Service creates order)
+          example: 55
+        totalItems:
+          type: integer
+          description: Total quantity of all items
+          example: 3
+        totalAmount:
+          type: number
+          format: double
+          description: Total order amount
+          example: 1200000
+        createdAt:
+          type: string
+          format: date-time
+          description: Session creation timestamp
+          example: "2026-05-23T17:10:00Z"
+        message:
+          type: string
+          description: Status message
+          example: "Checkout Ä‘Ã£ Ä‘Æ°á»£c gá»­i. ÄÆ¡n hÃ ng Ä‘ang trong quÃ¡ trÃ¬nh xá»­ lÃ½."
+
+    CheckoutSubmitErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "CONFLICT"
+        message:
+          type: string
+          description: |
+            JSON string containing detailed error info.
+            Example: {"error":"STOCK_CHANGED","message":"Tá»“n kho hoáº·c giÃ¡ Ä‘Ã£ thay Ä‘á»•i...","details":[...]}
+          example: "{\"error\":\"STOCK_CHANGED\",\"message\":\"Tá»“n kho hoáº·c giÃ¡ Ä‘Ã£ thay Ä‘á»•i. Vui lÃ²ng lÃ m má»›i giá» hÃ ng.\",\"details\":[...]}"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "Resource not found"
+        data:
+          type: object
+          nullable: true

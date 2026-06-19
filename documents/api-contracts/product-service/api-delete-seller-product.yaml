@@ -1,0 +1,85 @@
+﻿openapi: "3.0.3"
+info:
+  title: Product Service - Delete Seller Product
+  description: |
+    Seller xÃ³a má»m sáº£n pháº©m cá»§a mÃ¬nh.
+    Base URL: `/api/v1`
+    Service: product-service (Port 8084)
+  version: "5.4.0"
+
+servers:
+  - url: https://api.marketplace.vn/api/v1
+    description: Production
+  - url: http://localhost:8084/api/v1
+    description: Local development
+
+paths:
+  /seller/products/{productId}:
+    delete:
+      operationId: deleteProduct
+      summary: Xoa mem san pham
+      description: |
+        Seller xoa mem san pham. San pham khong bi xoa vinh vien
+        ma duoc danh dau da xoa. Chi seller so huu san pham moi co the xoa.
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID cua san pham can xoa
+      responses:
+        "200":
+          description: Xoa san pham thanh cong
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Xoa mem san pham thanh cong"
+        "401":
+          description: Thieu JWT hoac JWT khong hop le
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Khong phai chu so huu san pham hoac khong co quyen SELLER
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Khong tim thay san pham
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT tu Identity Service
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+          description: Ma loi machine-readable
+        message:
+          type: string
+          description: Thong bao loi tieng Viet

@@ -1,0 +1,112 @@
+openapi: "3.0.3"
+info:
+  title: Identity Service - POST /users/me/addresses
+  description: Create a new shipping address for the current user
+  version: "5.4"
+servers:
+  - url: http://localhost:8081/api/v1
+    description: Identity Service (local)
+paths:
+  /users/me/addresses:
+    post:
+      operationId: createAddress
+      summary: Thêm địa chỉ mới
+      description: >
+        Creates a new address for the authenticated user.
+        If is_default=true, all other defaults are unset.
+        Referenced by UC-IDENTITY-004, FR-IDENTITY-009.
+      tags:
+        - Addresses
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - province_id
+                - district_id
+                - full_address
+              properties:
+                province_id:
+                  type: integer
+                  description: Province/city code
+                district_id:
+                  type: integer
+                  description: District code
+                full_address:
+                  type: string
+                  description: Full street address
+                is_default:
+                  type: boolean
+                  default: false
+              example:
+                province_id: 79
+                district_id: 760
+                full_address: "123 Nguyen Trai, Ward 2"
+                is_default: false
+      responses:
+        "201":
+          description: Address created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddressResponse"
+              example:
+                id: 7
+                userId: 42
+                provinceId: 79
+                districtId: 760
+                fullAddress: "123 Nguyen Trai, Ward 2"
+                isDefault: false
+                createdAt: "2026-04-15T10:30:00Z"
+        "400":
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Token invalid or expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AddressResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        provinceId:
+          type: integer
+        districtId:
+          type: integer
+        fullAddress:
+          type: string
+        isDefault:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        status_code:
+          type: integer

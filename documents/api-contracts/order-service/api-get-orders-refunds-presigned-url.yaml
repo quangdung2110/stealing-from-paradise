@@ -1,0 +1,141 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Refund Evidence Presigned URL API
+  description: |
+    Tra ve MinIO presigned PUT URL de buyer upload anh bang chung hoan tien.
+    Bucket: refund-evidence. TTL: 15 phut.
+  version: "5.4"
+  contact:
+    name: Order Service Team
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: order-service
+    description: Refund evidence upload endpoints
+paths:
+  /orders/{orderId}/refunds/presigned-url:
+    get:
+      tags:
+        - order-service
+      summary: Lay presigned URL upload anh bang chung hoan tien
+      description: |
+        Tra ve MinIO presigned PUT URL cho phep buyer upload anh bang chung.
+        Bucket: refund-evidence. URL co hieu luc 15 phut.
+        Tham khao: FR-PAYMENT-008.
+      operationId: getRefundEvidencePresignedUrl
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Sub-order ID de upload bang chung
+        - name: file_name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Ten file goc (vd. "evidence-1.jpg")
+          example: "evidence-1.jpg"
+        - name: content_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [image/jpeg, image/png, image/webp]
+          description: MIME type cua anh
+          example: "image/jpeg"
+      responses:
+        "200":
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PresignedUrlResponse"
+              example:
+                upload_url: "https://minio.internal/refund-evidence/orders/100/uuid-abc.jpg?X-Amz-..."
+                object_key: "orders/100/uuid-abc.jpg"
+                cdn_url: "https://cdn.marketplace.vn/refund-evidence/orders/100/uuid-abc.jpg"
+                expires_in: 900
+        "401":
+          description: Chua xac thuc
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Khong phai buyer cua don hang
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForbiddenError"
+        "422":
+          description: content_type khong hop le
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PresignedUrlResponse:
+      type: object
+      properties:
+        upload_url:
+          type: string
+          format: uri
+          description: MinIO presigned PUT URL de upload anh
+          example: "https://minio.internal/refund-evidence/orders/100/uuid-abc.jpg?X-Amz-..."
+        object_key:
+          type: string
+          description: Object key trong bucket
+          example: "orders/100/uuid-abc.jpg"
+        cdn_url:
+          type: string
+          format: uri
+          description: URL CDN cong khai sau khi upload
+          example: "https://cdn.marketplace.vn/refund-evidence/orders/100/uuid-abc.jpg"
+        expires_in:
+          type: integer
+          description: Thoi gian het han tinh bang giay (900s = 15 phut)
+          example: 900
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Ma loi
+        message:
+          type: string
+          description: Mo ta loi
+
+    ForbiddenError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "FORBIDDEN"
+        message:
+          type: string
+          example: "Ban khong co quyen truy cap tai nguyen nay"
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "VALIDATION_FAILED"
+        message:
+          type: string
+          example: "content_type khong duoc ho tro"

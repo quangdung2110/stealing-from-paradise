@@ -1,0 +1,13 @@
+{
+  "reason": "Sản phẩm bị hỏng trong quá trình vận chuyển.",
+  "items": [
+    {
+      "orderItemId": 1,
+      "quantity": 1,
+      "itemReason": "Sản phẩm có vết nứt lớn"
+    }
+  ],
+  "evidenceImages": [
+    "https://minio.flashsale.dev/evidence/broken_item_1.jpg"
+  ]
+}

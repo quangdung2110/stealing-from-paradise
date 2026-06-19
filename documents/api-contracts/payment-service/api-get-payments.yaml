@@ -1,0 +1,280 @@
+openapi: "3.0.3"
+info:
+  title: Payment Service - Payment Queries
+  description: >
+    Payment lookup endpoints: parent-order payment details, Stripe client secret,
+    and lookup by Stripe Payment Intent ID.
+    Payment Service (Port 8082).
+  version: "5.4"
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local development
+tags:
+  - name: Payment Queries
+    description: Payment transaction lookup endpoints
+paths:
+  /payments/parent-order/{parentOrderId}:
+    get:
+      tags:
+        - Payment Queries
+      summary: Get payment info with seller breakdown
+      description: >
+        Returns the transaction details for a parent order, including
+        per-seller transfer breakdowns with fees and net amounts.
+        Accessible by buyer (owner) or admin.
+        Referenced by FR-PAYMENT-004.
+      operationId: getPaymentByParentOrder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: parentOrderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Parent order ID
+      responses:
+        "200":
+          description: Payment transaction with seller breakdown
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentDetail"
+              example:
+                transaction_id: 301
+                parent_order_id: 55
+                amount: 1200000
+                status: "SUCCESS"
+                application_fee_amount: 60000
+                trans_ref: "TXN-20251001-301"
+                pay_at: "2026-10-01T10:05:00Z"
+                sellers:
+                  - seller_id: 5
+                    order_id: 100
+                    amount: 700000
+                    fee: 35000
+                    net_amount: 665000
+                    stripe_transfer_id: "tr_3PxABC2K98765432"
+                    transfer_status: "SUCCESS"
+                  - seller_id: 9
+                    order_id: 101
+                    amount: 500000
+                    fee: 25000
+                    net_amount: 475000
+                    stripe_transfer_id: "tr_3PxABC2K98765433"
+                    transfer_status: "SUCCESS"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not the buyer or not an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: No transaction found for this parent order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /payments/parent-order/{parentOrderId}/client-secret:
+    get:
+      tags:
+        - Payment Queries
+      summary: Get Stripe client secret for payment
+      description: >
+        Returns the Stripe PaymentIntent client_secret for the
+        frontend to complete payment via Stripe Elements.
+        Referenced by FR-PAYMENT-005.
+      operationId: getClientSecret
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: parentOrderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Parent order ID
+      responses:
+        "200":
+          description: Stripe client secret
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientSecretResponse"
+              example:
+                client_secret: "pi_3PxABC2K1234567_secret_abc123..."
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not the buyer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: No payment intent found for this order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /payments/by-intent/{stripePaymentIntentId}:
+    get:
+      tags:
+        - Payment Queries
+      summary: Lookup transaction by Stripe Payment Intent ID
+      description: >
+        Returns transaction details for a given Stripe PaymentIntent ID.
+        Useful for debugging or manual reconciliation.
+        Accessible by buyer or admin.
+      operationId: getPaymentByIntent
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: stripePaymentIntentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Stripe PaymentIntent ID (e.g., pi_xxx)
+      responses:
+        "200":
+          description: Transaction found by PaymentIntent ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentDetail"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not the buyer or not an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Identity Service
+
+  schemas:
+    PaymentDetail:
+      type: object
+      properties:
+        transaction_id:
+          type: integer
+          format: int64
+          example: 301
+        parent_order_id:
+          type: integer
+          format: int64
+          example: 55
+        amount:
+          type: number
+          format: double
+          description: Total transaction amount
+          example: 1200000
+        status:
+          type: string
+          enum: [PENDING, SUCCESS, FAILED]
+          example: "SUCCESS"
+        application_fee_amount:
+          type: number
+          format: double
+          description: Platform application fee
+          example: 60000
+        trans_ref:
+          type: string
+          description: Internal transaction reference (TXN-YYYYMMDD-{id})
+          example: "TXN-20251001-301"
+        pay_at:
+          type: string
+          format: date-time
+          description: When payment was completed
+          example: "2026-10-01T10:05:00Z"
+        sellers:
+          type: array
+          description: Per-seller transfer breakdown
+          items:
+            $ref: "#/components/schemas/SellerTransfer"
+
+    SellerTransfer:
+      type: object
+      properties:
+        seller_id:
+          type: integer
+          format: int64
+          example: 5
+        order_id:
+          type: integer
+          format: int64
+          example: 100
+        amount:
+          type: number
+          format: double
+          description: Sub-order amount
+          example: 700000
+        fee:
+          type: number
+          format: double
+          description: Platform fee for this seller
+          example: 35000
+        net_amount:
+          type: number
+          format: double
+          description: Net amount after fees
+          example: 665000
+        stripe_transfer_id:
+          type: string
+          description: Stripe transfer ID (tr_xxx)
+          example: "tr_3PxABC2K98765432"
+        transfer_status:
+          type: string
+          enum: [PENDING, SUCCESS, FAILED, REVERSED]
+          example: "SUCCESS"
+
+    ClientSecretResponse:
+      type: object
+      properties:
+        client_secret:
+          type: string
+          description: Stripe PaymentIntent client_secret
+          example: "pi_3PxABC2K1234567_secret_abc123..."
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string

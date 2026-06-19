@@ -1,0 +1,116 @@
+openapi: "3.0.3"
+info:
+  title: Identity Service - POST /auth/register
+  description: Register a new customer account
+  version: "5.4"
+servers:
+  - url: http://localhost:8081/api/v1
+    description: Identity Service (local)
+paths:
+  /auth/register:
+    post:
+      operationId: registerUser
+      summary: Register new account
+      description: >
+        Creates a new user with role=BUYER. Publishes account.created to Kafka.
+        Referenced by UC-IDENTITY-001, FR-IDENTITY-001.
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - phone
+                - password
+                - full_name
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                  pattern: "^[a-z0-9._]+$"
+                  description: Login username, a-z 0-9 . _
+                email:
+                  type: string
+                  format: email
+                  description: Valid email address
+                phone:
+                  type: string
+                  description: Vietnamese phone number
+                password:
+                  type: string
+                  minLength: 8
+                  description: Min 8 chars, >=1 uppercase, >=1 digit (BR-IDENTITY-002)
+                full_name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                  description: Display name
+            example:
+              username: "nguyen_van_a"
+              email: "a@example.com"
+              phone: "0901234567"
+              password: "SecurePass123!"
+              full_name: "Nguyen Van A"
+      responses:
+        "201":
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    format: int64
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  phone:
+                    type: string
+                  full_name:
+                    type: string
+                  status:
+                    type: string
+                    enum: [ACTIVE]
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                user_id: 42
+                username: "nguyen_van_a"
+                email: "a@example.com"
+                phone: "0901234567"
+                full_name: "Nguyen Van A"
+                status: "ACTIVE"
+                created_at: "2026-04-15T08:00:00Z"
+        "400":
+          description: Validation failure (BR-IDENTITY-002)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Duplicate username/email/phone (BR-IDENTITY-001)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        status_code:
+          type: integer

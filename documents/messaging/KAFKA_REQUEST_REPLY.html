@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kafka Request-Reply Pattern</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --doc-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      --doc-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --doc-bg: #f6f7f9;
+      --doc-panel: #ffffff;
+      --doc-border: #d9dee7;
+      --doc-muted: #5c6675;
+      --doc-text: #162033;
+      --doc-accent: #1d4ed8;
+      --doc-accent-soft: #eff6ff;
+    }
+
+    html { scroll-padding-top: 5rem; }
+    body {
+      background: var(--doc-bg);
+      color: var(--doc-text);
+      font-family: var(--doc-font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      letter-spacing: 0;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      text-rendering: optimizeLegibility;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      line-height: 1.22;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+
+    a { color: var(--doc-accent); }
+    a:hover { color: #123b9c; }
+
+    .doc-topbar {
+      background: rgba(255, 255, 255, .96);
+      border-bottom: 1px solid var(--doc-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .doc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    .doc-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .doc-sidebar {
+      position: sticky;
+      top: 5rem;
+      max-height: calc(100vh - 6rem);
+      overflow: auto;
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+    }
+
+    .doc-main {
+      min-width: 0;
+    }
+
+    .doc-hero,
+    .doc-panel {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+    }
+
+    .doc-hero {
+      padding: 1.25rem;
+    }
+
+    .doc-section {
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-kpi {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+      height: 100%;
+    }
+
+    .doc-card {
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      background: var(--doc-panel);
+      height: 100%;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .doc-card:hover {
+      border-color: #adc6ff;
+      box-shadow: 0 .5rem 1.5rem rgba(22, 32, 51, .08);
+      transform: translateY(-1px);
+    }
+
+    .doc-card:focus-visible,
+    .doc-link-list a:focus-visible,
+    .nav-link:focus-visible,
+    .btn:focus-visible {
+      outline: 3px solid rgba(29, 78, 216, .35);
+      outline-offset: 2px;
+    }
+
+    .doc-card .card-body {
+      padding: 1rem;
+    }
+
+    .doc-link-list {
+      display: grid;
+      gap: .5rem;
+      padding-left: 0;
+      margin-bottom: 0;
+      list-style: none;
+    }
+
+    .doc-link-list a {
+      display: block;
+      padding: .625rem .75rem;
+      border: 1px solid var(--doc-border);
+      border-radius: .5rem;
+      background: #fff;
+      text-decoration: none;
+    }
+
+    .doc-link-list a:hover {
+      background: var(--doc-accent-soft);
+      border-color: #bfdbfe;
+    }
+
+    .doc-table {
+      --bs-table-bg: #fff;
+      border: 1px solid var(--doc-border);
+    }
+
+    .doc-table thead th {
+      background: #eef2f7;
+      color: #283549;
+      white-space: nowrap;
+    }
+
+    pre {
+      background: #101827;
+      color: #f8fafc;
+      font-family: var(--doc-font-mono);
+      font-size: .875rem;
+      line-height: 1.55;
+      padding: 1rem;
+      border-radius: .75rem;
+      overflow: auto;
+    }
+
+    pre.mermaid {
+      background: #ffffff;
+      color: var(--doc-text);
+      border: 1px solid var(--doc-border);
+      min-height: 8rem;
+    }
+
+    code {
+      color: #9a3412;
+      font-family: var(--doc-font-mono);
+      font-size: .9em;
+    }
+
+    .doc-meta {
+      color: var(--doc-muted);
+      font-size: .875rem;
+    }
+
+    .doc-anchor {
+      scroll-margin-top: 5rem;
+    }
+
+    @media (max-width: 991.98px) {
+      .doc-shell { padding: .875rem; }
+      .doc-layout { grid-template-columns: 1fr; }
+      .doc-sidebar {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    @media print {
+      .doc-topbar,
+      .doc-sidebar,
+      .btn,
+      .nav-tabs {
+        display: none !important;
+      }
+      body { background: #fff; }
+      .doc-shell { max-width: none; padding: 0; }
+      .doc-layout { display: block; }
+      .doc-hero,
+      .doc-panel,
+      .doc-card,
+      .doc-kpi {
+        border: 1px solid #bbb;
+        box-shadow: none !important;
+      }
+    }
+      pre code { color: inherit; background: transparent; font-size: inherit; padding: 0; }
+    pre { white-space: pre; }
+  </style>
+</head>
+<body>
+  <header class="doc-topbar sticky-top">
+    <nav class="navbar navbar-expand-lg">
+      <div class="container-fluid px-3">
+        <a class="navbar-brand fw-semibold" href="../index.html">Stealing-from-Paradise</a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <a class="btn btn-sm btn-outline-secondary" href="../index.html">Home</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/overview.html">Overview</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/architecture.html">Architecture</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/domain.html">Domain Model and Rules</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/use-cases.html">Use Cases</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/business-flows.html">Business Flows</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/interfaces.html">Interfaces</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/messaging.html">Messaging and Realtime</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/traceability.html">Traceability</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="doc-shell">
+    <div class="doc-layout">
+      <aside class="doc-sidebar">
+        <div class="fw-semibold mb-2">Contents</div>
+        <nav class="nav nav-pills flex-column gap-1">
+          <a class="nav-link" href="../groups/overview.html">Overview</a>
+<a class="nav-link" href="../groups/architecture.html">Architecture</a>
+<a class="nav-link" href="../groups/domain.html">Domain Model and Rules</a>
+<a class="nav-link" href="../groups/business-flows.html">Business Flows</a>
+<a class="nav-link" href="../groups/use-cases.html">Use Cases</a>
+<a class="nav-link" href="../groups/interfaces.html">Interfaces</a>
+<a class="nav-link" href="../groups/messaging.html">Messaging and Realtime</a>
+<a class="nav-link" href="../groups/identity.html">Identity and Security</a>
+<a class="nav-link" href="../groups/platform.html">Platform and Operations</a>
+<a class="nav-link" href="../groups/deployment.html">Deployment</a>
+<a class="nav-link" href="../groups/observability.html">Observability</a>
+<a class="nav-link" href="../groups/integrations.html">Integrations</a>
+<a class="nav-link" href="../groups/traceability.html">Traceability</a>
+<a class="nav-link" href="../traceability/matrix.html">Traceability Matrix</a>
+        </nav>
+      </aside>
+
+      <main class="doc-main">
+        <section class="doc-hero doc-section">
+          <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div>
+              <h1 class="h2 mb-1">Kafka Request-Reply Pattern</h1>
+              <div class="doc-meta">DOC-MESSAGING-KAFKA-REQUEST-REPLY | 2026-06-09</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2"><span class="badge text-bg-info">message</span> <span class="badge text-bg-light">platform</span></div>
+          </div>
+        </section>
+
+        <section class="doc-section"><div class="doc-panel p-3 p-md-4 doc-prose"><h1>Kafka Request-Reply Pattern</h1>
+<p><strong>Project:</strong> stealing-from-paradise
+<strong>Last Updated:</strong> 2026-06-09</p>
+<hr>
+<h2>Overview</h2>
+<p>The backend uses Kafka request-reply only for synchronous-like internal reads that still need loose service coupling. Each request includes a <code>correlation_id</code>; the responder copies it to the response so the requester can complete the pending future.</p>
+<hr>
+<h2>Active Request-Reply Pairs</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Request Topic</th>
+<th>Response Topic</th>
+<th>Requester</th>
+<th>Responder</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>order.address.request</code></td>
+<td><code>order.address.response</code></td>
+<td>Product / Flash Sale</td>
+<td>Identity</td>
+<td>Validate buyer shipping address</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>order.refunds.request</code></td>
+<td><code>order.refunds.response</code></td>
+<td>Order</td>
+<td>Refund</td>
+<td>Read refund list/detail/status</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>order.refund_presigned_url.request</code></td>
+<td><code>order.refund_presigned_url.response</code></td>
+<td>Order</td>
+<td>Refund</td>
+<td>Get refund evidence upload URL</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>order.payment_status.request</code></td>
+<td><code>order.payment_status.response</code></td>
+<td>Order</td>
+<td>Refund</td>
+<td>Check refund/payment status used by refund views</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>search.index_data.request</code></td>
+<td><code>search.index_data.response</code></td>
+<td>Search</td>
+<td>Product</td>
+<td>Fetch product/category/SKU data for indexing</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Address Validation</h2>
+<p>Used by product checkout submit and flash-sale buy flows.</p>
+<pre><code class="language-json">{
+  &quot;correlation_id&quot;: &quot;uuid&quot;,
+  &quot;user_id&quot;: 42,
+  &quot;address_id&quot;: 5
+}
+</code></pre>
+<p>Response:</p>
+<pre><code class="language-json">{
+  &quot;correlation_id&quot;: &quot;uuid&quot;,
+  &quot;addressId&quot;: 5,
+  &quot;userId&quot;: 42,
+  &quot;fullAddress&quot;: &quot;123 Le Van Viet&quot;,
+  &quot;provinceId&quot;: 79,
+  &quot;districtId&quot;: 769,
+  &quot;error&quot;: false
+}
+</code></pre>
+<hr>
+<h2>Refund Reads</h2>
+<p>Order Service asks Refund Service for buyer/admin refund views.</p>
+<pre><code class="language-json">{
+  &quot;correlation_id&quot;: &quot;uuid&quot;,
+  &quot;order_id&quot;: 1001
+}
+</code></pre>
+<p>Response contains a <code>refunds[]</code> list or an error flag.</p>
+<hr>
+<h2>Search Index Data</h2>
+<p>Search Service requests product-side indexing pages or field snapshots.</p>
+<table>
+<thead>
+<tr>
+<th>requestType</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ACTIVE_PRODUCTS_PAGE</code></td>
+<td>Full reindex page</td>
+</tr>
+<tr>
+<td><code>PRODUCT_SKU_DOCUMENTS</code></td>
+<td>All SKU documents for one product</td>
+</tr>
+<tr>
+<td><code>PRODUCT_SEARCH_FIELDS</code></td>
+<td>Product fields for update events</td>
+</tr>
+<tr>
+<td><code>CATEGORY_SEARCH_FIELDS</code></td>
+<td>Category fields for update events</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Deprecated / Removed Pairs</h2>
+<table>
+<thead>
+<tr>
+<th>Pair</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>order.stock_check.request</code> / <code>order.stock_check.response</code></td>
+<td>Checkout stock validation moved into Product Service preview/submit</td>
+</tr>
+<tr>
+<td><code>order.cart_items.request</code> / <code>order.cart_items.response</code></td>
+<td>Checkout item snapshots are emitted by Product Service in <code>order.checkout_submitted</code></td>
+</tr>
+<tr>
+<td><code>cart.product_info.request</code> / <code>cart.product_info.response</code></td>
+<td>No backend producer/consumer remains</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Cross-References</h2>
+<ul>
+<li><a href="KAFKA_CATALOG.html">KAFKA_CATALOG.md</a></li>
+<li><a href="../business-rules/order-service/br-checkout.html">Checkout BR</a></li>
+<li><a href="../flows/product-service/flow-product-catalog-cart-review.html">Product checkout flow</a></li>
+</ul></div></section>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    function normalizeDocSearchText(value) {
+      return (value || '').toString().toLowerCase();
+    }
+
+    function escapeDocHtml(value) {
+      return (value || '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderSearchIndexResults(container, items, query) {
+      if (!container) return;
+      var normalized = normalizeDocSearchText(query);
+      if (!normalized) {
+        container.innerHTML = '';
+        container.classList.add('d-none');
+        return;
+      }
+      var matches = items.filter(function(item) {
+        var haystack = [
+          item.id,
+          item.title,
+          item.type,
+          item.group,
+          item.status,
+          item.summary,
+          (item.tags || []).join(' '),
+          (item.related_ids || []).join(' '),
+          item.search_text
+        ].map(normalizeDocSearchText).join(' ');
+        return haystack.indexOf(normalized) !== -1;
+      }).slice(0, 12);
+
+      if (!matches.length) {
+        container.innerHTML = '<div class="text-secondary small">No indexed results found.</div>';
+        container.classList.remove('d-none');
+        return;
+      }
+
+      container.innerHTML = matches.map(function(item) {
+        var title = escapeDocHtml(item.title || item.id || 'Untitled');
+        var path = escapeDocHtml(item.path || '#');
+        var meta = escapeDocHtml([item.type, item.group, item.status].filter(Boolean).join(' | '));
+        return '<a class="d-block border rounded p-2 mb-2 text-decoration-none bg-white" href="' + path + '">' +
+          '<div class="fw-semibold">' + title + '</div>' +
+          '<div class="text-secondary small">' + meta + '</div>' +
+          '</a>';
+      }).join('');
+      container.classList.remove('d-none');
+    }
+
+    var searchIndexPromise = null;
+    function loadDocSearchIndex(path, inlineSelector) {
+      var inlineNode = inlineSelector ? document.querySelector(inlineSelector) : null;
+      if (inlineNode && inlineNode.textContent.trim()) {
+        try {
+          return Promise.resolve(JSON.parse(inlineNode.textContent));
+        } catch (error) {
+          return Promise.resolve(null);
+        }
+      }
+      if (!path) return Promise.resolve(null);
+      if (!searchIndexPromise) {
+        searchIndexPromise = fetch(path).then(function(response) {
+          if (!response.ok) return null;
+          return response.json();
+        }).catch(function() { return null; });
+      }
+      return searchIndexPromise;
+    }
+
+    document.querySelectorAll('[data-doc-filter-target]').forEach(function(input) {
+      var selector = input.getAttribute('data-doc-filter-target');
+      var items = Array.prototype.slice.call(document.querySelectorAll(selector));
+      var indexPath = input.getAttribute('data-doc-search-index');
+      var inlineIndexSelector = input.getAttribute('data-doc-search-inline');
+      var resultSelector = input.getAttribute('data-doc-search-results');
+      var resultContainer = resultSelector ? document.querySelector(resultSelector) : null;
+      input.addEventListener('input', function() {
+        var query = input.value.trim().toLowerCase();
+        items.forEach(function(item) {
+          var haystack = (item.getAttribute('data-doc-filter-text') || item.textContent || '').toLowerCase();
+          item.classList.toggle('d-none', query && haystack.indexOf(query) === -1);
+        });
+        loadDocSearchIndex(indexPath, inlineIndexSelector).then(function(index) {
+          if (index && Array.isArray(index.items)) {
+            renderSearchIndexResults(resultContainer, index.items, query);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

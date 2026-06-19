@@ -1,0 +1,142 @@
+openapi: "3.0.3"
+info:
+  title: Payment Service - Stripe Onboarding Refresh Link
+  description: |
+    Làm mới URL onboarding Stripe đã hết hạn cho người bán.
+    Chỉ khả dụng khi KYC chưa hoàn tất.
+  version: "1.0.0"
+  contact:
+    name: Payment Service Team
+
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local development server
+
+paths:
+  /stripe/onboarding/refresh-link:
+    post:
+      tags:
+        - payment-service
+      summary: Làm mới link onboarding đã hết hạn
+      description: |
+        Tạo URL onboarding mới khi URL hiện tại đã hết hạn.
+        Chỉ cho phép nếu KYC chưa hoàn tất (`detailsSubmitted = false`).
+      operationId: refreshStripeOnboardingLink
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: URL onboarding mới đã được tạo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StripeOnboardingResponse"
+              example:
+                onboardingUrl: "https://connect.stripe.com/setup/e/acct_1OxABC123456789/new-link"
+                stripeAccountId: "acct_1OxABC123456789"
+                expiresAt: "2026-05-11T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: KYC đã hoàn tất
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "CONFLICT"
+                message: "KYC already completed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from Identity Service (yêu cầu role SELLER)
+
+  schemas:
+    StripeOnboardingResponse:
+      type: object
+      required:
+        - onboardingUrl
+        - stripeAccountId
+        - expiresAt
+      properties:
+        onboardingUrl:
+          type: string
+          format: uri
+          description: Stripe Account Link URL để hoàn tất KYC
+          example: "https://connect.stripe.com/setup/e/acct_1OxABC123456789/abc123"
+        stripeAccountId:
+          type: string
+          description: Stripe Express account ID
+          example: "acct_1OxABC123456789"
+        expiresAt:
+          type: string
+          format: date-time
+          description: Thời điểm URL hết hạn (ISO 8601, 24h từ khi tạo)
+          example: "2026-05-11T10:00:00Z"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Mã lỗi
+          example: "UNAUTHORIZED"
+        message:
+          type: string
+          description: Mô tả lỗi dành cho con người
+          example: "Authentication required"
+
+  responses:
+    ValidationError:
+      description: Yêu cầu không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "VALIDATION_ERROR"
+            message: "Invalid request parameters"
+    Unauthorized:
+      description: Thiếu hoặc token JWT không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "UNAUTHORIZED"
+            message: "Authentication required"
+    Forbidden:
+      description: Đã xác thực nhưng thiếu role SELLER
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "FORBIDDEN"
+            message: "SELLER role required"
+    InternalError:
+      description: Lỗi máy chủ nội bộ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "INTERNAL_ERROR"
+            message: "An unexpected error occurred"
+
+tags:
+  - name: payment-service
+    description: Payment service operations

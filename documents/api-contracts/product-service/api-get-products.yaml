@@ -1,0 +1,341 @@
+﻿openapi: "3.0.3"
+info:
+  title: Product Service - Product Listing
+  description: |
+    Public product listing and search API.
+    Base URL: `/api/v1`
+    Service: product-service (Port 8084)
+  version: "5.4.0"
+  contact:
+    name: Product Service Team
+
+servers:
+  - url: https://api.marketplace.vn/api/v1
+    description: Production
+  - url: http://localhost:8084/api/v1
+    description: Local development
+
+paths:
+  /products:
+    get:
+      operationId: listProducts
+      summary: List and search products
+      description: |
+        Returns paginated product list. Only `active` and `out_of_stock` products
+        are visible publicly. `inactive` products are excluded.
+        Each product card includes min price across active variants,
+        thumbnail image, and discount badge if applicable.
+      tags: [Products]
+      parameters:
+        - name: category_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Filter by category
+        - name: seller_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Filter by seller
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [active, out_of_stock]
+          description: Filter by product status (default active)
+        - name: min_price
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Minimum price filter
+        - name: max_price
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Maximum price filter
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [price_asc, price_desc, created_at, name]
+          description: Sort order
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Product list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
+        "422":
+          description: Invalid filter parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /products/{productId}:
+    get:
+      operationId: getProduct
+      summary: Get product detail
+      description: |
+        Returns full product detail including all active/out_of_stock variants,
+        image gallery, category breadcrumb, and attributes/description for tabs.
+        Inactive variants are excluded for public consumers.
+      tags: [Products]
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Product detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDetailResponse"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    ProductCard:
+      type: object
+      required: [id, name, slug, min_price, thumbnail_url, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "507f1f77bcf86cd799439012"
+        name:
+          type: string
+          maxLength: 500
+          example: "Ao Thun Nike Air Nam"
+        slug:
+          type: string
+          maxLength: 500
+          example: "ao-thun-nike-air-nam"
+        category_id:
+          type: string
+          format: uuid
+        seller_id:
+          type: string
+          format: uuid
+        min_price:
+          type: number
+          description: Minimum price across active variants
+          example: 150000
+        thumbnail_url:
+          type: string
+          description: Primary image URL (sort_order=0, variant_id=NULL)
+          example: "https://cdn.marketplace.vn/products-media/products/5/101/uuid-front.jpg"
+        status:
+          type: string
+          enum: [active, out_of_stock]
+          example: "active"
+        sold_count:
+          type: integer
+          description: From Elasticsearch index
+          example: 3400
+        has_discount:
+          type: boolean
+          description: True if any variant has price < original_price
+          example: false
+        discount_percentage:
+          type: integer
+          nullable: true
+          description: Max discount percentage across variants
+          example: null
+
+    ProductListResponse:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductCard"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    ProductDetailResponse:
+      type: object
+      required:
+        [id, name, slug, description, attributes, category, images, variants]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+          description: Rich text/HTML for "Mo ta" tab
+        attributes:
+          type: object
+          additionalProperties: true
+          description: Key-value attributes for "Chi tiet" tab
+          example:
+            material: "100% Cotton"
+            origin: "Viet Nam"
+            style: "Casual"
+        category:
+          $ref: "#/components/schemas/CategoryBreadcrumb"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductImageItem"
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/VariantCard"
+        seller_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active, out_of_stock, inactive]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CategoryBreadcrumb:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        path:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              slug:
+                type: string
+
+    ProductImageItem:
+      type: object
+      required: [id, url, sort_order]
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        variant_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: NULL = common product image
+        sort_order:
+          type: integer
+          default: 0
+
+    VariantCard:
+      type: object
+      required: [id, price, stock_quantity, status, variant_attributes]
+      properties:
+        id:
+          type: string
+          format: uuid
+        variant_code:
+          type: string
+          example: "NK-AIR-RED-XL"
+        variant_name:
+          type: string
+          example: "Mau sac, Size"
+        variant_attributes:
+          type: object
+          additionalProperties: true
+          example:
+            color: "Den"
+            size: "M"
+        price:
+          type: number
+          example: 150000
+        original_price:
+          type: number
+          nullable: true
+          example: 200000
+        stock_quantity:
+          type: integer
+          example: 10
+        status:
+          type: string
+          enum: [active, out_of_stock]
+        image_url:
+          type: string
+          nullable: true
+
+    Pagination:
+      type: object
+      required: [page, limit, total, total_pages]
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Machine-readable error code
+        details:
+          type: array
+          items:
+            type: object
+          description: Field-level validation errors

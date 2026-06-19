@@ -1,0 +1,182 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Ship Order API
+  description: |
+    Seller provides tracking number for a paid order, transitioning it to SHIPPING.
+    Produces `order.shipped` Kafka event.
+  version: "5.4"
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: Shipping
+    description: Shipment tracking operations
+paths:
+  /orders/{orderId}/tracking:
+    put:
+      tags:
+        - Shipping
+      summary: Update tracking number (Seller ships order)
+      description: |
+        Seller provides the shipping tracking number.
+        Order must be in PAID status.
+        Transitions order to SHIPPING and notifies buyer.
+      operationId: updateTracking
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          description: Sub-order ID to ship
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTrackingRequest"
+            example:
+              tracking_number: "VT123456789"
+              note: "Estimated delivery 2-3 days"
+      responses:
+        "200":
+          description: Tracking updated, order now SHIPPING
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShipOrderResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Seller is not the sub-order owner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Order is not in PAID status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/{orderId}/confirm-received:
+    post:
+      tags:
+        - Shipping
+      summary: Confirm delivery (Buyer)
+      description: |
+        Buyer confirms receipt of shipped order.
+        Transitions order to DELIVERED, sets return_window_end = NOW() + 7d.
+        Triggers seller payout via Payment Service.
+      operationId: confirmReceived
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              description: No body required
+      responses:
+        "200":
+          description: Delivery confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryConfirmationResponse"
+        "409":
+          description: Order not in SHIPPING status
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UpdateTrackingRequest:
+      type: object
+      required:
+        - tracking_number
+      properties:
+        tracking_number:
+          type: string
+          maxLength: 100
+          description: Carrier tracking number
+          example: "VT123456789"
+        note:
+          type: string
+          maxLength: 500
+          description: Optional note about the shipment
+          example: "Estimated delivery 2-3 days"
+
+    ShipOrderResponse:
+      type: object
+      properties:
+        order_id:
+          type: integer
+          format: int64
+          example: 100
+        order_code:
+          type: string
+          example: "OR-20251001-100"
+        status:
+          type: string
+          enum: [SHIPPING]
+          example: "SHIPPING"
+        tracking_number:
+          type: string
+          example: "VT123456789"
+        shipping_deadline:
+          type: string
+          format: date-time
+          description: Deadline for delivery (created_at + 3 days)
+          example: "2026-10-04T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-10-01T12:00:00Z"
+
+    DeliveryConfirmationResponse:
+      type: object
+      properties:
+        order_id:
+          type: integer
+          format: int64
+          example: 100
+        order_code:
+          type: string
+          example: "OR-20251001-100"
+        status:
+          type: string
+          enum: [DELIVERED]
+          example: "DELIVERED"
+        delivered_at:
+          type: string
+          format: date-time
+          example: "2026-10-03T14:30:00Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

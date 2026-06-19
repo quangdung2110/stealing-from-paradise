@@ -1,0 +1,2258 @@
+{
+  "meta": {
+    "id": "SFP-DATASET-FULL-COVERAGE-2026-06-12",
+    "project": "stealing-from-paradise",
+    "createdAt": "2026-06-12",
+    "purpose": "Direct manual/API testing dataset covering every documented use case and business flow under documents/.",
+    "sourceFolders": [
+      "documents/use-cases",
+      "documents/flows",
+      "documents/api-contracts",
+      "documents/traceability"
+    ],
+    "coverageTarget": {
+      "useCases": 48,
+      "businessFlows": 12
+    },
+    "gatewayBaseUrl": "http://localhost:8080",
+    "aiBaseUrl": "http://localhost:8080/api/ai",
+    "notes": [
+      "Use placeholders in double braces, for example {{buyerToken}}, {{runId}}, {{productId.reviewApprove}}.",
+      "Do not overwrite the legacy seed files in test-datasets/*.json; this dataset is an overlay for manual and E2E coverage.",
+      "For Stripe webhooks, generate a valid Stripe-Signature with stripe-webhook.ps1, Stripe CLI, or the E2E helper. Raw unsigned webhook payloads should fail."
+    ]
+  },
+  "personas": {
+    "admin": {
+      "username": "admin",
+      "password": "dev123",
+      "role": "ADMIN",
+      "userId": 10
+    },
+    "buyerPrimary": {
+      "username": "minhhoa",
+      "password": "dev123",
+      "role": "BUYER",
+      "userId": 6
+    },
+    "buyerAlt": {
+      "username": "phuongthao",
+      "password": "dev123",
+      "role": "BUYER",
+      "userId": 7
+    },
+    "sellerPrimary": {
+      "username": "techworld",
+      "password": "dev123",
+      "role": "SELLER",
+      "userId": 1,
+      "stripeAccountHint": "acct_test_SELLER001_AABBCC"
+    },
+    "sellerSecondary": {
+      "username": "gadgetpro",
+      "password": "dev123",
+      "role": "SELLER",
+      "userId": 3
+    },
+    "generatedBuyer": {
+      "username": "fc_buyer_{{runId}}",
+      "email": "fc_buyer_{{runId}}@example.test",
+      "password": "dev123",
+      "role": "BUYER"
+    },
+    "generatedSeller": {
+      "username": "fc_seller_{{runId}}",
+      "email": "fc_seller_{{runId}}@example.test",
+      "password": "dev123",
+      "role": "SELLER"
+    }
+  },
+  "lookupPlan": [
+    {
+      "key": "category.leaf",
+      "method": "GET",
+      "path": "/api/v1/categories",
+      "extract": "Pick any leaf category id from response data."
+    },
+    {
+      "key": "variant.activeTech",
+      "method": "GET",
+      "path": "/api/v1/products/variants/sku/SKU-MAGSAFE",
+      "extract": "data.id or id"
+    },
+    {
+      "key": "variant.activeAudio",
+      "method": "GET",
+      "path": "/api/v1/products/variants/sku/SKU-AIRPOD-PRO2",
+      "extract": "data.id or id"
+    },
+    {
+      "key": "variant.secondSeller",
+      "method": "GET",
+      "path": "/api/v1/products/variants/sku/SKU-MOUSE-MX3",
+      "extract": "data.id or id"
+    },
+    {
+      "key": "buyerDefaultAddress",
+      "method": "GET",
+      "path": "/api/v1/users/me/addresses",
+      "auth": "buyerPrimary",
+      "extract": "First data[].address_id or id"
+    }
+  ],
+  "seedReferences": {
+    "products": {
+      "activeSku": "SKU-MAGSAFE",
+      "activeSku2": "SKU-AIRPOD-PRO2",
+      "multiSellerSku": "SKU-MOUSE-MX3",
+      "pendingSku": "SKU-SCARF-FH-2026",
+      "rejectedSku": "SKU-BAG-TEST",
+      "stockManagedSku": "SKU-MAGSAFE",
+      "flashSku": "SKU-JBL-FLIP6-BLK"
+    },
+    "orders": {
+      "pendingOrder": "{{orderId.pendingFromCheckout}}",
+      "paidOrder": "{{orderId.paidAfterWebhook}}",
+      "shippedOrder": "{{orderId.shippedAfterTracking}}",
+      "deliveredOrder": "{{orderId.deliveredAfterConfirm}}",
+      "refundEligibleOrder": "{{orderId.deliveredAfterConfirm}}"
+    }
+  },
+  "requestBodies": {
+    "identity": {
+      "registerBuyer": {
+        "username": "fc_buyer_{{runId}}",
+        "email": "fc_buyer_{{runId}}@example.test",
+        "phone": "099{{runIdShort}}01",
+        "password": "dev123",
+        "fullName": "Full Coverage Buyer {{runId}}"
+      },
+      "registerSeller": {
+        "username": "fc_seller_{{runId}}",
+        "email": "fc_seller_{{runId}}@example.test",
+        "phone": "099{{runIdShort}}02",
+        "password": "dev123",
+        "fullName": "Full Coverage Seller {{runId}}"
+      },
+      "loginBuyer": {
+        "credential": "minhhoa",
+        "password": "dev123"
+      },
+      "loginSeller": {
+        "credential": "techworld",
+        "password": "dev123"
+      },
+      "loginAdmin": {
+        "credential": "admin",
+        "password": "dev123"
+      },
+      "loginWrongPassword": {
+        "credential": "minhhoa",
+        "password": "wrong-password"
+      },
+      "refresh": {
+        "refreshToken": "{{buyerRefreshToken}}"
+      },
+      "profileUpdate": {
+        "fullName": "Full Coverage Buyer Updated {{runId}}",
+        "phone": "098{{runIdShort}}01"
+      },
+      "changePassword": {
+        "oldPassword": "dev123",
+        "newPassword": "dev1234"
+      },
+      "changePasswordBack": {
+        "oldPassword": "dev1234",
+        "newPassword": "dev123"
+      },
+      "addressCreate": {
+        "fullName": "Full Coverage Buyer",
+        "phoneNumber": "0901234567",
+        "provinceId": 1,
+        "districtId": 1,
+        "wardCode": "00001",
+        "streetAddress": "123 Full Coverage Street {{runId}}",
+        "isDefault": false
+      },
+      "addressUpdate": {
+        "fullName": "Full Coverage Buyer Updated",
+        "phoneNumber": "0901234567",
+        "provinceId": 1,
+        "districtId": 1,
+        "wardCode": "00001",
+        "streetAddress": "456 Full Coverage Street {{runId}}",
+        "isDefault": true
+      }
+    },
+    "product": {
+      "categoryCreate": {
+        "name": "FC Category {{runId}}",
+        "parentId": null
+      },
+      "categoryUpdate": {
+        "name": "FC Category Updated {{runId}}"
+      },
+      "productCreate": {
+        "name": "FC Product {{runId}}",
+        "description": "Created by the full-coverage dataset.",
+        "categoryId": "{{category.leaf}}"
+      },
+      "productUpdate": {
+        "name": "FC Product Updated {{runId}}",
+        "description": "Updated by the full-coverage dataset.",
+        "categoryId": "{{category.leaf}}"
+      },
+      "variantCreate": {
+        "variantCode": "FC-SKU-{{runId}}",
+        "variantName": "Default",
+        "price": 120000,
+        "stockQuantity": 25
+      },
+      "variantUpdate": {
+        "variantName": "Default Updated",
+        "price": 135000,
+        "stockQuantity": 30
+      },
+      "imageRegister": {
+        "imageId": "{{uuid}}",
+        "url": "https://picsum.photos/seed/fc-{{runId}}/640/640",
+        "sortOrder": 0
+      },
+      "inventoryRestock": {
+        "quantity": 10,
+        "reason": "full-coverage restock {{runId}}"
+      },
+      "inventoryAdjust": {
+        "skuCode": "SKU-MAGSAFE",
+        "quantity": -1,
+        "reason": "full-coverage adjustment {{runId}}"
+      },
+      "cartAdd": {
+        "variantId": "{{variant.activeTech}}",
+        "quantity": 1
+      },
+      "cartUpdate": {
+        "quantity": 2
+      },
+      "checkoutPreview": {
+        "itemIds": [
+          "{{buyerPrimary.userId}}:{{variant.activeTech}}"
+        ]
+      },
+      "checkoutPreviewMultiSeller": {
+        "itemIds": [
+          "{{buyerPrimary.userId}}:{{variant.activeTech}}",
+          "{{buyerPrimary.userId}}:{{variant.secondSeller}}"
+        ]
+      },
+      "checkoutSubmit": {
+        "previewToken": "{{previewToken}}",
+        "addressId": "{{buyerDefaultAddress}}"
+      }
+    },
+    "order": {
+      "buyerCancel": {
+        "reason": "Changed mind during full coverage run {{runId}}"
+      },
+      "sellerCancel": {
+        "reason": "Seller cannot fulfill this paid order",
+        "note": "Full coverage seller cancellation {{runId}}"
+      },
+      "tracking": {
+        "trackingNumber": "FC-TRACK-{{runId}}"
+      },
+      "refundPartial": {
+        "type": "PARTIAL",
+        "reason": "Item arrived with a visible issue.",
+        "items": [
+          {
+            "orderItemId": "{{orderItemId.refundEligible}}",
+            "quantity": 1,
+            "amount": 50000
+          }
+        ],
+        "evidenceImages": [
+          "https://picsum.photos/seed/refund-{{runId}}/480/480"
+        ]
+      },
+      "refundFullParent": {
+        "reason": "Full parent-order refund requested by buyer.",
+        "evidenceImages": [
+          "https://picsum.photos/seed/full-refund-{{runId}}/480/480"
+        ]
+      },
+      "refundPartialParent": {
+        "reason": "Partial multi-seller refund requested by buyer.",
+        "items": [
+          {
+            "orderId": "{{orderId.refundEligible}}",
+            "orderItemId": "{{orderItemId.refundEligible}}",
+            "quantity": 1,
+            "amount": 50000
+          }
+        ]
+      },
+      "returnToSenderMultipartFields": {
+        "reason": "Wrong item returned to sender by seller",
+        "evidenceFieldName": "evidence",
+        "evidenceFilePath": "{{localEvidenceImagePath}}"
+      }
+    },
+    "payment": {
+      "stripeWebhookPaymentSucceeded": {
+        "id": "evt_fc_pi_success_{{runId}}",
+        "object": "event",
+        "type": "payment_intent.succeeded",
+        "data": {
+          "object": {
+            "id": "{{paymentIntentId}}",
+            "object": "payment_intent",
+            "amount": "{{amountMinor}}",
+            "currency": "vnd",
+            "status": "succeeded",
+            "metadata": {
+              "parent_order_id": "{{parentOrderId}}"
+            }
+          }
+        }
+      },
+      "stripeWebhookPaymentFailed": {
+        "id": "evt_fc_pi_failed_{{runId}}",
+        "object": "event",
+        "type": "payment_intent.payment_failed",
+        "data": {
+          "object": {
+            "id": "{{paymentIntentId}}",
+            "object": "payment_intent",
+            "amount": "{{amountMinor}}",
+            "currency": "vnd",
+            "status": "requires_payment_method",
+            "metadata": {
+              "parent_order_id": "{{parentOrderId}}"
+            }
+          }
+        }
+      },
+      "stripeWebhookAccountUpdated": {
+        "id": "evt_fc_account_updated_{{runId}}",
+        "object": "event",
+        "type": "account.updated",
+        "data": {
+          "object": {
+            "id": "{{stripeAccountId}}",
+            "object": "account",
+            "charges_enabled": true,
+            "payouts_enabled": true,
+            "details_submitted": true,
+            "metadata": {
+              "seller_id": "{{sellerId}}"
+            }
+          }
+        }
+      },
+      "adminRefundApprove": {
+        "adminNote": "Approved by full coverage dataset {{runId}}"
+      },
+      "adminRefundReject": {
+        "reason": "Evidence is not sufficient for refund approval.",
+        "adminNote": "Rejected by full coverage dataset {{runId}}"
+      }
+    },
+    "flashsale": {
+      "createUpcomingSession": {
+        "name": "FC Upcoming Flash Sale {{runId}}",
+        "startTime": "{{nowPlus30MinutesIso}}",
+        "endTime": "{{nowPlus90MinutesIso}}"
+      },
+      "createShortLiveSession": {
+        "name": "FC Short Live Flash Sale {{runId}}",
+        "startTime": "{{nowMinus1MinuteIso}}",
+        "endTime": "{{nowPlus5MinutesIso}}"
+      },
+      "updateSession": {
+        "name": "FC Updated Flash Sale {{runId}}",
+        "startTime": "{{nowPlus35MinutesIso}}",
+        "endTime": "{{nowPlus95MinutesIso}}",
+        "status": "UPCOMING"
+      },
+      "registerItem": {
+        "skuCode": "SKU-JBL-FLIP6-BLK",
+        "flashPrice": 2290000,
+        "flashStock": 20,
+        "limitPerUser": 2
+      },
+      "buyItem": {
+        "fsItemId": "{{flashSaleItemId}}",
+        "quantity": 1,
+        "addressId": "{{buyerDefaultAddress}}"
+      },
+      "rejectItem": {
+        "reason": "Flash price does not meet campaign rules."
+      }
+    },
+    "notification": {
+      "markRead": {},
+      "markAllRead": {}
+    },
+    "search": {
+      "reindex": {}
+    },
+    "aiChat": {
+      "createSession": {
+        "context": {
+          "currentPage": "product_detail",
+          "productId": "{{productId.active}}"
+        }
+      },
+      "sendMessage": {
+        "sessionId": "{{chatSessionId}}",
+        "message": "Find an audio product under 7000000 VND and explain why it is suitable.",
+        "type": "TEXT"
+      },
+      "confirmAction": {
+        "confirmId": "{{pendingConfirmationId}}",
+        "sessionId": "{{chatSessionId}}",
+        "decision": "CONFIRMED"
+      },
+      "rejectAction": {
+        "confirmId": "{{pendingConfirmationId}}",
+        "sessionId": "{{chatSessionId}}",
+        "decision": "REJECTED"
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "TC-IDENTITY-001-REGISTER-BUYER",
+      "service": "identity-service",
+      "actor": "public",
+      "coversUseCases": [
+        "UC-IDENTITY-001"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/identity-service/flow-identity-access-profile.md"
+      ],
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "bodyRef": "requestBodies.identity.registerBuyer",
+      "expect": {
+        "status": [
+          200,
+          201
+        ],
+        "assert": [
+          "access token returned",
+          "role BUYER"
+        ]
+      }
+    },
+    {
+      "id": "TC-IDENTITY-002-LOGIN-REFRESH-LOGOUT",
+      "service": "identity-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-IDENTITY-002"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/identity-service/flow-identity-access-profile.md"
+      ],
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/login",
+          "bodyRef": "requestBodies.identity.loginBuyer",
+          "extract": [
+            "buyerToken",
+            "buyerRefreshToken"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/refresh",
+          "bodyRef": "requestBodies.identity.refresh"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/logout",
+          "auth": "buyerToken",
+          "body": {}
+        }
+      ],
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "JWT access token accepted before logout",
+          "logged-out token cannot access protected routes"
+        ]
+      }
+    },
+    {
+      "id": "TC-IDENTITY-002-NEGATIVE",
+      "service": "identity-service",
+      "actor": "public",
+      "coversUseCases": [
+        "UC-IDENTITY-002"
+      ],
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "bodyRef": "requestBodies.identity.loginWrongPassword",
+      "expect": {
+        "status": [
+          401,
+          403
+        ],
+        "assert": [
+          "no access token returned"
+        ]
+      }
+    },
+    {
+      "id": "TC-IDENTITY-003-PROFILE-PASSWORD",
+      "service": "identity-service",
+      "actor": "generatedBuyer",
+      "coversUseCases": [
+        "UC-IDENTITY-003"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/identity-service/flow-identity-access-profile.md"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/users/me"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/users/me",
+          "bodyRef": "requestBodies.identity.profileUpdate"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/users/me/change-password",
+          "bodyRef": "requestBodies.identity.changePassword"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/users/me/change-password",
+          "bodyRef": "requestBodies.identity.changePasswordBack"
+        }
+      ],
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "profile values changed",
+          "password can be restored for repeatable runs"
+        ]
+      }
+    },
+    {
+      "id": "TC-IDENTITY-004-ADDRESS-CRUD",
+      "service": "identity-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-IDENTITY-004"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/identity-service/flow-identity-access-profile.md"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/users/me/addresses"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/users/me/addresses",
+          "bodyRef": "requestBodies.identity.addressCreate",
+          "extract": "addressId.created"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/users/me/addresses/{{addressId.created}}",
+          "bodyRef": "requestBodies.identity.addressUpdate"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/users/me/addresses/{{addressId.created}}"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          201
+        ],
+        "assert": [
+          "address list mutates correctly",
+          "default address rule remains valid"
+        ]
+      }
+    },
+    {
+      "id": "TC-IDENTITY-006-REGISTER-SELLER",
+      "service": "identity-service",
+      "actor": "public",
+      "coversUseCases": [
+        "UC-IDENTITY-006"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/identity-service/flow-identity-access-profile.md",
+        "documents/flows/cross-service/flow-stripe-onboarding.md"
+      ],
+      "method": "POST",
+      "path": "/api/v1/auth/register/seller",
+      "bodyRef": "requestBodies.identity.registerSeller",
+      "expect": {
+        "status": [
+          200,
+          201
+        ],
+        "assert": [
+          "role SELLER",
+          "seller can request Stripe onboarding"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-001-BROWSE-CATALOG",
+      "service": "product-service",
+      "actor": "public",
+      "coversUseCases": [
+        "UC-PRODUCT-001"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/product-service/flow-product-catalog-cart-review.md"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/products?page=0&size=10"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/products/variants/sku/SKU-MAGSAFE",
+          "extract": "variant.activeTech"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/categories",
+          "extract": "category.leaf"
+        }
+      ],
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "only active public products are listed",
+          "SKU lookup returns a variant id"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-002-MANAGE-CATEGORIES",
+      "service": "product-service",
+      "actor": "admin",
+      "coversUseCases": [
+        "UC-PRODUCT-002"
+      ],
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/categories",
+          "bodyRef": "requestBodies.product.categoryCreate",
+          "extract": "category.created"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/admin/categories/{{category.created}}",
+          "bodyRef": "requestBodies.product.categoryUpdate"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/admin/categories/{{category.created}}"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          201,
+          204
+        ],
+        "assert": [
+          "admin-only category lifecycle succeeds"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-003-CREATE-PRODUCT",
+      "service": "product-service",
+      "actor": "sellerPrimary",
+      "coversUseCases": [
+        "UC-PRODUCT-003"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/product-service/flow-product-catalog-cart-review.md"
+      ],
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/v1/products",
+          "bodyRef": "requestBodies.product.productCreate",
+          "extract": "productId.created"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/products/{{productId.created}}",
+          "bodyRef": "requestBodies.product.productUpdate"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/sellers/me/products"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          201
+        ],
+        "assert": [
+          "seller owns created product",
+          "product is not public until approved/published"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-004-MANAGE-VARIANTS",
+      "service": "product-service",
+      "actor": "sellerPrimary",
+      "coversUseCases": [
+        "UC-PRODUCT-004"
+      ],
+      "dependsOn": [
+        "TC-PRODUCT-003-CREATE-PRODUCT"
+      ],
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/v1/seller/products/{{productId.created}}/variants",
+          "bodyRef": "requestBodies.product.variantCreate",
+          "extract": "variant.created"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/seller/products/{{productId.created}}/variants"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/seller/variants/{{variant.created}}",
+          "bodyRef": "requestBodies.product.variantUpdate"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/seller/variants/{{variant.created}}"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          201
+        ],
+        "assert": [
+          "variant create/update/delete changes seller variant list"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-005-UPLOAD-IMAGES",
+      "service": "product-service",
+      "actor": "sellerPrimary",
+      "coversUseCases": [
+        "UC-PRODUCT-005"
+      ],
+      "dependsOn": [
+        "TC-PRODUCT-003-CREATE-PRODUCT"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/products/{{productId.created}}/presigned-url?file_name=front.jpg&content_type=image/jpeg"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/products/{{productId.created}}/images",
+          "bodyRef": "requestBodies.product.imageRegister",
+          "extract": "image.created"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/products/{{productId.created}}/images"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/images/{{image.created}}"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          201
+        ],
+        "assert": [
+          "presigned URL returned",
+          "image metadata can be registered and removed"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-006-MANAGE-STOCK",
+      "service": "product-service",
+      "actor": "sellerPrimary",
+      "coversUseCases": [
+        "UC-PRODUCT-006"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/inventory/SKU-MAGSAFE"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/inventory/SKU-MAGSAFE/restock",
+          "bodyRef": "requestBodies.product.inventoryRestock"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/seller/inventory/adjust",
+          "bodyRef": "requestBodies.product.inventoryAdjust"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/seller/inventory/SKU-MAGSAFE/logs"
+        }
+      ],
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "stock and audit log reflect changes",
+          "inventory events are emitted for downstream search"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-007-RESERVE-STOCK",
+      "service": "product-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-PRODUCT-007"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/product-service/flow-product-catalog-cart-review.md",
+        "documents/flows/order-service/flow-order-lifecycle.md"
+      ],
+      "steps": [
+        {
+          "method": "DELETE",
+          "path": "/api/v1/cart"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/cart/items",
+          "bodyRef": "requestBodies.product.cartAdd"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/cart/checkout/preview",
+          "bodyRef": "requestBodies.product.checkoutPreview",
+          "extract": "previewToken"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/cart/checkout/submit",
+          "bodyRef": "requestBodies.product.checkoutSubmit",
+          "extract": [
+            "checkoutSessionId",
+            "parentOrderId"
+          ]
+        }
+      ],
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "preview token is one-time use",
+          "stock reservation is PENDING until payment outcome"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-008-VIEW-CART",
+      "service": "product-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-PRODUCT-008"
+      ],
+      "method": "GET",
+      "path": "/api/v1/cart",
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "cart payload includes items and warnings"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-009-ADD-TO-CART",
+      "service": "product-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-PRODUCT-009"
+      ],
+      "method": "POST",
+      "path": "/api/v1/cart/items",
+      "bodyRef": "requestBodies.product.cartAdd",
+      "expect": {
+        "status": [
+          200,
+          201
+        ],
+        "assert": [
+          "cart contains variant with requested quantity"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-010-UPDATE-CART-ITEM",
+      "service": "product-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-PRODUCT-010"
+      ],
+      "method": "PUT",
+      "path": "/api/v1/cart/items/{{variant.activeTech}}",
+      "bodyRef": "requestBodies.product.cartUpdate",
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "quantity is updated",
+          "quantity zero is rejected and DELETE remains removal path"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-011-REMOVE-FROM-CART",
+      "service": "product-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-PRODUCT-011"
+      ],
+      "steps": [
+        {
+          "method": "DELETE",
+          "path": "/api/v1/cart/items/{{variant.activeTech}}"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/cart"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          204
+        ],
+        "assert": [
+          "single item removal and clear cart are idempotent"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-012-SUBMIT-PRODUCT-REVIEW",
+      "service": "product-service",
+      "actor": "sellerPrimary",
+      "coversUseCases": [
+        "UC-PRODUCT-012"
+      ],
+      "dependsOn": [
+        "TC-PRODUCT-003-CREATE-PRODUCT",
+        "TC-PRODUCT-004-MANAGE-VARIANTS",
+        "TC-PRODUCT-005-UPLOAD-IMAGES"
+      ],
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/v1/seller/products/{{productId.reviewApprove}}/submit",
+          "body": {}
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/seller/products/{{productId.approved}}/publish",
+          "body": {}
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/seller/products/{{productId.approved}}/unpublish",
+          "body": {}
+        }
+      ],
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "product enters pending review",
+          "approved product can publish/unpublish"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-013-LIST-PENDING-PRODUCTS",
+      "service": "product-service",
+      "actor": "admin",
+      "coversUseCases": [
+        "UC-PRODUCT-013"
+      ],
+      "method": "GET",
+      "path": "/api/v1/admin/products/pending?page=0&size=20",
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "pending submitted product is visible to admin"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-014-APPROVE-PRODUCT",
+      "service": "product-service",
+      "actor": "admin",
+      "coversUseCases": [
+        "UC-PRODUCT-014"
+      ],
+      "method": "POST",
+      "path": "/api/v1/admin/products/{{productId.reviewApprove}}/approve",
+      "body": {
+        "note": "Approved in full coverage run {{runId}}"
+      },
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "product state becomes approved/active-capable",
+          "product approved event is emitted"
+        ]
+      }
+    },
+    {
+      "id": "TC-PRODUCT-015-REJECT-PRODUCT",
+      "service": "product-service",
+      "actor": "admin",
+      "coversUseCases": [
+        "UC-PRODUCT-015"
+      ],
+      "method": "POST",
+      "path": "/api/v1/admin/products/{{productId.reviewReject}}/reject",
+      "body": {
+        "reason": "Description is too short for approval."
+      },
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "product state becomes rejected",
+          "reason is persisted"
+        ]
+      }
+    },
+    {
+      "id": "TC-ORDER-001-CHECKOUT",
+      "service": "order-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-ORDER-001"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/order-service/flow-order-lifecycle.md",
+        "documents/flows/product-service/flow-product-catalog-cart-review.md"
+      ],
+      "dependsOn": [
+        "TC-PRODUCT-007-RESERVE-STOCK"
+      ],
+      "method": "GET",
+      "path": "/api/v1/orders/parent/{{parentOrderId}}",
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "parent order exists",
+          "sub-orders exist",
+          "status PENDING before payment webhook"
+        ]
+      }
+    },
+    {
+      "id": "TC-ORDER-002-VIEW-ORDERS",
+      "service": "order-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-ORDER-002"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/orders?page=0&size=10"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/orders/{{orderId.anyOwned}}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/orders/parent/{{parentOrderId}}"
+        }
+      ],
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "buyer sees only owned orders"
+        ]
+      }
+    },
+    {
+      "id": "TC-ORDER-003-CANCEL-ORDER-BUYER",
+      "service": "order-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-ORDER-003"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/cross-service/flow-order-cancellation.md"
+      ],
+      "method": "POST",
+      "path": "/api/v1/orders/{{orderId.pendingForBuyerCancel}}/cancel",
+      "bodyRef": "requestBodies.order.buyerCancel",
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "order status CANCELLED",
+          "reserved stock released",
+          "pending payment intent cancelled when applicable"
+        ]
+      }
+    },
+    {
+      "id": "TC-ORDER-004-SHIP-ORDER",
+      "service": "order-service",
+      "actor": "sellerPrimary",
+      "coversUseCases": [
+        "UC-ORDER-004"
+      ],
+      "method": "PUT",
+      "path": "/api/v1/orders/{{orderId.paidForShipping}}/tracking",
+      "bodyRef": "requestBodies.order.tracking",
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "tracking number persisted",
+          "order status SHIPPING/SHIPPED"
+        ]
+      }
+    },
+    {
+      "id": "TC-ORDER-005-CONFIRM-DELIVERY",
+      "service": "order-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-ORDER-005"
+      ],
+      "method": "POST",
+      "path": "/api/v1/orders/{{orderId.shippedForDelivery}}/confirm-received",
+      "body": {},
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "order status DELIVERED",
+          "seller transfer becomes eligible"
+        ]
+      }
+    },
+    {
+      "id": "TC-ORDER-006-REQUEST-RETURN",
+      "service": "order-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-ORDER-006"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/cross-service/flow-refund-processing.md"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/orders/{{orderId.deliveredForRefund}}/refunds/presigned-url"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/orders/{{orderId.deliveredForRefund}}/refunds",
+          "bodyRef": "requestBodies.order.refundPartial",
+          "extract": "refundId.pending"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/orders/{{orderId.rtsCandidate}}/return-to-sender",
+          "contentType": "multipart/form-data",
+          "bodyRef": "requestBodies.order.returnToSenderMultipartFields"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          201
+        ],
+        "assert": [
+          "buyer refund request creates PENDING refund",
+          "RTS creates system refund path"
+        ]
+      }
+    },
+    {
+      "id": "TC-ORDER-007-VIEW-SELLER-ORDERS",
+      "service": "order-service",
+      "actor": "sellerPrimary",
+      "coversUseCases": [
+        "UC-ORDER-007"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/sellers/me/orders?page=0&size=10"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/sellers/me/dashboard"
+        }
+      ],
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "seller only sees own sub-orders",
+          "dashboard totals are present"
+        ]
+      }
+    },
+    {
+      "id": "TC-ORDER-008-SELLER-CANCEL-ORDER",
+      "service": "order-service",
+      "actor": "sellerPrimary",
+      "coversUseCases": [
+        "UC-ORDER-008"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/cross-service/flow-order-cancellation.md"
+      ],
+      "method": "POST",
+      "path": "/api/v1/orders/{{orderId.paidUnshippedForSellerCancel}}/cancel",
+      "bodyRef": "requestBodies.order.sellerCancel",
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "seller reason length accepted",
+          "seller.order_cancelled event emitted",
+          "auto full refund requested for paid order"
+        ]
+      }
+    },
+    {
+      "id": "TC-PAYMENT-001-ONBOARD-STRIPE",
+      "service": "payment-service",
+      "actor": "sellerPrimary",
+      "coversUseCases": [
+        "UC-PAYMENT-001"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/payment-service/flow-payment-stripe-payout.md",
+        "documents/flows/cross-service/flow-stripe-onboarding.md"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/stripe/onboarding/status"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/stripe/onboarding/start",
+          "body": {},
+          "extract": [
+            "stripeAccountId",
+            "onboardingUrl"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/stripe/onboarding/refresh-link",
+          "body": {}
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          400,
+          409
+        ],
+        "assert": [
+          "new/incomplete seller receives onboarding link",
+          "already complete seller is rejected idempotently"
+        ]
+      }
+    },
+    {
+      "id": "TC-PAYMENT-002-PROCESS-PAYMENT",
+      "service": "payment-service",
+      "actor": "system",
+      "coversUseCases": [
+        "UC-PAYMENT-002"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/payment-service/flow-payment-stripe-payout.md"
+      ],
+      "dependsOn": [
+        "TC-ORDER-001-CHECKOUT"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/payments/parent-order/{{parentOrderId}}",
+          "extract": [
+            "transactionId",
+            "paymentIntentId"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payments/client-secret/{{parentOrderId}}",
+          "extract": "clientSecret"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          404
+        ],
+        "assert": [
+          "transaction eventually exists after checkout event",
+          "single transaction per parent order"
+        ]
+      }
+    },
+    {
+      "id": "TC-PAYMENT-003-HANDLE-WEBHOOK",
+      "service": "payment-service",
+      "actor": "stripe",
+      "coversUseCases": [
+        "UC-PAYMENT-003"
+      ],
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/v1/stripe/webhooks",
+          "bodyRef": "requestBodies.payment.stripeWebhookPaymentSucceeded",
+          "headers": {
+            "Stripe-Signature": "{{validStripeSignature}}"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/stripe/webhooks",
+          "bodyRef": "requestBodies.payment.stripeWebhookPaymentFailed",
+          "headers": {
+            "Stripe-Signature": "{{validStripeSignature}}"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/stripe/webhooks",
+          "bodyRef": "requestBodies.payment.stripeWebhookAccountUpdated",
+          "headers": {
+            "Stripe-Signature": "{{validStripeSignature}}"
+          }
+        }
+      ],
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "succeeded webhook marks transaction SUCCESS",
+          "failed webhook marks transaction FAILED/CANCELLED",
+          "account.updated syncs onboarding state",
+          "unsigned webhook is rejected"
+        ]
+      }
+    },
+    {
+      "id": "TC-PAYMENT-007-TRANSFER-TO-SELLER",
+      "service": "payment-service",
+      "actor": "system",
+      "coversUseCases": [
+        "UC-PAYMENT-007"
+      ],
+      "dependsOn": [
+        "TC-ORDER-005-CONFIRM-DELIVERY",
+        "TC-PAYMENT-003-HANDLE-WEBHOOK"
+      ],
+      "method": "GET",
+      "path": "/api/v1/seller/payments/transfers?page=0&size=10",
+      "auth": "sellerPrimary",
+      "expect": {
+        "status": [
+          200,
+          500
+        ],
+        "assert": [
+          "delivered paid order creates or advances seller transfer",
+          "Stripe account incomplete state is visible if transfer cannot execute"
+        ]
+      }
+    },
+    {
+      "id": "TC-PAYMENT-008-VIEW-TRANSFERS",
+      "service": "payment-service",
+      "actor": "sellerPrimary",
+      "coversUseCases": [
+        "UC-PAYMENT-008"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/seller/payments/transfers?page=0&size=10"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/seller/payments/balance"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/seller/payments/earnings"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/seller/payments/stripe-dashboard"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          500
+        ],
+        "assert": [
+          "seller payment dashboard endpoints are routed to payment-service"
+        ]
+      }
+    },
+    {
+      "id": "TC-REFUND-001-CREATE-REFUND",
+      "service": "refund-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-REFUND-001"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/refund-service/flow-refund-admin-review.md",
+        "documents/flows/cross-service/flow-refund-processing.md"
+      ],
+      "dependsOn": [
+        "TC-ORDER-006-REQUEST-RETURN"
+      ],
+      "method": "GET",
+      "path": "/api/v1/orders/{{orderId.deliveredForRefund}}/refunds",
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "refund-service consumed refund.requested and created PENDING refund"
+        ]
+      }
+    },
+    {
+      "id": "TC-REFUND-002-APPROVE-REFUND",
+      "service": "refund-service",
+      "actor": "admin",
+      "coversUseCases": [
+        "UC-REFUND-002"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/refund-service/flow-refund-admin-review.md",
+        "documents/flows/cross-service/flow-refund-processing.md"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/refunds?page=0&size=20",
+          "extract": "refundId.pending"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/refunds/{{refundId.pendingApprove}}/approve",
+          "bodyRef": "requestBodies.payment.adminRefundApprove"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          500
+        ],
+        "assert": [
+          "admin approval changes refund state or reports Stripe limitation for forged PaymentIntent",
+          "refund.admin_approved event emitted on success"
+        ]
+      }
+    },
+    {
+      "id": "TC-REFUND-003-REJECT-REFUND",
+      "service": "refund-service",
+      "actor": "admin",
+      "coversUseCases": [
+        "UC-REFUND-003"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/refund-service/flow-refund-admin-review.md"
+      ],
+      "method": "POST",
+      "path": "/api/v1/admin/refunds/{{refundId.pendingReject}}/reject",
+      "bodyRef": "requestBodies.payment.adminRefundReject",
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "refund state becomes REJECTED",
+          "buyer/admin notifications are emitted"
+        ]
+      }
+    },
+    {
+      "id": "TC-FLASHSALE-001-CREATE-SESSION",
+      "service": "flashsale-service",
+      "actor": "admin",
+      "coversUseCases": [
+        "UC-FLASHSALE-001"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/flashsale-service/flow-flashsale-session-purchase.md"
+      ],
+      "method": "POST",
+      "path": "/api/v1/flash-sales",
+      "bodyRef": "requestBodies.flashsale.createUpcomingSession",
+      "extract": "flashSessionId.upcoming",
+      "expect": {
+        "status": [
+          200,
+          201
+        ],
+        "assert": [
+          "session status UPCOMING",
+          "registration deadline calculated",
+          "Redis start/end triggers registered"
+        ]
+      }
+    },
+    {
+      "id": "TC-FLASHSALE-002-REGISTER-PRODUCT",
+      "service": "flashsale-service",
+      "actor": "sellerPrimary",
+      "coversUseCases": [
+        "UC-FLASHSALE-002"
+      ],
+      "dependsOn": [
+        "TC-FLASHSALE-001-CREATE-SESSION"
+      ],
+      "method": "POST",
+      "path": "/api/v1/flash-sales/{{flashSessionId.upcoming}}/items",
+      "bodyRef": "requestBodies.flashsale.registerItem",
+      "extract": "flashSaleItemId",
+      "expect": {
+        "status": [
+          200,
+          201
+        ],
+        "assert": [
+          "seller-owned product registered before deadline"
+        ]
+      }
+    },
+    {
+      "id": "TC-FLASHSALE-003-VIEW-SESSIONS",
+      "service": "flashsale-service",
+      "actor": "public",
+      "coversUseCases": [
+        "UC-FLASHSALE-003"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/flash-sales"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/flash-sales/active"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/flash-sales/{{flashSessionId.upcoming}}"
+        }
+      ],
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "server_time is present",
+          "session detail includes items"
+        ]
+      }
+    },
+    {
+      "id": "TC-FLASHSALE-006-END-SESSION",
+      "service": "flashsale-service",
+      "actor": "system",
+      "coversUseCases": [
+        "UC-FLASHSALE-006"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/flashsale-service/flow-flashsale-session-purchase.md"
+      ],
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/v1/flash-sales",
+          "auth": "admin",
+          "bodyRef": "requestBodies.flashsale.createShortLiveSession",
+          "extract": "flashSessionId.shortLive"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/flash-sales/{{flashSessionId.shortLive}}"
+        },
+        {
+          "wait": "Poll until end_time + worker latency, then re-query session detail and search index."
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          201
+        ],
+        "assert": [
+          "session transitions ACTIVE then ENDED",
+          "flash prices reset downstream"
+        ]
+      }
+    },
+    {
+      "id": "TC-FLASHSALE-FLOW-BUY-REMINDER",
+      "service": "flashsale-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-FLASHSALE-003"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/flashsale-service/flow-flashsale-session-purchase.md"
+      ],
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/v1/flash-sales/{{flashSessionId.upcoming}}/reminders",
+          "body": {}
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/flash-sales/{{flashSessionId.upcoming}}/reminders"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/flash-sales/{{flashSessionId.active}}/buy",
+          "bodyRef": "requestBodies.flashsale.buyItem"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          201,
+          409
+        ],
+        "assert": [
+          "reminder create/delete works",
+          "buy path decrements flash stock when session ACTIVE"
+        ]
+      }
+    },
+    {
+      "id": "TC-SEARCH-001-SEARCH-PRODUCTS",
+      "service": "search-service",
+      "actor": "public",
+      "coversUseCases": [
+        "UC-SEARCH-001"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/search-service/flow-search-indexing.md"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/search/products?q=iphone&page=0&size=10"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/search/products?q=iphone&sort=price_asc&in_stock=true"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/search/products/suggest?q=iph"
+        }
+      ],
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "query, filter, sort, and suggestion paths respond"
+        ]
+      }
+    },
+    {
+      "id": "TC-SEARCH-003-REINDEX",
+      "service": "search-service",
+      "actor": "admin",
+      "coversUseCases": [
+        "UC-SEARCH-003"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/search-service/flow-search-indexing.md"
+      ],
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/v1/search/reindex",
+          "bodyRef": "requestBodies.search.reindex"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/search/reindex/status"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          202
+        ],
+        "assert": [
+          "reindex job accepted",
+          "status progresses without duplicate concurrent jobs"
+        ]
+      }
+    },
+    {
+      "id": "TC-NOTIF-001-STREAM-NOTIFICATIONS",
+      "service": "notification-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-NOTIF-001"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/notification-service/flow-notification-stream.md",
+        "documents/flows/cross-service/flow-refund-processing.md",
+        "documents/flows/cross-service/flow-order-cancellation.md"
+      ],
+      "method": "GET",
+      "path": "/api/v1/notifications/stream",
+      "headers": {
+        "Accept": "text/event-stream"
+      },
+      "trigger": "Run an order status, refund, or flash sale event in another terminal.",
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "SSE stream stays open",
+          "new event arrives after Kafka consumer processes trigger"
+        ]
+      }
+    },
+    {
+      "id": "TC-NOTIF-002-VIEW-HISTORY",
+      "service": "notification-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-NOTIF-002"
+      ],
+      "method": "GET",
+      "path": "/api/v1/notifications?page=0&size=20",
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "notification history is paginated"
+        ]
+      }
+    },
+    {
+      "id": "TC-NOTIF-003-MARK-READ",
+      "service": "notification-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-NOTIF-003"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/v1/notifications/unread-count"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/notifications/{{notificationId}}/read",
+          "bodyRef": "requestBodies.notification.markRead"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/notifications/read-all",
+          "bodyRef": "requestBodies.notification.markAllRead"
+        }
+      ],
+      "expect": {
+        "status": [
+          200
+        ],
+        "assert": [
+          "single read and read-all are idempotent",
+          "unread count decreases"
+        ]
+      }
+    },
+    {
+      "id": "TC-AICHAT-001-START-CHAT",
+      "service": "ai-chat-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-AICHAT-001"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/ai-chat-service/flow-ai-chat-confirmation.md"
+      ],
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/ai/suggest?context=product&limit=4"
+        },
+        {
+          "method": "POST",
+          "path": "/api/ai/sessions",
+          "bodyRef": "requestBodies.aiChat.createSession",
+          "extract": "chatSessionId"
+        },
+        {
+          "method": "GET",
+          "path": "/api/ai/sessions"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          201
+        ],
+        "assert": [
+          "session status ACTIVE",
+          "suggestions returned"
+        ]
+      }
+    },
+    {
+      "id": "TC-AICHAT-002-SEND-MESSAGE",
+      "service": "ai-chat-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-AICHAT-002"
+      ],
+      "dependsOn": [
+        "TC-AICHAT-001-START-CHAT"
+      ],
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/ai/chat",
+          "headers": {
+            "Accept": "text/event-stream"
+          },
+          "bodyRef": "requestBodies.aiChat.sendMessage"
+        },
+        {
+          "method": "GET",
+          "path": "/api/ai/chat/history?sessionId={{chatSessionId}}&limit=20"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          503
+        ],
+        "assert": [
+          "SSE emits delta/done or a documented provider error",
+          "history contains user and assistant/tool records when LLM key is valid"
+        ]
+      }
+    },
+    {
+      "id": "TC-AICHAT-003-CONFIRM-ACTION",
+      "service": "ai-chat-service",
+      "actor": "buyerPrimary",
+      "coversUseCases": [
+        "UC-AICHAT-003"
+      ],
+      "coversBusinessFlows": [
+        "documents/flows/ai-chat-service/flow-ai-chat-confirmation.md"
+      ],
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/ai/chat",
+          "headers": {
+            "Accept": "text/event-stream"
+          },
+          "body": {
+            "sessionId": "{{chatSessionId}}",
+            "message": "Add SKU-MAGSAFE to my cart if available.",
+            "type": "TEXT"
+          },
+          "extract": "pendingConfirmationId"
+        },
+        {
+          "method": "POST",
+          "path": "/api/ai/confirm",
+          "bodyRef": "requestBodies.aiChat.confirmAction"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/ai/sessions/{{chatSessionId}}"
+        }
+      ],
+      "expect": {
+        "status": [
+          200,
+          422,
+          503
+        ],
+        "assert": [
+          "confirmation_required event pauses high-risk tool",
+          "confirm endpoint executes or rejects with documented error"
+        ]
+      }
+    }
+  ],
+  "businessFlowScenarios": [
+    {
+      "id": "BF-IDENTITY-ACCESS-PROFILE",
+      "document": "documents/flows/identity-service/flow-identity-access-profile.md",
+      "cases": [
+        "TC-IDENTITY-001-REGISTER-BUYER",
+        "TC-IDENTITY-002-LOGIN-REFRESH-LOGOUT",
+        "TC-IDENTITY-003-PROFILE-PASSWORD",
+        "TC-IDENTITY-004-ADDRESS-CRUD",
+        "TC-IDENTITY-006-REGISTER-SELLER"
+      ]
+    },
+    {
+      "id": "BF-PRODUCT-CATALOG-CART-REVIEW",
+      "document": "documents/flows/product-service/flow-product-catalog-cart-review.md",
+      "cases": [
+        "TC-PRODUCT-001-BROWSE-CATALOG",
+        "TC-PRODUCT-003-CREATE-PRODUCT",
+        "TC-PRODUCT-004-MANAGE-VARIANTS",
+        "TC-PRODUCT-005-UPLOAD-IMAGES",
+        "TC-PRODUCT-007-RESERVE-STOCK",
+        "TC-PRODUCT-012-SUBMIT-PRODUCT-REVIEW",
+        "TC-PRODUCT-014-APPROVE-PRODUCT",
+        "TC-PRODUCT-015-REJECT-PRODUCT"
+      ]
+    },
+    {
+      "id": "BF-ORDER-LIFECYCLE",
+      "document": "documents/flows/order-service/flow-order-lifecycle.md",
+      "cases": [
+        "TC-ORDER-001-CHECKOUT",
+        "TC-ORDER-002-VIEW-ORDERS",
+        "TC-ORDER-003-CANCEL-ORDER-BUYER",
+        "TC-ORDER-004-SHIP-ORDER",
+        "TC-ORDER-005-CONFIRM-DELIVERY",
+        "TC-ORDER-006-REQUEST-RETURN",
+        "TC-ORDER-007-VIEW-SELLER-ORDERS",
+        "TC-ORDER-008-SELLER-CANCEL-ORDER"
+      ]
+    },
+    {
+      "id": "BF-PAYMENT-STRIPE-PAYOUT",
+      "document": "documents/flows/payment-service/flow-payment-stripe-payout.md",
+      "cases": [
+        "TC-PAYMENT-001-ONBOARD-STRIPE",
+        "TC-PAYMENT-002-PROCESS-PAYMENT",
+        "TC-PAYMENT-003-HANDLE-WEBHOOK",
+        "TC-PAYMENT-007-TRANSFER-TO-SELLER",
+        "TC-PAYMENT-008-VIEW-TRANSFERS"
+      ]
+    },
+    {
+      "id": "BF-FLASHSALE-SESSION-PURCHASE",
+      "document": "documents/flows/flashsale-service/flow-flashsale-session-purchase.md",
+      "cases": [
+        "TC-FLASHSALE-001-CREATE-SESSION",
+        "TC-FLASHSALE-002-REGISTER-PRODUCT",
+        "TC-FLASHSALE-003-VIEW-SESSIONS",
+        "TC-FLASHSALE-006-END-SESSION",
+        "TC-FLASHSALE-FLOW-BUY-REMINDER"
+      ]
+    },
+    {
+      "id": "BF-REFUND-ADMIN-REVIEW",
+      "document": "documents/flows/refund-service/flow-refund-admin-review.md",
+      "cases": [
+        "TC-REFUND-001-CREATE-REFUND",
+        "TC-REFUND-002-APPROVE-REFUND",
+        "TC-REFUND-003-REJECT-REFUND"
+      ]
+    },
+    {
+      "id": "BF-SEARCH-INDEXING",
+      "document": "documents/flows/search-service/flow-search-indexing.md",
+      "cases": [
+        "TC-SEARCH-001-SEARCH-PRODUCTS",
+        "TC-SEARCH-003-REINDEX",
+        "TC-PRODUCT-014-APPROVE-PRODUCT"
+      ]
+    },
+    {
+      "id": "BF-NOTIFICATION-STREAM",
+      "document": "documents/flows/notification-service/flow-notification-stream.md",
+      "cases": [
+        "TC-NOTIF-001-STREAM-NOTIFICATIONS",
+        "TC-NOTIF-002-VIEW-HISTORY",
+        "TC-NOTIF-003-MARK-READ"
+      ]
+    },
+    {
+      "id": "BF-AICHAT-CONFIRMATION",
+      "document": "documents/flows/ai-chat-service/flow-ai-chat-confirmation.md",
+      "cases": [
+        "TC-AICHAT-001-START-CHAT",
+        "TC-AICHAT-002-SEND-MESSAGE",
+        "TC-AICHAT-003-CONFIRM-ACTION"
+      ]
+    },
+    {
+      "id": "BF-CROSS-STRIPE-ONBOARDING",
+      "document": "documents/flows/cross-service/flow-stripe-onboarding.md",
+      "cases": [
+        "TC-IDENTITY-006-REGISTER-SELLER",
+        "TC-PAYMENT-001-ONBOARD-STRIPE",
+        "TC-PAYMENT-003-HANDLE-WEBHOOK"
+      ]
+    },
+    {
+      "id": "BF-CROSS-REFUND-PROCESSING",
+      "document": "documents/flows/cross-service/flow-refund-processing.md",
+      "cases": [
+        "TC-ORDER-006-REQUEST-RETURN",
+        "TC-REFUND-001-CREATE-REFUND",
+        "TC-REFUND-002-APPROVE-REFUND",
+        "TC-REFUND-003-REJECT-REFUND",
+        "TC-NOTIF-001-STREAM-NOTIFICATIONS"
+      ]
+    },
+    {
+      "id": "BF-CROSS-ORDER-CANCELLATION",
+      "document": "documents/flows/cross-service/flow-order-cancellation.md",
+      "cases": [
+        "TC-ORDER-003-CANCEL-ORDER-BUYER",
+        "TC-ORDER-008-SELLER-CANCEL-ORDER",
+        "TC-PAYMENT-003-HANDLE-WEBHOOK",
+        "TC-NOTIF-001-STREAM-NOTIFICATIONS"
+      ]
+    }
+  ],
+  "coverageSummary": {
+    "useCases": {
+      "UC-AICHAT-001": [
+        "TC-AICHAT-001-START-CHAT"
+      ],
+      "UC-AICHAT-002": [
+        "TC-AICHAT-002-SEND-MESSAGE"
+      ],
+      "UC-AICHAT-003": [
+        "TC-AICHAT-003-CONFIRM-ACTION"
+      ],
+      "UC-FLASHSALE-001": [
+        "TC-FLASHSALE-001-CREATE-SESSION"
+      ],
+      "UC-FLASHSALE-002": [
+        "TC-FLASHSALE-002-REGISTER-PRODUCT"
+      ],
+      "UC-FLASHSALE-003": [
+        "TC-FLASHSALE-003-VIEW-SESSIONS",
+        "TC-FLASHSALE-FLOW-BUY-REMINDER"
+      ],
+      "UC-FLASHSALE-006": [
+        "TC-FLASHSALE-006-END-SESSION"
+      ],
+      "UC-IDENTITY-001": [
+        "TC-IDENTITY-001-REGISTER-BUYER"
+      ],
+      "UC-IDENTITY-002": [
+        "TC-IDENTITY-002-LOGIN-REFRESH-LOGOUT",
+        "TC-IDENTITY-002-NEGATIVE"
+      ],
+      "UC-IDENTITY-003": [
+        "TC-IDENTITY-003-PROFILE-PASSWORD"
+      ],
+      "UC-IDENTITY-004": [
+        "TC-IDENTITY-004-ADDRESS-CRUD"
+      ],
+      "UC-IDENTITY-006": [
+        "TC-IDENTITY-006-REGISTER-SELLER"
+      ],
+      "UC-NOTIF-001": [
+        "TC-NOTIF-001-STREAM-NOTIFICATIONS"
+      ],
+      "UC-NOTIF-002": [
+        "TC-NOTIF-002-VIEW-HISTORY"
+      ],
+      "UC-NOTIF-003": [
+        "TC-NOTIF-003-MARK-READ"
+      ],
+      "UC-ORDER-001": [
+        "TC-ORDER-001-CHECKOUT"
+      ],
+      "UC-ORDER-002": [
+        "TC-ORDER-002-VIEW-ORDERS"
+      ],
+      "UC-ORDER-003": [
+        "TC-ORDER-003-CANCEL-ORDER-BUYER"
+      ],
+      "UC-ORDER-004": [
+        "TC-ORDER-004-SHIP-ORDER"
+      ],
+      "UC-ORDER-005": [
+        "TC-ORDER-005-CONFIRM-DELIVERY"
+      ],
+      "UC-ORDER-006": [
+        "TC-ORDER-006-REQUEST-RETURN"
+      ],
+      "UC-ORDER-007": [
+        "TC-ORDER-007-VIEW-SELLER-ORDERS"
+      ],
+      "UC-ORDER-008": [
+        "TC-ORDER-008-SELLER-CANCEL-ORDER"
+      ],
+      "UC-PAYMENT-001": [
+        "TC-PAYMENT-001-ONBOARD-STRIPE"
+      ],
+      "UC-PAYMENT-002": [
+        "TC-PAYMENT-002-PROCESS-PAYMENT"
+      ],
+      "UC-PAYMENT-003": [
+        "TC-PAYMENT-003-HANDLE-WEBHOOK"
+      ],
+      "UC-PAYMENT-007": [
+        "TC-PAYMENT-007-TRANSFER-TO-SELLER"
+      ],
+      "UC-PAYMENT-008": [
+        "TC-PAYMENT-008-VIEW-TRANSFERS"
+      ],
+      "UC-PRODUCT-001": [
+        "TC-PRODUCT-001-BROWSE-CATALOG"
+      ],
+      "UC-PRODUCT-002": [
+        "TC-PRODUCT-002-MANAGE-CATEGORIES"
+      ],
+      "UC-PRODUCT-003": [
+        "TC-PRODUCT-003-CREATE-PRODUCT"
+      ],
+      "UC-PRODUCT-004": [
+        "TC-PRODUCT-004-MANAGE-VARIANTS"
+      ],
+      "UC-PRODUCT-005": [
+        "TC-PRODUCT-005-UPLOAD-IMAGES"
+      ],
+      "UC-PRODUCT-006": [
+        "TC-PRODUCT-006-MANAGE-STOCK"
+      ],
+      "UC-PRODUCT-007": [
+        "TC-PRODUCT-007-RESERVE-STOCK"
+      ],
+      "UC-PRODUCT-008": [
+        "TC-PRODUCT-008-VIEW-CART"
+      ],
+      "UC-PRODUCT-009": [
+        "TC-PRODUCT-009-ADD-TO-CART"
+      ],
+      "UC-PRODUCT-010": [
+        "TC-PRODUCT-010-UPDATE-CART-ITEM"
+      ],
+      "UC-PRODUCT-011": [
+        "TC-PRODUCT-011-REMOVE-FROM-CART"
+      ],
+      "UC-PRODUCT-012": [
+        "TC-PRODUCT-012-SUBMIT-PRODUCT-REVIEW"
+      ],
+      "UC-PRODUCT-013": [
+        "TC-PRODUCT-013-LIST-PENDING-PRODUCTS"
+      ],
+      "UC-PRODUCT-014": [
+        "TC-PRODUCT-014-APPROVE-PRODUCT"
+      ],
+      "UC-PRODUCT-015": [
+        "TC-PRODUCT-015-REJECT-PRODUCT"
+      ],
+      "UC-REFUND-001": [
+        "TC-REFUND-001-CREATE-REFUND"
+      ],
+      "UC-REFUND-002": [
+        "TC-REFUND-002-APPROVE-REFUND"
+      ],
+      "UC-REFUND-003": [
+        "TC-REFUND-003-REJECT-REFUND"
+      ],
+      "UC-SEARCH-001": [
+        "TC-SEARCH-001-SEARCH-PRODUCTS"
+      ],
+      "UC-SEARCH-003": [
+        "TC-SEARCH-003-REINDEX"
+      ]
+    }
+  }
+}

@@ -1,0 +1,173 @@
+openapi: "3.0.3"
+info:
+  title: Payment Service - Admin Refund Rejection
+  description: |
+    Admin từ chối yêu cầu hoàn tiền.
+    Đặt trạng thái refund thành REJECTED, yêu cầu lý do từ chối bắt buộc.
+    Phát sự kiện refund.rejected lên Kafka để thông báo cho buyer.
+  version: "1.0.0"
+  contact:
+    name: Payment Service Team
+
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local development server
+
+paths:
+  /admin/refunds/{refundId}/reject:
+    post:
+      tags:
+        - payment-service
+      summary: Admin từ chối hoàn tiền
+      description: |
+        Admin từ chối một yêu cầu hoàn tiền đang ở trạng thái PENDING.
+        Đặt trạng thái thành REJECTED với lý do từ chối bắt buộc.
+        Phát sự kiện `refund.rejected` lên Kafka. Thông báo cho buyer với lý do từ chối.
+      operationId: rejectAdminRefund
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: refundId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: REFUNDS.id cần từ chối
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminRefundRejectRequest"
+            example:
+              rejectReason: "Sản phẩm không đáp ứng điều kiện hoàn tiền"
+      responses:
+        "200":
+          description: Refund đã bị từ chối
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+              example:
+                code: 200
+                message: "Refund rejected"
+                data: null
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Không tìm thấy refund
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "NOT_FOUND"
+                message: "Refund not found"
+        "409":
+          description: Refund đã được xử lý (không ở trạng thái PENDING)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "CONFLICT"
+                message: "Refund already processed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from Identity Service (yêu cầu role ADMIN)
+
+  schemas:
+    AdminRefundRejectRequest:
+      type: object
+      required:
+        - rejectReason
+      properties:
+        rejectReason:
+          type: string
+          maxLength: 500
+          description: Lý do từ chối hoàn tiền (bắt buộc)
+          example: "Sản phẩm không đáp ứng điều kiện hoàn tiền"
+
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Mã phản hồi HTTP
+          example: 200
+        message:
+          type: string
+          description: Thông báo kết quả
+          example: "Refund rejected"
+        data:
+          nullable: true
+          description: Dữ liệu phản hồi (void)
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Mã lỗi
+          example: "NOT_FOUND"
+        message:
+          type: string
+          description: Mô tả lỗi dành cho con người
+          example: "Refund not found"
+
+  responses:
+    ValidationError:
+      description: Yêu cầu không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "VALIDATION_ERROR"
+            message: "Invalid request parameters"
+    Unauthorized:
+      description: Thiếu hoặc token JWT không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "UNAUTHORIZED"
+            message: "Authentication required"
+    Forbidden:
+      description: Đã xác thực nhưng thiếu role ADMIN
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "FORBIDDEN"
+            message: "ADMIN role required"
+    InternalError:
+      description: Lỗi máy chủ nội bộ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "INTERNAL_ERROR"
+            message: "An unexpected error occurred"
+
+tags:
+  - name: payment-service
+    description: Payment service operations

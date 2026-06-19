@@ -1,0 +1,18 @@
+# ============================================================
+# DEV Profile — refund-service
+# Active when SPRING_PROFILES_ACTIVE=dev
+# ============================================================
+spring:
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: none
+
+logging:
+  level:
+    com.flashsale: DEBUG
+
+dev-data:
+  enabled: true
+  # reset=true wipes refund.refunds + refund.refund_items before reseeding.
+  reset: ${DEV_DATA_RESET:false}

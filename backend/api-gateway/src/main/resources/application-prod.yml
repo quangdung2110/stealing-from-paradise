@@ -1,0 +1,27 @@
+# ============================================================
+# PROD Profile — api-gateway
+# Active when SPRING_PROFILES_ACTIVE=prod
+# ============================================================
+spring:
+  cloud:
+    gateway:
+      httpclient:
+        pool:
+          maxConnections: 1000
+        connect-timeout: 5000
+        response-timeout: 10s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    root: INFO
+    com.flashsale: INFO
+    org.springframework.cloud.gateway: WARN

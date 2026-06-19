@@ -1,0 +1,131 @@
+openapi: "3.0.3"
+info:
+  title: Identity Service - Token Management
+  description: JWT token refresh and logout operations
+  version: "5.4"
+servers:
+  - url: http://localhost:8081/api/v1
+    description: Identity Service (local)
+paths:
+  /auth/refresh:
+    post:
+      operationId: refreshToken
+      summary: Refresh access token
+      description: >
+        Accepts a valid refresh_token and returns a new access_token + rotated refresh_token.
+        Refresh tokens are rotated on each use (BR-IDENTITY-005).
+        Referenced by UC-IDENTITY-002, FR-IDENTITY-004.
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  description: Valid RS256 refresh token
+              example:
+                refresh_token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: New RS256 JWT access token, 15 min TTL
+                  refresh_token:
+                    type: string
+                    description: New rotated RS256 JWT refresh token, 7 day TTL
+                  token_type:
+                    type: string
+                    enum: [Bearer]
+                  expires_in:
+                    type: integer
+                    description: Access token TTL in seconds (900)
+              example:
+                access_token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+                refresh_token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+                token_type: "Bearer"
+                expires_in: 900
+        "401":
+          description: Refresh token expired or invalid (BR-IDENTITY-005)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: Logout and revoke tokens
+      description: >
+        Adds the current access token JTI to the Redis blocklist (TTL = remaining token lifetime).
+        Optionally revokes the refresh token if provided.
+        If logout_all_devices=true, all refresh tokens for the user are invalidated.
+        Referenced by UC-IDENTITY-002, FR-IDENTITY-005.
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  description: If provided, this refresh token is also revoked
+                logout_all_devices:
+                  type: boolean
+                  default: false
+                  description: If true, revoke all refresh tokens for this user
+              example:
+                refresh_token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+                logout_all_devices: false
+      responses:
+        "200":
+          description: Logout successful, current token invalidated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "Logout successful, current token invalidated"
+        "401":
+          description: Access token invalid or already expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        status_code:
+          type: integer

@@ -1,0 +1,37 @@
+{
+  "generated_at": "2026-06-09",
+  "project": "Stealing-from-Paradise",
+  "artifact_count": 243,
+  "by_group": {
+    "overview": 7,
+    "interfaces": 68,
+    "domain": 68,
+    "business-flows": 13,
+    "messaging": 13,
+    "platform": 13,
+    "architecture": 11,
+    "traceability": 11,
+    "use-cases": 49,
+    "identity": 1,
+    "integrations": 1,
+    "deployment": 1,
+    "observability": 1
+  },
+  "by_type": {
+    "doc": 5,
+    "api": 67,
+    "business-rule": 12,
+    "entity": 30,
+    "data-model": 1,
+    "business-flow": 12,
+    "message": 12,
+    "runbook": 12,
+    "architecture": 10,
+    "requirement": 11,
+    "state": 13,
+    "traceability": 10,
+    "use-case": 48,
+    "group": 13,
+    "index": 1
+  }
+}

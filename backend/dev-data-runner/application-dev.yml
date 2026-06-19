@@ -1,0 +1,16 @@
+# ============================================================
+# DEV Profile — Composite dev-data runner (parent module)
+# Applied to all services via shared dev-data properties.
+# Set dev-data.enabled=true in application-dev.yml of each service.
+# ============================================================
+dev-data:
+  enabled: true
+  # reset=true drops all collections/tables before seeding.
+  # CAUTION: This will destroy ALL data in the dev database.
+  reset: false
+  # Seed counts
+  seller-count: 3
+  product-count: 14
+  order-count: 6
+  transaction-count: 5
+  refund-count: 4

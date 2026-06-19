@@ -1,0 +1,178 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Full Parent Refund API
+  description: |
+    Buyer yeu cau hoan tien toan bo parent order.
+    Tao groupRef UUID de theo doi hoan tien tren tat ca sub-orders.
+  version: "5.4"
+  contact:
+    name: Order Service Team
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: order-service
+    description: Full parent-order refund endpoints
+paths:
+  /orders/parent/{parentOrderId}/refund:
+    post:
+      tags:
+        - order-service
+      summary: Yeu cau hoan tien toan bo parent order
+      description: |
+        Buyer yeu cau hoan tien toan bo cho parent order.
+        Tao mot groupRef UUID va yeu cau hoan tien cho tung sub-order.
+        Tao su kien Kafka `refund.requested`.
+      operationId: requestFullParentRefund
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: parentOrderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Parent order ID can hoan tien
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FullRefundRequest"
+            example:
+              reason: "San pham bi loi"
+              evidence_images:
+                - "https://cdn.marketplace.vn/refund-evidence/orders/55/img1.jpg"
+                - "https://cdn.marketplace.vn/refund-evidence/orders/55/img2.jpg"
+      responses:
+        "201":
+          description: Yeu cau hoan tien da duoc tao
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FullRefundCreatedResponse"
+        "401":
+          description: Chua xac thuc hoac khong phai BUYER
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Khong the hoan tien (trang thai khong hop le)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    FullRefundRequest:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: Ly do hoan tien
+          example: "San pham bi loi"
+        evidence_images:
+          type: array
+          maxItems: 10
+          description: Danh sach URL anh bang chung
+          items:
+            type: string
+            format: uri
+          example:
+            - "https://cdn.marketplace.vn/refund-evidence/orders/55/img1.jpg"
+
+    FullRefundCreatedResponse:
+      type: object
+      properties:
+        group_ref:
+          type: string
+          format: uuid
+          description: UUID nhom hoan tien de theo doi
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        parent_order_id:
+          type: integer
+          format: int64
+          example: 55
+        type:
+          type: string
+          enum: [FULL]
+          example: "FULL"
+        total_amount:
+          type: number
+          format: double
+          description: Tong so tien hoan
+          example: 1150000
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, COMPLETED, REJECTED]
+          example: "PENDING"
+        refunds:
+          type: array
+          description: Danh sach hoan tien cho tung sub-order
+          items:
+            type: object
+            properties:
+              order_id:
+                type: integer
+                format: int64
+                example: 100
+              seller_id:
+                type: integer
+                format: int64
+                example: 5
+              amount:
+                type: number
+                format: double
+                example: 700000
+              item_count:
+                type: integer
+                example: 2
+              status:
+                type: string
+                enum: [PENDING, PROCESSING, COMPLETED, REJECTED]
+                example: "PENDING"
+        estimated_days:
+          type: integer
+          description: So ngay du kien xu ly
+          example: 7
+        message:
+          type: string
+          description: Thong bao cho nguoi dung
+          example: "Yeu cau hoan tien cua ban da duoc ghi nhan. Chung toi se xu ly trong vong 7 ngay."
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-06T09:00:00Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Ma loi
+        message:
+          type: string
+          description: Mo ta loi
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "VALIDATION_FAILED"
+        message:
+          type: string
+          example: "Khong the yeu cau hoan tien cho don hang nay"

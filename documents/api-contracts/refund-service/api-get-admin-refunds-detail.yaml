@@ -1,0 +1,276 @@
+openapi: "3.0.3"
+info:
+  title: Payment Service - Admin Refund Detail
+  description: |
+    Xem chi tiết một yêu cầu hoàn tiền dành cho admin.
+    Bao gồm đầy đủ thông tin các mục hàng, ảnh bằng chứng, lịch sử duyệt, và tham chiếu Stripe.
+  version: "1.0.0"
+  contact:
+    name: Payment Service Team
+
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local development server
+
+paths:
+  /admin/refunds/{refundId}:
+    get:
+      tags:
+        - payment-service
+      summary: Xem chi tiết hoàn tiền (Admin)
+      description: |
+        Trả về đầy đủ chi tiết của một refund bao gồm tất cả các mục hàng,
+        ảnh bằng chứng, lịch sử duyệt, và tham chiếu Stripe refund.
+      operationId: getAdminRefundDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: refundId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: REFUNDS.id
+      responses:
+        "200":
+          description: Chi tiết refund đầy đủ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefundDetailResponse"
+              example:
+                refundId: 401
+                refundCode: "RF-20260415-001"
+                orderId: 100
+                groupRef: "550e8400-e29b-41d4-a716-446655440000"
+                type: "PARTIAL"
+                status: "PENDING"
+                amount: 350000
+                reason: "Sản phẩm bị lỗi khi nhận hàng"
+                initiatedBy: "BUYER"
+                refundReasonType: "BUYER_REQUEST"
+                evidenceImages:
+                  - "https://minio.example.com/products-media/evidence/img001.jpg"
+                rejectReason: null
+                adminNote: null
+                reviewedBy: null
+                reviewedAt: null
+                refundRef: null
+                trackingNumber: null
+                items:
+                  - refundItemId: 501
+                    orderItemId: 101
+                    quantity: 1
+                    refundAmount: 350000
+                    itemReason: "Màn hình bị trầy xước"
+                    status: "PENDING"
+                    returnTrackingNumber: null
+                createdAt: "2026-04-15T10:00:00Z"
+                updatedAt: "2026-04-15T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Không tìm thấy refund
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "NOT_FOUND"
+                message: "Refund not found"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from Identity Service (yêu cầu role ADMIN)
+
+  schemas:
+    RefundDetailResponse:
+      type: object
+      properties:
+        refundId:
+          type: integer
+          format: int64
+          description: REFUNDS.id
+        refundCode:
+          type: string
+          description: Mã hiển thị của refund
+          example: "RF-20260415-001"
+        orderId:
+          type: integer
+          format: int64
+          description: ORDER.id
+        groupRef:
+          type: string
+          format: uuid
+          description: UUID nhóm refund
+        type:
+          type: string
+          enum:
+            - FULL
+            - PARTIAL
+          description: Loại hoàn tiền
+        status:
+          type: string
+          enum:
+            - PENDING
+            - SUCCESS
+            - FAILED
+            - REJECTED
+          description: Trạng thái refund
+        amount:
+          type: number
+          description: Số tiền hoàn (decimal)
+        reason:
+          type: string
+          description: Lý do hoàn tiền
+        initiatedBy:
+          type: string
+          enum:
+            - BUYER
+            - SELLER
+            - SYSTEM
+          description: Bên khởi tạo yêu cầu hoàn tiền
+        refundReasonType:
+          type: string
+          description: Phân loại lý do hoàn tiền
+        evidenceImages:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: URL ảnh bằng chứng đã tải lên
+        rejectReason:
+          type: string
+          nullable: true
+          description: Lý do từ chối (nếu có)
+        adminNote:
+          type: string
+          nullable: true
+          description: Ghi chú nội bộ của admin
+        reviewedBy:
+          type: integer
+          format: int64
+          nullable: true
+          description: ID admin đã duyệt (null nếu chưa duyệt)
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Thời điểm duyệt (ISO 8601)
+        refundRef:
+          type: string
+          nullable: true
+          description: Stripe refund ID (re_xxx)
+        trackingNumber:
+          type: string
+          nullable: true
+          description: Mã vận đơn hoàn trả
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RefundItemDetail"
+          description: Danh sách các mục hàng được hoàn tiền
+        createdAt:
+          type: string
+          format: date-time
+          description: Thời điểm tạo (ISO 8601)
+        updatedAt:
+          type: string
+          format: date-time
+          description: Thời điểm cập nhật cuối (ISO 8601)
+
+    RefundItemDetail:
+      type: object
+      properties:
+        refundItemId:
+          type: integer
+          format: int64
+          description: REFUND_ITEMS.id
+        orderItemId:
+          type: integer
+          format: int64
+          description: ORDER_ITEMS.id được hoàn tiền
+        quantity:
+          type: integer
+          description: Số lượng hoàn
+        refundAmount:
+          type: number
+          description: Số tiền hoàn cho mục hàng này (decimal)
+        itemReason:
+          type: string
+          description: Lý do hoàn tiền cho mục hàng
+        status:
+          type: string
+          description: Trạng thái mục hàng hoàn tiền
+        returnTrackingNumber:
+          type: string
+          nullable: true
+          description: Mã vận đơn hoàn trả cho mục hàng này
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Mã lỗi
+          example: "NOT_FOUND"
+        message:
+          type: string
+          description: Mô tả lỗi dành cho con người
+          example: "Refund not found"
+
+  responses:
+    ValidationError:
+      description: Yêu cầu không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "VALIDATION_ERROR"
+            message: "Invalid request parameters"
+    Unauthorized:
+      description: Thiếu hoặc token JWT không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "UNAUTHORIZED"
+            message: "Authentication required"
+    Forbidden:
+      description: Đã xác thực nhưng thiếu role ADMIN
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "FORBIDDEN"
+            message: "ADMIN role required"
+    InternalError:
+      description: Lỗi máy chủ nội bộ
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "INTERNAL_ERROR"
+            message: "An unexpected error occurred"
+
+tags:
+  - name: payment-service
+    description: Payment service operations

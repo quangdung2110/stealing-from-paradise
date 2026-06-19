@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Running Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --doc-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      --doc-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --doc-bg: #f6f7f9;
+      --doc-panel: #ffffff;
+      --doc-border: #d9dee7;
+      --doc-muted: #5c6675;
+      --doc-text: #162033;
+      --doc-accent: #1d4ed8;
+      --doc-accent-soft: #eff6ff;
+    }
+
+    html { scroll-padding-top: 5rem; }
+    body {
+      background: var(--doc-bg);
+      color: var(--doc-text);
+      font-family: var(--doc-font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      letter-spacing: 0;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      text-rendering: optimizeLegibility;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      line-height: 1.22;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+
+    a { color: var(--doc-accent); }
+    a:hover { color: #123b9c; }
+
+    .doc-topbar {
+      background: rgba(255, 255, 255, .96);
+      border-bottom: 1px solid var(--doc-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .doc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    .doc-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .doc-sidebar {
+      position: sticky;
+      top: 5rem;
+      max-height: calc(100vh - 6rem);
+      overflow: auto;
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+    }
+
+    .doc-main {
+      min-width: 0;
+    }
+
+    .doc-hero,
+    .doc-panel {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+    }
+
+    .doc-hero {
+      padding: 1.25rem;
+    }
+
+    .doc-section {
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-kpi {
+      background: var(--doc-panel);
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      padding: 1rem;
+      height: 100%;
+    }
+
+    .doc-card {
+      border: 1px solid var(--doc-border);
+      border-radius: .75rem;
+      background: var(--doc-panel);
+      height: 100%;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .doc-card:hover {
+      border-color: #adc6ff;
+      box-shadow: 0 .5rem 1.5rem rgba(22, 32, 51, .08);
+      transform: translateY(-1px);
+    }
+
+    .doc-card:focus-visible,
+    .doc-link-list a:focus-visible,
+    .nav-link:focus-visible,
+    .btn:focus-visible {
+      outline: 3px solid rgba(29, 78, 216, .35);
+      outline-offset: 2px;
+    }
+
+    .doc-card .card-body {
+      padding: 1rem;
+    }
+
+    .doc-link-list {
+      display: grid;
+      gap: .5rem;
+      padding-left: 0;
+      margin-bottom: 0;
+      list-style: none;
+    }
+
+    .doc-link-list a {
+      display: block;
+      padding: .625rem .75rem;
+      border: 1px solid var(--doc-border);
+      border-radius: .5rem;
+      background: #fff;
+      text-decoration: none;
+    }
+
+    .doc-link-list a:hover {
+      background: var(--doc-accent-soft);
+      border-color: #bfdbfe;
+    }
+
+    .doc-table {
+      --bs-table-bg: #fff;
+      border: 1px solid var(--doc-border);
+    }
+
+    .doc-table thead th {
+      background: #eef2f7;
+      color: #283549;
+      white-space: nowrap;
+    }
+
+    pre {
+      background: #101827;
+      color: #f8fafc;
+      font-family: var(--doc-font-mono);
+      font-size: .875rem;
+      line-height: 1.55;
+      padding: 1rem;
+      border-radius: .75rem;
+      overflow: auto;
+    }
+
+    pre.mermaid {
+      background: #ffffff;
+      color: var(--doc-text);
+      border: 1px solid var(--doc-border);
+      min-height: 8rem;
+    }
+
+    code {
+      color: #9a3412;
+      font-family: var(--doc-font-mono);
+      font-size: .9em;
+    }
+
+    .doc-meta {
+      color: var(--doc-muted);
+      font-size: .875rem;
+    }
+
+    .doc-anchor {
+      scroll-margin-top: 5rem;
+    }
+
+    @media (max-width: 991.98px) {
+      .doc-shell { padding: .875rem; }
+      .doc-layout { grid-template-columns: 1fr; }
+      .doc-sidebar {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    @media print {
+      .doc-topbar,
+      .doc-sidebar,
+      .btn,
+      .nav-tabs {
+        display: none !important;
+      }
+      body { background: #fff; }
+      .doc-shell { max-width: none; padding: 0; }
+      .doc-layout { display: block; }
+      .doc-hero,
+      .doc-panel,
+      .doc-card,
+      .doc-kpi {
+        border: 1px solid #bbb;
+        box-shadow: none !important;
+      }
+    }
+      pre code { color: inherit; background: transparent; font-size: inherit; padding: 0; }
+    pre { white-space: pre; }
+  </style>
+</head>
+<body>
+  <header class="doc-topbar sticky-top">
+    <nav class="navbar navbar-expand-lg">
+      <div class="container-fluid px-3">
+        <a class="navbar-brand fw-semibold" href="../index.html">Stealing-from-Paradise</a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <a class="btn btn-sm btn-outline-secondary" href="../index.html">Home</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/overview.html">Overview</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/architecture.html">Architecture</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/domain.html">Domain Model and Rules</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/use-cases.html">Use Cases</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/business-flows.html">Business Flows</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/interfaces.html">Interfaces</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/messaging.html">Messaging and Realtime</a>
+<a class="btn btn-sm btn-outline-secondary" href="../groups/traceability.html">Traceability</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="doc-shell">
+    <div class="doc-layout">
+      <aside class="doc-sidebar">
+        <div class="fw-semibold mb-2">Contents</div>
+        <nav class="nav nav-pills flex-column gap-1">
+          <a class="nav-link" href="../groups/overview.html">Overview</a>
+<a class="nav-link" href="../groups/architecture.html">Architecture</a>
+<a class="nav-link" href="../groups/domain.html">Domain Model and Rules</a>
+<a class="nav-link" href="../groups/business-flows.html">Business Flows</a>
+<a class="nav-link" href="../groups/use-cases.html">Use Cases</a>
+<a class="nav-link" href="../groups/interfaces.html">Interfaces</a>
+<a class="nav-link" href="../groups/messaging.html">Messaging and Realtime</a>
+<a class="nav-link" href="../groups/identity.html">Identity and Security</a>
+<a class="nav-link" href="../groups/platform.html">Platform and Operations</a>
+<a class="nav-link" href="../groups/deployment.html">Deployment</a>
+<a class="nav-link" href="../groups/observability.html">Observability</a>
+<a class="nav-link" href="../groups/integrations.html">Integrations</a>
+<a class="nav-link" href="../groups/traceability.html">Traceability</a>
+<a class="nav-link" href="../traceability/matrix.html">Traceability Matrix</a>
+        </nav>
+      </aside>
+
+      <main class="doc-main">
+        <section class="doc-hero doc-section">
+          <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div>
+              <h1 class="h2 mb-1">Running Guide</h1>
+              <div class="doc-meta">DOC-OPERATIONS-RUNNING-GUIDE | 2026-06-09</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2"><span class="badge text-bg-info">runbook</span> <span class="badge text-bg-light">platform</span></div>
+          </div>
+        </section>
+
+        <section class="doc-section"><div class="doc-panel p-3 p-md-4 doc-prose"><h1>Running Guide</h1>
+<blockquote>
+<p><strong>Source</strong>: documents/operations/RUNNING_GUIDE.md (2026-05-11)
+<strong>Entry Script</strong>: flashsale-build.ps1
+<strong>Generated</strong>: 2026-05-10</p>
+</blockquote>
+<hr>
+<h2>Prerequisites</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Version</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Docker Desktop</td>
+<td>Latest</td>
+<td>Run all services in containers</td>
+</tr>
+<tr>
+<td>Maven</td>
+<td>3.8+</td>
+<td>Build backend JARs (optional)</td>
+</tr>
+<tr>
+<td>Java</td>
+<td>25</td>
+<td>Run backend locally (optional)</td>
+</tr>
+<tr>
+<td>Node.js</td>
+<td>22+</td>
+<td>Run frontend locally (optional)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>All services can run fully inside Docker.</p>
+</blockquote>
+<hr>
+<h2>First-Time Setup</h2>
+<h3>1. Copy environment file</h3>
+<pre><code class="language-powershell">cp .env.example .env
+</code></pre>
+<h3>2. Fill in secrets in <code>.env</code></h3>
+<pre><code>JWT_SECRET=&lt;generate-a-256bit-base64-string&gt;
+POSTGRES_PASSWORD=&lt;strong-password&gt;
+REDIS_PASSWORD=&lt;strong-password&gt;
+MONGO_INITDB_ROOT_PASSWORD=&lt;strong-password&gt;
+MINIO_ACCESS_KEY=&lt;your-access-key&gt;
+MINIO_SECRET_KEY=&lt;your-secret-key&gt;
+ELASTIC_USERNAME=elastic
+ELASTIC_PASSWORD=&lt;strong-password&gt;
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+SPRING_AI_OPENAI_API_KEY=sk-...
+</code></pre>
+<h3>3. Start Docker Desktop</h3>
+<hr>
+<h2>Quick Start</h2>
+<h3>Full Stack -- DEV mode (recommended)</h3>
+<pre><code class="language-powershell">.\flashsale-build.ps1 mvn-all
+.\flashsale-build.ps1 dev
+</code></pre>
+<h3>Backend Only</h3>
+<pre><code class="language-powershell">.\flashsale-build.ps1 be-dev
+</code></pre>
+<h3>Frontend Only -- Mock Data</h3>
+<pre><code class="language-powershell"># All 3 apps via npm on host (hot-reload, 3 terminal windows)
+.\flashsale-build.ps1 fe-dev-all
+
+# All 3 apps via Docker (mock data)
+.\flashsale-build.ps1 fe-docker-all
+</code></pre>
+<h3>Stop Everything</h3>
+<pre><code class="language-powershell">.\flashsale-build.ps1 stop all
+</code></pre>
+<hr>
+<h2>Script Command Reference</h2>
+<p>Run from the <strong>project root</strong>: <code>.\flashsale-build.ps1 &lt;action&gt; [target]</code></p>
+<h3>Maven -- Backend Build</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mvn-all</code></td>
+<td>Build ALL Maven modules (clean install, skip tests)</td>
+</tr>
+<tr>
+<td><code>mvn &lt;service&gt;</code></td>
+<td>Build single Maven module</td>
+</tr>
+<tr>
+<td><code>mvn-clean &lt;service&gt;</code></td>
+<td>Clean + build single Maven module</td>
+</tr>
+</tbody>
+</table>
+<p>Services: <code>discovery</code>, <code>gateway</code>, <code>identity</code>, <code>payment</code>, <code>order</code>, <code>flashsale</code>, <code>product</code>, <code>search</code>, <code>notification</code>, <code>chat</code>, <code>common-lib</code>, <code>dev-data-runner</code></p>
+<h3>npm -- Frontend Build</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>npm-install-all</code></td>
+<td>Run <code>npm install</code> for all frontend apps + shared</td>
+</tr>
+<tr>
+<td><code>npm-install &lt;app&gt;</code></td>
+<td>Run <code>npm install</code> for specific app</td>
+</tr>
+<tr>
+<td><code>npm-all</code></td>
+<td>Build ALL 3 frontend apps</td>
+</tr>
+<tr>
+<td><code>npm &lt;app&gt;</code></td>
+<td>Build single frontend app</td>
+</tr>
+</tbody>
+</table>
+<p>Apps: <code>customer</code>, <code>seller</code>, <code>admin</code>, <code>shared</code></p>
+<h3>Frontend Dev Modes</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fe-dev &lt;app&gt;</code></td>
+<td>ONE app via npm on host (hot-reload, mock data)</td>
+</tr>
+<tr>
+<td><code>fe-dev-all</code></td>
+<td>ALL 3 apps via npm on host (3 terminal windows)</td>
+</tr>
+<tr>
+<td><code>fe-docker &lt;app&gt;</code></td>
+<td>ONE app via Docker (mock data)</td>
+</tr>
+<tr>
+<td><code>fe-docker-all</code></td>
+<td>ALL 3 apps via Docker (mock data)</td>
+</tr>
+</tbody>
+</table>
+<p>Apps: <code>customer</code> (port 3000), <code>seller</code> (port 3001), <code>admin</code> (port 3002)</p>
+<h3>Backend &amp; Fullstack Modes</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>infra-up</code></td>
+<td>Start ONLY infrastructure</td>
+</tr>
+<tr>
+<td><code>infra-down</code></td>
+<td>Stop infrastructure</td>
+</tr>
+<tr>
+<td><code>be-dev</code></td>
+<td>Start infra + backend (no frontend)</td>
+</tr>
+<tr>
+<td><code>be-down</code></td>
+<td>Stop backend</td>
+</tr>
+<tr>
+<td><code>dev</code></td>
+<td>Full stack DEV (infra + backend + frontend + stripe-listener)</td>
+</tr>
+<tr>
+<td><code>dev-down</code></td>
+<td>Stop dev stack</td>
+</tr>
+<tr>
+<td><code>prod</code></td>
+<td>Full stack PROD (no stripe-listener)</td>
+</tr>
+<tr>
+<td><code>prod-down</code></td>
+<td>Stop prod stack</td>
+</tr>
+</tbody>
+</table>
+<h3>Single-Service Container Commands</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>svc-build &lt;service&gt;</code></td>
+<td>Build ONE backend service Docker image</td>
+</tr>
+<tr>
+<td><code>svc-run &lt;service&gt;</code></td>
+<td>Start infra + build + run ONE service</td>
+</tr>
+<tr>
+<td><code>svc-up &lt;service&gt;</code></td>
+<td>Start ONE service container (already built)</td>
+</tr>
+<tr>
+<td><code>svc-rm &lt;service&gt;</code></td>
+<td>Remove ONE service container</td>
+</tr>
+</tbody>
+</table>
+<p>Services: <code>discovery</code>, <code>gateway</code>, <code>identity</code>, <code>payment</code>, <code>order</code>, <code>flashsale</code>, <code>product</code>, <code>search</code>, <code>notification</code>, <code>chat</code></p>
+<h3>Stop Commands</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stop infra</code></td>
+<td>Stop infrastructure</td>
+</tr>
+<tr>
+<td><code>stop be</code></td>
+<td>Stop backend</td>
+</tr>
+<tr>
+<td><code>stop fe</code></td>
+<td>Stop frontend</td>
+</tr>
+<tr>
+<td><code>stop dev</code></td>
+<td>Stop dev stack</td>
+</tr>
+<tr>
+<td><code>stop prod</code></td>
+<td>Stop prod stack</td>
+</tr>
+<tr>
+<td><code>stop all</code></td>
+<td>Stop ALL containers (keeps volumes)</td>
+</tr>
+</tbody>
+</table>
+<h3>Utility Commands</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>logs all</code></td>
+<td>Stream logs from ALL containers</td>
+</tr>
+<tr>
+<td><code>logs be</code></td>
+<td>Stream logs from backend</td>
+</tr>
+<tr>
+<td><code>logs fe</code></td>
+<td>Stream logs from frontend</td>
+</tr>
+<tr>
+<td><code>logs infra</code></td>
+<td>Stream logs from infrastructure</td>
+</tr>
+<tr>
+<td><code>logs &lt;service&gt;</code></td>
+<td>Stream logs from a specific container</td>
+</tr>
+<tr>
+<td><code>ps</code> / <code>status</code></td>
+<td>List all running containers</td>
+</tr>
+<tr>
+<td><code>clean</code></td>
+<td>Stop all + remove volumes (DESTRUCTIVE)</td>
+</tr>
+<tr>
+<td><code>help</code></td>
+<td>Show help message</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Running Modes</h2>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Command</th>
+<th>Infra</th>
+<th>Backend</th>
+<th>Frontend</th>
+<th>Stripe CLI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>dev</strong></td>
+<td><code>dev</code></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>prod</strong></td>
+<td><code>prod</code></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>be-dev</strong></td>
+<td><code>be-dev</code></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>fe-dev</strong></td>
+<td><code>fe-dev &lt;app&gt;</code></td>
+<td>No</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>infra</strong></td>
+<td><code>infra-up</code></td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Service Ports &amp; URLs</h2>
+<h3>Backend Services</h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Container</th>
+<th>Port</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API Gateway</td>
+<td><code>fs-gateway</code></td>
+<td>8080</td>
+<td>http://localhost:8080</td>
+</tr>
+<tr>
+<td>Discovery (Eureka)</td>
+<td><code>fs-discovery</code></td>
+<td>8761</td>
+<td>http://localhost:8761</td>
+</tr>
+<tr>
+<td>Identity</td>
+<td><code>fs-identity</code></td>
+<td>8081</td>
+<td>http://localhost:8081</td>
+</tr>
+<tr>
+<td>Payment</td>
+<td><code>fs-payment</code></td>
+<td>8082</td>
+<td>http://localhost:8082</td>
+</tr>
+<tr>
+<td>Order</td>
+<td><code>fs-order</code></td>
+<td>8083</td>
+<td>http://localhost:8083</td>
+</tr>
+<tr>
+<td>Flash Sale</td>
+<td><code>fs-flashsale</code></td>
+<td>8086</td>
+<td>http://localhost:8086</td>
+</tr>
+<tr>
+<td>Product</td>
+<td><code>fs-product</code></td>
+<td>8084</td>
+<td>http://localhost:8084</td>
+</tr>
+<tr>
+<td>Search</td>
+<td><code>fs-search</code></td>
+<td>8087</td>
+<td>http://localhost:8087</td>
+</tr>
+<tr>
+<td>Notification</td>
+<td><code>fs-notification</code></td>
+<td>8092</td>
+<td>http://localhost:8092</td>
+</tr>
+<tr>
+<td>AI Chat</td>
+<td><code>fs-chat</code></td>
+<td>8093</td>
+<td>http://localhost:8093</td>
+</tr>
+</tbody>
+</table>
+<h3>Infrastructure</h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Container</th>
+<th>Port</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PostgreSQL</td>
+<td><code>fs-postgres</code></td>
+<td>5432</td>
+</tr>
+<tr>
+<td>MongoDB</td>
+<td><code>fs-mongo</code></td>
+<td>27017</td>
+</tr>
+<tr>
+<td>Redis</td>
+<td><code>fs-redis</code></td>
+<td>6379</td>
+</tr>
+<tr>
+<td>Kafka</td>
+<td><code>fs-kafka</code></td>
+<td>9092 / 29092</td>
+</tr>
+<tr>
+<td>Zookeeper</td>
+<td><code>fs-zookeeper</code></td>
+<td>2181</td>
+</tr>
+<tr>
+<td>Elasticsearch</td>
+<td><code>fs-elasticsearch</code></td>
+<td>9200</td>
+</tr>
+<tr>
+<td>MinIO</td>
+<td><code>fs-minio</code></td>
+<td>9000 / 9001</td>
+</tr>
+<tr>
+<td>Axon Server</td>
+<td><code>fs-axonserver</code></td>
+<td>8024 (GUI) / 8124 (gRPC)</td>
+</tr>
+</tbody>
+</table>
+<h3>Frontend Apps</h3>
+<table>
+<thead>
+<tr>
+<th>App</th>
+<th>Container</th>
+<th>Port</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Customer</td>
+<td><code>fs-customer-fe</code></td>
+<td>3000</td>
+</tr>
+<tr>
+<td>Seller</td>
+<td><code>fs-seller-fe</code></td>
+<td>3001</td>
+</tr>
+<tr>
+<td>Admin</td>
+<td><code>fs-admin-fe</code></td>
+<td>3002</td>
+</tr>
+</tbody>
+</table>
+<h3>Quick Access Links</h3>
+<pre><code>http://localhost:3000    Customer App
+http://localhost:3001    Seller App
+http://localhost:3002    Admin App
+http://localhost:8080    API Gateway
+http://localhost:8080/swagger-ui.html  Swagger UI
+http://localhost:8761    Eureka Discovery
+http://localhost:9001    MinIO Console
+http://localhost:8024    Axon Server GUI
+</code></pre>
+<hr>
+<h2>Container Names</h2>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Containers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Infrastructure</strong></td>
+<td><code>fs-postgres</code>, <code>fs-mongo</code>, <code>fs-redis</code>, <code>fs-elasticsearch</code>, <code>fs-minio</code>, <code>fs-kafka</code>, <code>fs-zookeeper</code>, <code>fs-axonserver</code></td>
+</tr>
+<tr>
+<td><strong>Backend</strong></td>
+<td><code>fs-discovery</code>, <code>fs-gateway</code>, <code>fs-identity</code>, <code>fs-payment</code>, <code>fs-order</code>, <code>fs-flashsale</code>, <code>fs-product</code>, <code>fs-search</code>, <code>fs-notification</code>, <code>fs-chat</code></td>
+</tr>
+<tr>
+<td><strong>Frontend</strong></td>
+<td><code>fs-customer-fe</code>, <code>fs-seller-fe</code>, <code>fs-admin-fe</code></td>
+</tr>
+<tr>
+<td><strong>Special</strong></td>
+<td><code>fs-reverse-proxy</code> (nginx), <code>fs-stripe-listener</code> (dev only)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Database Connections</h2>
+<p>Connect from host machine (outside Docker):</p>
+<table>
+<thead>
+<tr>
+<th>Database</th>
+<th>Host</th>
+<th>Port</th>
+<th>User</th>
+<th>Password</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PostgreSQL</td>
+<td>localhost</td>
+<td>5432</td>
+<td>postgres</td>
+<td><code>POSTGRES_PASSWORD</code> from <code>.env</code></td>
+</tr>
+<tr>
+<td>MongoDB</td>
+<td>localhost</td>
+<td>27017</td>
+<td>fs_mongo_admin</td>
+<td><code>MONGO_INITDB_ROOT_PASSWORD</code> from <code>.env</code></td>
+</tr>
+<tr>
+<td>Redis</td>
+<td>localhost</td>
+<td>6379</td>
+<td>(none)</td>
+<td><code>REDIS_PASSWORD</code> from <code>.env</code></td>
+</tr>
+<tr>
+<td>Elasticsearch</td>
+<td>localhost</td>
+<td>9200</td>
+<td>elastic</td>
+<td><code>ELASTIC_PASSWORD</code> from <code>.env</code> (x-pack security; disabled by default in dev, must be enabled in production)</td>
+</tr>
+<tr>
+<td>MinIO</td>
+<td>localhost</td>
+<td>9000</td>
+<td><code>MINIO_ACCESS_KEY</code></td>
+<td><code>MINIO_SECRET_KEY</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Docker Compose File Architecture</h2>
+<pre><code>project-root/
+|-- docker-compose.yml                    # Base: infra + backend + frontend + nginx
+|-- docker-compose.dev.yml               # DEV override: adds fs-stripe-listener
+|-- docker-compose-infrastructure.yml    # Infrastructure only
+|-- docker-compose-backend.yml            # Backend services only
+|-- flashsale-build.ps1                # Unified build &amp; run script
+|-- backend/
+|   |-- discovery-service/
+|   |-- api-gateway/
+|   |-- identity-service/
+|   |-- product-service/
+|   |-- order-service/
+|   |-- payment-service/
+|   |-- flashsale-service/
+|   |-- search-service/
+|   |-- notification-service/
+|   |-- ai-chat-service/
+|   |-- common-lib/
+|   |-- docker/
+|       |-- postgres/init/
+|       |-- mongo/init/
+|       |-- kafka/create-topics.sh
+</code></pre>
+<h3>Compose File Combinations</h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Compose Files</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dev</code></td>
+<td><code>docker-compose.yml</code> + <code>docker-compose.dev.yml</code></td>
+<td>Full stack + stripe-listener</td>
+</tr>
+<tr>
+<td><code>prod</code></td>
+<td><code>docker-compose.yml</code></td>
+<td>Full stack (no stripe-listener)</td>
+</tr>
+<tr>
+<td><code>be-dev</code></td>
+<td><code>docker-compose.yml</code> + <code>docker-compose-backend.yml</code></td>
+<td>Backend + stripe-listener</td>
+</tr>
+<tr>
+<td><code>infra-up</code></td>
+<td><code>docker-compose.yml</code> + <code>docker-compose-infrastructure.yml</code></td>
+<td>Infrastructure only</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Stripe Webhook Setup</h2>
+<h3>Local Development</h3>
+<p><code>dev</code> command automatically starts <code>fs-stripe-listener</code> which forwards Stripe webhook events to <code>payment-service</code>.</p>
+<p>Get the webhook signing secret:</p>
+<pre><code class="language-powershell">docker logs fs-stripe-listener | Select-String whsec_
+</code></pre>
+<p>Update <code>.env</code> and restart:</p>
+<pre><code class="language-powershell">.\flashsale-build.ps1 svc-rm payment
+.\flashsale-build.ps1 svc-up payment
+</code></pre>
+<h3>Production</h3>
+<ol>
+<li>Stripe Dashboard &gt; Developers &gt; Webhooks &gt; Add endpoint</li>
+<li>Endpoint URL: <code>https://your-domain.com/api/v1/stripe/webhooks</code></li>
+<li>Events: <code>payment_intent.succeeded</code>, <code>payment_intent.payment_failed</code>, <code>charge.refunded</code>, <code>account.updated</code></li>
+<li>Copy signing secret (whsec_xxx)</li>
+<li>Set <code>STRIPE_WEBHOOK_SECRET_PROD=whsec_xxx</code> in production <code>.env</code></li>
+</ol>
+<hr>
+<h2>Development Workflows</h2>
+<h3>Full-Stack (daily dev)</h3>
+<pre><code class="language-powershell">.\flashsale-build.ps1 dev
+
+# After backend changes:
+.\flashsale-build.ps1 mvn-all
+.\flashsale-build.ps1 stop be
+.\flashsale-build.ps1 be-dev
+
+# Full reset:
+.\flashsale-build.ps1 stop all
+.\flashsale-build.ps1 mvn-all
+.\flashsale-build.ps1 dev
+</code></pre>
+<h3>Backend-Only</h3>
+<pre><code class="language-powershell"># Option A: Backend in Docker
+.\flashsale-build.ps1 be-dev
+
+# Option B: Backend in IDE, infra in Docker
+.\flashsale-build.ps1 infra-up
+cd backend
+mvn spring-boot:run -pl identity-service
+</code></pre>
+<h3>Frontend-Only</h3>
+<pre><code class="language-powershell"># npm on host (recommended)
+.\flashsale-build.ps1 fe-dev-all
+
+# Docker (sandboxed)
+.\flashsale-build.ps1 fe-docker-all
+</code></pre>
+<h3>Single Service</h3>
+<pre><code class="language-powershell">.\flashsale-build.ps1 svc-run order
+curl http://localhost:8080/api/v1/orders/...
+</code></pre>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>Containers Not Starting</h3>
+<pre><code class="language-powershell">.\flashsale-build.ps1 ps
+.\flashsale-build.ps1 logs gateway
+docker logs fs-payment
+</code></pre>
+<h3>Port Already in Use</h3>
+<pre><code class="language-powershell">netstat -ano | Select-String &quot;:8080&quot;
+taskkill /PID &lt;PID&gt; /F
+</code></pre>
+<h3>Out of Disk Space</h3>
+<pre><code class="language-powershell">docker system prune -a
+docker volume prune
+</code></pre>
+<h3>Kafka Not Starting</h3>
+<p>Kafka needs ~30 seconds to initialize. Check: <code>docker logs fs-kafka</code></p>
+<h3>Full Reset</h3>
+<pre><code class="language-powershell">.\flashsale-build.ps1 clean
+.\flashsale-build.ps1 mvn-all
+.\flashsale-build.ps1 dev
+</code></pre></div></section>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    function normalizeDocSearchText(value) {
+      return (value || '').toString().toLowerCase();
+    }
+
+    function escapeDocHtml(value) {
+      return (value || '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderSearchIndexResults(container, items, query) {
+      if (!container) return;
+      var normalized = normalizeDocSearchText(query);
+      if (!normalized) {
+        container.innerHTML = '';
+        container.classList.add('d-none');
+        return;
+      }
+      var matches = items.filter(function(item) {
+        var haystack = [
+          item.id,
+          item.title,
+          item.type,
+          item.group,
+          item.status,
+          item.summary,
+          (item.tags || []).join(' '),
+          (item.related_ids || []).join(' '),
+          item.search_text
+        ].map(normalizeDocSearchText).join(' ');
+        return haystack.indexOf(normalized) !== -1;
+      }).slice(0, 12);
+
+      if (!matches.length) {
+        container.innerHTML = '<div class="text-secondary small">No indexed results found.</div>';
+        container.classList.remove('d-none');
+        return;
+      }
+
+      container.innerHTML = matches.map(function(item) {
+        var title = escapeDocHtml(item.title || item.id || 'Untitled');
+        var path = escapeDocHtml(item.path || '#');
+        var meta = escapeDocHtml([item.type, item.group, item.status].filter(Boolean).join(' | '));
+        return '<a class="d-block border rounded p-2 mb-2 text-decoration-none bg-white" href="' + path + '">' +
+          '<div class="fw-semibold">' + title + '</div>' +
+          '<div class="text-secondary small">' + meta + '</div>' +
+          '</a>';
+      }).join('');
+      container.classList.remove('d-none');
+    }
+
+    var searchIndexPromise = null;
+    function loadDocSearchIndex(path, inlineSelector) {
+      var inlineNode = inlineSelector ? document.querySelector(inlineSelector) : null;
+      if (inlineNode && inlineNode.textContent.trim()) {
+        try {
+          return Promise.resolve(JSON.parse(inlineNode.textContent));
+        } catch (error) {
+          return Promise.resolve(null);
+        }
+      }
+      if (!path) return Promise.resolve(null);
+      if (!searchIndexPromise) {
+        searchIndexPromise = fetch(path).then(function(response) {
+          if (!response.ok) return null;
+          return response.json();
+        }).catch(function() { return null; });
+      }
+      return searchIndexPromise;
+    }
+
+    document.querySelectorAll('[data-doc-filter-target]').forEach(function(input) {
+      var selector = input.getAttribute('data-doc-filter-target');
+      var items = Array.prototype.slice.call(document.querySelectorAll(selector));
+      var indexPath = input.getAttribute('data-doc-search-index');
+      var inlineIndexSelector = input.getAttribute('data-doc-search-inline');
+      var resultSelector = input.getAttribute('data-doc-search-results');
+      var resultContainer = resultSelector ? document.querySelector(resultSelector) : null;
+      input.addEventListener('input', function() {
+        var query = input.value.trim().toLowerCase();
+        items.forEach(function(item) {
+          var haystack = (item.getAttribute('data-doc-filter-text') || item.textContent || '').toLowerCase();
+          item.classList.toggle('d-none', query && haystack.indexOf(query) === -1);
+        });
+        loadDocSearchIndex(indexPath, inlineIndexSelector).then(function(index) {
+          if (index && Array.isArray(index.items)) {
+            renderSearchIndexResults(resultContainer, index.items, query);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

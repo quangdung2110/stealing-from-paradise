@@ -1,0 +1,22 @@
+{
+  "id": "evt_test_succeeded_123456",
+  "object": "event",
+  "api_version": "2024-06-20",
+  "created": 1718000000,
+  "livemode": false,
+  "pending_webhooks": 1,
+  "type": "payment_intent.succeeded",
+  "data": {
+    "object": {
+      "id": "pi_test_succeeded",
+      "object": "payment_intent",
+      "metadata": {
+        "parent_order_id": "5"
+      },
+      "amount": 45900000,
+      "currency": "vnd",
+      "status": "succeeded",
+      "latest_charge": "ch_test_succeeded"
+    }
+  }
+}

@@ -1,0 +1,209 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Order Detail API
+  description: |
+    Tra ve chi tiet don hang (sub-order) bao gom items, dia chi giao hang,
+    thong tin van chuyen va hoan tien.
+  version: "5.4"
+  contact:
+    name: Order Service Team
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: order-service
+    description: Order detail endpoints
+paths:
+  /orders/{orderId}:
+    get:
+      tags:
+        - order-service
+      summary: Xem chi tiet don hang
+      description: |
+        Tra ve day du thong tin cua mot sub-order bao gom items,
+        dia chi giao hang, tracking, va thong tin hoan tien.
+        Nguoi dung phai la buyer hoac seller cua don hang.
+      operationId: getOrderDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Sub-order ID
+      responses:
+        "200":
+          description: Chi tiet don hang
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderDetailResponse"
+        "403":
+          description: Khong phai chu don hang hoac seller
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForbiddenError"
+        "404":
+          description: Khong tim thay don hang
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    OrderDetailResponse:
+      type: object
+      properties:
+        order_id:
+          type: integer
+          format: int64
+          example: 100
+        parent_order_id:
+          type: integer
+          format: int64
+          example: 55
+        order_code:
+          type: string
+          description: Ma don hang hien thi (OR-YYYYMMDD-{id})
+          example: "OR-20251001-100"
+        seller_id:
+          type: integer
+          format: int64
+          example: 5
+        customer_id:
+          type: integer
+          format: int64
+          example: 42
+        status:
+          type: string
+          enum: [PENDING, PAID, SHIPPING, DELIVERED, RETURNED, CANCELLED, PARTIALLY_REFUNDED, REFUNDED]
+          example: "PAID"
+        total_amt:
+          type: number
+          format: double
+          example: 700000
+        final_amt:
+          type: number
+          format: double
+          example: 700000
+        is_flash_sale:
+          type: boolean
+          description: Danh dau don hang flash sale
+          example: false
+        cancelled_by:
+          type: string
+          nullable: true
+          enum: [BUYER, SELLER, SYSTEM, null]
+          example: null
+        cancel_reason:
+          type: string
+          nullable: true
+          example: null
+        shipping_address:
+          type: object
+          description: Ban sao dia chi giao hang tai thoi diem checkout (JSON)
+          properties:
+            full_address:
+              type: string
+              example: "123 Nguyen Trai, Phuong 2, Q.3, TP.HCM"
+            province_id:
+              type: integer
+              example: 79
+            district_id:
+              type: integer
+              example: 760
+        tracking_number:
+          type: string
+          nullable: true
+          example: "GHN123456789"
+        shipping_deadline:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-10-05T23:59:59Z"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemDetail"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-01T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-10-01T10:30:00Z"
+
+    OrderItemDetail:
+      type: object
+      properties:
+        order_item_id:
+          type: integer
+          format: int64
+          example: 501
+        sku_code:
+          type: string
+          example: "NK-AIR-RED-XL"
+        variant_id:
+          type: integer
+          format: int64
+          description: ID cua variant san pham
+          example: 301
+        name_snapshot:
+          type: string
+          description: Ten san pham tai thoi diem mua
+          example: "Ao Thun Nike Air"
+        image_snapshot:
+          type: string
+          format: uri
+          description: Anh san pham tai thoi diem mua
+          example: "https://cdn.marketplace.vn/products-media/products/5/101/uuid.jpg"
+        price_snapshot:
+          type: number
+          format: double
+          description: Gia tai thoi diem mua
+          example: 350000
+        quantity:
+          type: integer
+          example: 2
+        refunded_quantity:
+          type: integer
+          description: So luong da hoan tien
+          example: 0
+        fs_item_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: Flash sale item ID (neu co)
+          example: null
+
+    ForbiddenError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "FORBIDDEN"
+        message:
+          type: string
+          example: "Ban khong co quyen truy cap tai nguyen nay"
+
+    NotFoundError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "Khong tim thay don hang"

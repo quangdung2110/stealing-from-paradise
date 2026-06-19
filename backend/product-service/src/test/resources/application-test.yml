@@ -1,0 +1,56 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration
+      - org.springframework.cloud.netflix.eureka.EurekaDiscoveryClientConfiguration
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    defer-datasource-initialization: true
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    database-platform: org.hibernate.dialect.H2Dialect
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: false
+  sql:
+    init:
+      mode: never
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+
+minio:
+  url: http://localhost:9000
+  access-key: test
+  secret-key: test
+  bucket: test-bucket
+
+eureka:
+  client:
+    enabled: false
+
+reservation:
+  cleanup:
+    interval-ms: 180000
+  ttl-minutes: 15
+
+kafka:
+  topics:
+    order-created: order.created
+    order-cancelled: order.cancelled
+    order-returned: order.returned
+    flash-sale-session-started: flash_sale.session_started
+    flash-sale-session-ended: flash_sale.session_ended

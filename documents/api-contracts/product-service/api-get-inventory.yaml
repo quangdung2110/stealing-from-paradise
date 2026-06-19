@@ -1,0 +1,331 @@
+﻿openapi: "3.0.3"
+info:
+  title: Product Service - Inventory Management
+  description: >
+    Inventory query, adjustment, restock, and audit log endpoints.
+    Product Service (Port 8084).
+  version: "5.4.0"
+servers:
+  - url: http://localhost:8084/api/v1
+    description: Local development
+paths:
+  /inventory/{skuCode}:
+    get:
+      operationId: queryInventory
+      summary: Query current stock by SKU
+      description: >
+        Returns current inventory levels for a given SKU code.
+        Includes total, locked (reserved), available, and flash-sale-reserved quantities.
+        Referenced by FR-PRODUCT-011.
+      tags:
+        - Inventory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: skuCode
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique SKU code (e.g., "NK-AIR-RED-XL")
+      responses:
+        "200":
+          description: Current inventory snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventorySnapshot"
+              example:
+                sku_code: "NK-AIR-RED-XL"
+                stock_total: 100
+                stock_locked: 5
+                stock_available: 95
+                stock_flash_reserved: 0
+                updated_at: "2026-04-15T10:00:00Z"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: SKU does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /inventory/{skuCode}/restock:
+    put:
+      operationId: restockInventory
+      summary: Add stock (Seller restock)
+      description: >
+        Increases stock_available and stock_total for the given SKU.
+        Only the seller who owns the product/variant can restock.
+        Referenced by FR-PRODUCT-015.
+      tags:
+        - Inventory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: skuCode
+          in: path
+          required: true
+          schema:
+            type: string
+          description: SKU code to restock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestockRequest"
+            example:
+              quantity: 50
+              reason: "Restock from supplier"
+              note: "April 2026 batch"
+      responses:
+        "200":
+          description: Stock restocked successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventorySnapshot"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not the product/variant owner (SELLER only)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: SKU does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Invalid quantity or SKU
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /seller/inventory/adjust:
+    post:
+      operationId: adjustInventory
+      summary: Adjust inventory by delta
+      description: >
+        Seller adjusts stock by a positive or negative delta.
+        Negative delta reduces stock_available (must not go negative).
+        Positive delta increases stock_total.
+        Emits `variant.stock_updated` Kafka event.
+        Referenced by FR-PRODUCT-014.
+      tags:
+        - Inventory
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjustRequest"
+            example:
+              sku_code: "NK-AIR-RED-XL"
+              delta: -5
+              reason: "Damaged in warehouse"
+      responses:
+        "200":
+          description: Inventory adjusted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventorySnapshot"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not the product/variant owner (SELLER only)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Adjustment would make stock_available negative
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /seller/inventory/{skuCode}/logs:
+    get:
+      operationId: getInventoryLogs
+      summary: Inventory adjustment audit logs
+      description: >
+        Returns the history of inventory adjustments for a given SKU.
+        Includes restocks, manual adjustments, and system adjustments (order reservations).
+        Referenced by FR-PRODUCT-011.
+      tags:
+        - Inventory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: skuCode
+          in: path
+          required: true
+          schema:
+            type: string
+          description: SKU code to query logs for
+      responses:
+        "200":
+          description: List of adjustment log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryLogEntry"
+              example:
+                - log_id: 1
+                  sku_code: "NK-AIR-RED-XL"
+                  delta: 50
+                  reason: "Restock from supplier"
+                  source: "MANUAL"
+                  created_at: "2026-04-14T09:00:00Z"
+                - log_id: 2
+                  sku_code: "NK-AIR-RED-XL"
+                  delta: -2
+                  reason: "Order #100 checkout"
+                  source: "ORDER_CHECKOUT"
+                  created_at: "2026-04-15T10:00:00Z"
+        "401":
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not the product/variant owner (SELLER only)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: SKU does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT from Identity Service
+
+  schemas:
+    InventorySnapshot:
+      type: object
+      properties:
+        sku_code:
+          type: string
+          example: "NK-AIR-RED-XL"
+        stock_total:
+          type: integer
+          description: Total stock units (locked + available + flash_reserved)
+          example: 100
+        stock_locked:
+          type: integer
+          description: Units reserved by pending orders
+          example: 5
+        stock_available:
+          type: integer
+          description: Units currently sellable (total - locked - flash_reserved)
+          example: 95
+        stock_flash_reserved:
+          type: integer
+          description: Units reserved for active flash sales
+          example: 0
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-04-15T10:00:00Z"
+
+    RestockRequest:
+      type: object
+      required:
+        - quantity
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+          description: Number of units to add
+        reason:
+          type: string
+          maxLength: 500
+          description: Reason for the restock
+        note:
+          type: string
+          maxLength: 1000
+          description: Additional note (batch info, supplier, etc.)
+
+    AdjustRequest:
+      type: object
+      required:
+        - sku_code
+        - delta
+      properties:
+        sku_code:
+          type: string
+          description: SKU to adjust
+        delta:
+          type: integer
+          description: Positive for restock, negative for deduction
+        reason:
+          type: string
+          maxLength: 500
+          description: Reason for the adjustment
+        version:
+          type: integer
+          nullable: true
+          description: Optional. Current variant version for optimistic locking. If provided and mismatched, returns 409 CONFLICT.
+
+    InventoryLogEntry:
+      type: object
+      properties:
+        log_id:
+          type: integer
+          format: int64
+        sku_code:
+          type: string
+        delta:
+          type: integer
+          description: Change amount (+add, -remove)
+        reason:
+          type: string
+        source:
+          type: string
+          enum: [MANUAL, ORDER_CHECKOUT, ORDER_CANCEL, ORDER_RETURN, FLASH_SALE_RESERVE, FLASH_SALE_RELEASE]
+          description: Source of the inventory change
+        created_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

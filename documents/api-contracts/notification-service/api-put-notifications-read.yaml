@@ -1,0 +1,153 @@
+openapi: "3.0.3"
+info:
+  title: Notification Service - Read Status API
+  description: |
+    Mark notification read status. Single mark, bulk read-all, and unread count.
+    Notification service (Port 8092). MongoDB storage.
+  version: "5.4"
+
+servers:
+  - url: http://localhost:8092/api/v1
+    description: Local development
+
+paths:
+  /notifications/{notifId}/read:
+    put:
+      operationId: markNotificationRead
+      summary: Mark single notification as read
+      description: |
+        Sets `is_read = true` on the specified notification.
+        Idempotent: calling on already-read notification returns 200 with no change.
+      tags:
+        - Notification Read Status
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: notifId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId of the notification
+      responses:
+        "200":
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadResponse"
+        "401":
+          description: JWT invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Notification does not belong to user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /notifications/read-all:
+    put:
+      operationId: markAllNotificationsRead
+      summary: Mark all notifications as read
+      description: |
+        Sets `is_read = true` on all unread notifications for the authenticated user.
+        Returns count of updated documents.
+      tags:
+        - Notification Read Status
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: All notifications marked read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadAllResponse"
+        "401":
+          description: JWT invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /notifications/unread-count:
+    get:
+      operationId: getUnreadCount
+      summary: Get unread notification count
+      description: Returns the count of unread notifications for the authenticated user.
+      tags:
+        - Notification Read Status
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnreadCountResponse"
+        "401":
+          description: JWT invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ReadResponse:
+      type: object
+      required:
+        - id
+        - is_read
+      properties:
+        id:
+          type: string
+          description: Notification ID
+          example: "64f3a1b2c3d4e5f6a7b8c9d0"
+        is_read:
+          type: boolean
+          example: true
+
+    ReadAllResponse:
+      type: object
+      required:
+        - updated_count
+      properties:
+        updated_count:
+          type: integer
+          description: Number of notifications marked read
+          example: 5
+
+    UnreadCountResponse:
+      type: object
+      required:
+        - unread_count
+      properties:
+        unread_count:
+          type: integer
+          example: 5
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

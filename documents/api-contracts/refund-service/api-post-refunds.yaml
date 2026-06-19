@@ -1,0 +1,268 @@
+openapi: "3.0.3"
+info:
+  title: Payment Service - Refunds
+  description: |
+    Buyer-initiated refund requests. Creates a refund record pending admin review.
+    Supports FULL and PARTIAL refund types with evidence image uploads.
+  version: "1.0.0"
+  contact:
+    name: Payment Service Team
+
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local development server
+
+paths:
+  /refunds:
+    post:
+      tags:
+        - Refunds
+      summary: Create refund request
+      description: |
+        Buyer submits a refund request for an order. Creates a REFUND record
+        with status PENDING and associated REFUND_ITEM records. Requires
+        evidence images. Admin must approve before Stripe execution.
+      operationId: createRefund
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRefundRequest"
+            example:
+              order_id: 100
+              type: "PARTIAL"
+              reason: "Item arrived damaged"
+              evidence_images:
+                - "https://minio.example.com/products-media/evidence/img001.jpg"
+                - "https://minio.example.com/products-media/evidence/img002.jpg"
+              items:
+                - item_id: 501
+                  refund_amount: 350000
+                  reason: "Scratched screen"
+      responses:
+        "201":
+          description: Refund request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefundResponse"
+              example:
+                refund_id: 401
+                group_ref: "550e8400-e29b-41d4-a716-446655440000"
+                status: "PENDING"
+                amount: 350000
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          description: Validation failure (return window expired, amount exceeds balance, missing evidence)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "VALIDATION_ERROR"
+                message: "Return window expired"
+
+    get:
+      tags:
+        - Refunds
+      summary: List refunds
+      description: |
+        List refund requests for the authenticated buyer. Admins can view all refunds.
+      operationId: listRefunds
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, SUCCESS, FAILED, REJECTED]
+          description: Filter by refund status
+        - name: from_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by creation date (ISO 8601)
+        - name: to_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by creation date (ISO 8601)
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Page number (zero-indexed)
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: Page size
+      responses:
+        "200":
+          description: List of refunds
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RefundSummary"
+                  totalPages:
+                    type: integer
+                  totalElements:
+                    type: integer
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Identity Service
+
+  schemas:
+    CreateRefundRequest:
+      type: object
+      required:
+        - order_id
+        - type
+        - reason
+        - evidence_images
+      properties:
+        order_id:
+          type: integer
+          format: int64
+          description: Sub-order ID being refunded
+          example: 100
+        type:
+          type: string
+          enum: [FULL, PARTIAL]
+          description: Refund type
+          example: "PARTIAL"
+        reason:
+          type: string
+          maxLength: 500
+          description: Reason for the refund request
+          example: "Item arrived damaged"
+        evidence_images:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uri
+          description: MinIO URLs of evidence photos (at least 1 required). Max file size: 10MB per image.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RefundItemRequest"
+          description: Items to refund (required for PARTIAL refunds)
+
+    RefundItemRequest:
+      type: object
+      required:
+        - item_id
+        - refund_amount
+      properties:
+        item_id:
+          type: integer
+          format: int64
+          description: ORDER_ITEMS.id to refund
+        refund_amount:
+          type: number
+          format: double
+          description: Amount to refund for this item
+        reason:
+          type: string
+          description: Item-specific reason
+
+    RefundResponse:
+      type: object
+      properties:
+        refund_id:
+          type: integer
+          format: int64
+          description: Created refund ID
+        group_ref:
+          type: string
+          format: uuid
+          description: Common UUID for multi-item refund grouping
+        status:
+          type: string
+          enum: [PENDING]
+          description: Initial refund status
+        amount:
+          type: number
+          format: double
+          description: Total refund amount
+
+    RefundSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        order_id:
+          type: integer
+          format: int64
+        type:
+          type: string
+        amount:
+          type: number
+          format: double
+        status:
+          type: string
+        reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request body
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Missing or invalid JWT
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Insufficient role
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+tags:
+  - name: Refunds
+    description: Buyer refund request operations

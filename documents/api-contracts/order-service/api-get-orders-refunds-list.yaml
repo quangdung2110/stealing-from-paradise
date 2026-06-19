@@ -1,0 +1,200 @@
+openapi: "3.0.3"
+info:
+  title: Order Service - Buyer Refunds List API
+  description: |
+    Danh sach tat ca yeu cau hoan tien cua buyer co phan trang.
+    Ho tro loc theo trang thai, loai, va khoang thoi gian.
+  version: "5.4"
+  contact:
+    name: Order Service Team
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development
+tags:
+  - name: order-service
+    description: Buyer refund listing endpoints
+paths:
+  /orders/refunds:
+    get:
+      tags:
+        - order-service
+      summary: Danh sach hoan tien cua buyer
+      description: |
+        Tra ve danh sach tat ca yeu cau hoan tien cua buyer da xac thuc.
+        Ho tro loc theo trang thai, loai hoan tien, va khoang thoi gian.
+        Ket qua duoc phan trang.
+      operationId: listBuyerRefunds
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Loc theo trang thai hoan tien
+          required: false
+          schema:
+            type: string
+            enum: [PENDING, PROCESSING, COMPLETED, REJECTED]
+        - name: type
+          in: query
+          description: Loc theo loai hoan tien
+          required: false
+          schema:
+            type: string
+            enum: [FULL, PARTIAL]
+        - name: from_date
+          in: query
+          description: Loc hoan tien tu ngay (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          description: Loc hoan tien den ngay (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          description: So trang (bat dau tu 0)
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          description: Kich thuoc trang (mac dinh 20)
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+      responses:
+        "200":
+          description: Danh sach hoan tien co phan trang
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponseRefundInfo"
+        "401":
+          description: Chua xac thuc hoac khong phai BUYER
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PageResponseRefundInfo:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderRefundInfo"
+        total_elements:
+          type: integer
+          description: Tong so phan tu
+          example: 12
+        total_pages:
+          type: integer
+          description: Tong so trang
+          example: 1
+        page_number:
+          type: integer
+          description: Trang hien tai
+          example: 0
+        page_size:
+          type: integer
+          description: Kich thuoc trang
+          example: 20
+
+    OrderRefundInfo:
+      type: object
+      properties:
+        refund_id:
+          type: integer
+          format: int64
+          example: 88
+        refund_code:
+          type: string
+          description: Ma hoan tien (RF-YYYYMMDD-{id})
+          example: "RF-20251006-88"
+        order_id:
+          type: integer
+          format: int64
+          example: 100
+        group_ref:
+          type: string
+          format: uuid
+          nullable: true
+          description: UUID nhom hoan tien
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        type:
+          type: string
+          enum: [FULL, PARTIAL]
+          example: "PARTIAL"
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, COMPLETED, REJECTED]
+          example: "PENDING"
+        amount:
+          type: number
+          format: double
+          description: So tien hoan yeu cau
+          example: 250000
+        adjust_amount:
+          type: number
+          format: double
+          nullable: true
+          description: So tien dieu chinh
+          example: null
+        reason:
+          type: string
+          description: Ly do hoan tien
+          example: "San pham bi loi"
+        evidence_images:
+          type: array
+          description: Danh sach URL anh bang chung
+          items:
+            type: string
+            format: uri
+        tracking_number:
+          type: string
+          nullable: true
+          description: Ma theo doi hoan tien
+          example: null
+        reviewed_by:
+          type: integer
+          format: int64
+          nullable: true
+          description: ID admin da xem xet
+          example: null
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Thoi diem admin xem xet
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-06T09:00:00Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Ma loi
+        message:
+          type: string
+          description: Mo ta loi

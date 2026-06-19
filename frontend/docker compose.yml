@@ -1,0 +1,102 @@
+# ============================================================
+# FLASH SALE FRONTEND — STANDALONE DEV DOCKER COMPOSE
+# ============================================================
+# Runs the 3 frontend apps independently for UI development.
+# Does NOT require backend — uses mock data by default.
+#
+# IMPORTANT — Network & API configuration:
+#   • This compose file uses network `flashsale-frontend` (isolated).
+#     Frontend apps can NOT reach backend services by Docker DNS name.
+#
+#   • For standalone dev with MOCK data (no backend needed):
+#       VITE_BACKEND_MODE=mock  (default)
+#       VITE_API_URL is ignored.
+#
+#   • For standalone dev connecting to a real backend:
+#       Set VITE_API_URL to an accessible backend URL in .env
+#       e.g. VITE_API_URL=http://host.docker.internal:8080/api
+#
+#   • For full-stack dev (frontend + backend together):
+#       Use the ROOT docker-compose instead:
+#         cd .. && docker-compose -f docker-compose.yml up --build -d
+#       This ensures all apps share `flashsale-net` and can reach each other.
+#
+# USAGE:
+#   cd frontend
+#   docker-compose up --build          # dev with Vite HMR (foreground)
+#   docker-compose up --build -d       # dev in background
+#
+# NOTE: Run from the frontend/ directory.
+# ============================================================
+
+services:
+
+  customer-app:
+    build:
+      context: .
+      dockerfile: apps/customer/Dockerfile.dev
+    container_name: fe-customer
+    restart: unless-stopped
+    ports: ["${PORT_CUSTOMER:-3000}:3000"]
+    env_file: .env
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=${VITE_API_URL:-/api}
+      - VITE_BACKEND_MODE=${VITE_BACKEND_MODE:-mock}
+    volumes:
+      - ./apps/customer:/app/apps/customer:cached
+      - ./shared:/app/shared:cached
+      - customer_nm:/app/apps/customer/node_modules
+    networks: [flashsale-frontend]
+    healthcheck:
+      disable: true
+
+  seller-app:
+    build:
+      context: .
+      dockerfile: apps/seller/Dockerfile.dev
+    container_name: fe-seller
+    restart: unless-stopped
+    ports: ["${PORT_SELLER:-3001}:3001"]
+    env_file: .env
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=${VITE_API_URL:-/api}
+      - VITE_BACKEND_MODE=${VITE_BACKEND_MODE:-mock}
+    volumes:
+      - ./apps/seller:/app/apps/seller:cached
+      - ./shared:/app/shared:cached
+      - seller_nm:/app/apps/seller/node_modules
+    networks: [flashsale-frontend]
+    healthcheck:
+      disable: true
+
+  admin-app:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile.dev
+    container_name: fe-admin
+    restart: unless-stopped
+    ports: ["${PORT_ADMIN:-3002}:3002"]
+    env_file: .env
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=${VITE_API_URL:-/api}
+      - VITE_BACKEND_MODE=${VITE_BACKEND_MODE:-mock}
+    volumes:
+      - ./apps/admin:/app/apps/admin:cached
+      - ./shared:/app/shared:cached
+      - admin_nm:/app/apps/admin/node_modules
+    networks: [flashsale-frontend]
+    healthcheck:
+      disable: true
+
+volumes:
+  customer_nm:
+  seller_nm:
+  admin_nm:
+
+networks:
+  flashsale-frontend:
+    name: flashsale-frontend
+    driver: bridge
